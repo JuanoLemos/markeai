@@ -183,7 +183,33 @@ def create_app():
             [sys.executable, str(BASE_DIR / "orchestrator.py"), "--mode", "backtest", "--market", market],
             cwd=str(BASE_DIR), capture_output=True, text=True, timeout=120,
         )
-        return jsonify({"output": proc.stdout, "error": proc.stderr})
+        results = []
+        for line in proc.stdout.splitlines():
+            if "BT " not in line:
+                continue
+            txt = line.split("BT ", 1)[-1]
+            parts = txt.split(": ", 1)
+            if len(parts) < 2:
+                continue
+            try:
+                data = json.loads(parts[1])
+                data["ticker"] = parts[0]
+                results.append(data)
+            except (json.JSONDecodeError, KeyError):
+                pass
+        total_trades = sum(r.get("trades", 0) for r in results)
+        total_pnl = sum(r.get("total_pnl_usd", 0) for r in results)
+        wr_vals = [r.get("win_rate", 0) for r in results if r.get("win_rate") is not None]
+        avg_win_rate = round(sum(wr_vals) / len(wr_vals), 1) if wr_vals else 0
+        return jsonify({
+            "results": results,
+            "aggregate": {
+                "total_trades": total_trades,
+                "avg_win_rate": avg_win_rate,
+                "total_pnl_usd": round(total_pnl, 2),
+            },
+            "error": proc.stderr.strip() if proc.stderr and proc.stderr.strip() else None,
+        })
 
     @app.route("/analytics")
     def analytics_page():
