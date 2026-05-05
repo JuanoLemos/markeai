@@ -13,8 +13,7 @@
 | **RAM** | 4 GB (8 GB recomendado) |
 | **Disco** | 500 MB libres |
 | **Red** | Conexión a Internet estable |
-| **OpenCode** | Última versión |
-| **DeepSeek** | API key activa |
+| **DeepSeek** | API key activa (obligatoria) |
 
 ---
 
@@ -29,7 +28,7 @@ Si no está instalado: https://www.python.org/downloads/
 
 ---
 
-## Paso 2: Crear Entorno Virtual (Recomendado)
+## Paso 2: Crear Entorno Virtual
 
 ```bash
 # Windows
@@ -54,14 +53,7 @@ pip install -r requirements.txt
 
 ### Verificar instalación
 ```bash
-python -c "
-import yfinance as yf
-import pandas as pd
-import numpy as np
-from ta import add_all_ta_features
-import schedule
-print('Todas las dependencias OK')
-"
+python -c "import yfinance; import pandas; import numpy; import flask; import pystray; print('Dependencias OK')"
 ```
 
 ---
@@ -69,111 +61,70 @@ print('Todas las dependencias OK')
 ## Paso 4: Configurar Variables de Entorno
 
 ```bash
-# Copiar template
 copy .env.example .env    # Windows
 cp .env.example .env      # Linux/macOS
+```
 
-# Editar .env con tus keys:
-# DEEPSEEK_API_KEY=sk-tu-key-aqui
-# TELEGRAM_BOT_TOKEN=tu-token
-# TELEGRAM_CHAT_ID=tu-chat-id
-# POLYMARKET_PRIVATE_KEY=0x...  (opcional, solo para real)
-# POLYMARKET_API_KEY=...        (opcional, solo para real)
-# POLYMARKET_API_SECRET=...     (opcional, solo para real)
-# ALPACA_API_KEY=...            (opcional, solo para real)
-# ALPACA_SECRET_KEY=...         (opcional, solo para real)
+Editar `.env` con tus keys:
+```ini
+DEEPSEEK_API_KEY=sk-tu-api-key-aqui     # Obligatoria
+NEWSAPI_KEY=tu-key                       # Opcional
+POLYSCAN_API_KEY=tu-key                  # Opcional
 ```
 
 ---
 
-## Paso 5: Configurar Mercados
-
-Editar `config.yaml` para habilitar/deshabilitar mercados:
-
-```yaml
-markets:
-  polymarket:
-    enabled: true
-    mode: paper               # paper | real
-    check_interval_min: 15
-    max_position_usd: 50
-  forex:
-    enabled: true
-    pairs: ["EURUSD=X", "GBPUSD=X", "USDJPY=X", "USDCAD=X"]
-    mode: paper
-    check_interval_min: 60
-  stocks:
-    enabled: true
-    tickers: ["SPY", "QQQ", "AAPL", "MSFT", "TSLA"]
-    mode: paper
-    check_interval_min: 60
-```
-
----
-
-## Paso 6: Verificar Conexión a Datos
+## Paso 5: Verificar Instalación
 
 ```bash
-# Probar Yahoo Finance
-python -c "
-import yfinance as yf
-data = yf.download('SPY', period='1d', interval='1h')
-print(f'Yahoo Finance OK: {len(data)} velas')
-"
+# Ejecutar tests
+python -m pytest tests/ -v
 
-# Probar colectores
-python -c "
-from data.collector_yfinance import YFinanceCollector
-c = YFinanceCollector()
-data = c.get_forex_pairs()
-print(f'Forex OK: {len(data)} pares')
-"
+# Probar una iteración
+python orchestrator.py --mode once --market stocks
+
+# Ver log
+Get-Content orchestrator.log -Tail 10
 ```
 
 ---
 
-## Paso 7: Verificar OpenCode
+## Instalación Completa → Componentes Adicionales
 
+### Dashboard Web
 ```bash
-# Desde la terminal de OpenCode
-# Verificar que DeepSeek responde
-opencode --version
+python dashboard.py
+# Abrir http://localhost:8050
 ```
+
+### System Tray
+```bash
+python tray_app.py
+# Icono $ en bandeja del sistema
+```
+
+### .bat Lanzadores (Windows)
+- `dashboard.bat` — Dashboard web
+- `loop.bat` — Loop 24/7
+- `tray_app.bat` — System tray
 
 ---
 
 ## Solución de Problemas
 
-### Error: `ModuleNotFoundError: No module named 'yfinance'`
+### Error: `ModuleNotFoundError: No module named '...'`
 ```bash
-pip install yfinance
+pip install -r requirements.txt
 ```
 
-### Error: `SSL: CERTIFICATE_VERIFY_FAILED`
-```bash
-# Windows: instalar certificados
-python -m pip install --upgrade certifi
-```
+### Error: `UnicodeDecodeError` en config.yaml
+El archivo contiene caracteres Unicode (═). Asegurate de abrirlo con encoding UTF-8.
 
-### Error: Polymarket API no responde
-```bash
-# Verificar conectividad
-curl https://clob.polymarket.com
-```
+### Error: Polymarket retorna 0 mercados
+El DNS bypass está integrado. Si sigue fallando, verificar conectividad a Internet.
 
-### Error: `pip install` lento
-```bash
-pip install -r requirements.txt --timeout 120
-```
+### Error: Etherscan API timeout
+Aumentar `timeout` si la conexión es lenta. El default es 20s.
 
----
-
-## Verificación Final
-
-```bash
-# Ejecutar tests de colectores
-python -m pytest tests/test_collectors.py -v
-
-# Si todo pasa, el sistema está listo
-echo "✅ MarketAI instalado correctamente"
-```
+### Advertencia: CRLF
+Es normal en Windows. Git maneja la conversión automáticamente.

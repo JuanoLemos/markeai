@@ -6,249 +6,175 @@
 
 ## 1. Inicio Rápido
 
+### Lanzadores (doble clic)
+
+| Archivo | Qué hace |
+|---|---|
+| `loop.bat` | Inicia el loop de trading 24/7 |
+| `dashboard.bat` | Inicia el dashboard web en `http://localhost:8050` |
+| `tray_app.bat` | Inicia el loop minimizado a system tray (icono $) |
+
 ### Modo Manual (una iteración)
 ```bash
-# Ejecutar una iteración completa del sistema
+venv\Scripts\activate
 python orchestrator.py --mode once
 ```
 
-### Modo Continuo (loop 24/7)
+### Modo Loop (24/7)
 ```bash
-# Ejecutar en bucle según scheduling configurado
 python orchestrator.py --mode loop
 ```
 
-### Modo Paper Trading (por defecto)
+### Dashboard Web
 ```bash
-# Siempre usar paper primero
-python orchestrator.py --mode loop --paper
+python dashboard.py
+# Abrir http://localhost:8050
+```
+
+### System Tray
+```bash
+python tray_app.py
+# Icono $ en la bandeja del sistema
+# Click derecho: Show Dashboard, Pause, Resume, Stop, Exit
+# Cerrar ventana → minimiza a tray
 ```
 
 ---
 
-## 2. Uso con OpenCode
-
-### Análisis Manual desde OpenCode
-
-```bash
-# Preguntar al sistema qué hacer en Polymarket
-python analyzers/technical.py --market polymarket --ticker "will-btc-hit-100k-may-2026"
-python analyzers/sentiment.py --market polymarket
-python analyzers/orderbook.py --market polymarket --slug "will-btc-hit-100k-may-2026"
-
-# O usar el task tool de OpenCode para lanzar subagentes
-# task: "Ejecuta análisis técnico de SPY y devuelve RSI, MACD, Bollinger"
-```
-
-### Ver Estado Actual
-```bash
-# Resumen de posiciones abiertas
-python -c "
-from data.database import Database
-db = Database()
-trades = db.get_open_trades()
-for t in trades: print(t)
-"
-
-# Últimas señales generadas
-python -c "
-from data.database import Database
-db = Database()
-signals = db.get_recent_signals(limit=10)
-for s in signals: print(s)
-"
-
-# Balance y métricas
-python -c "
-from data.database import Database
-db = Database()
-print(db.get_portfolio_summary())
-"
-```
-
-### Modificar Estrategia
-```bash
-# OpenCode lee el journal y sugiere mejoras
-# Escribe sugerencias directamente en:
-# strategies/master_strategy.md
-# strategies/polymarket_rules.md
-```
-
----
-
-## 3. Comandos Principales
+## 2. Comandos Principales
 
 | Comando | Descripción |
-|---------|-------------|
-| `python orchestrator.py --mode once` | Una iteración y termina |
-| `python orchestrator.py --mode loop` | Bucle infinito según scheduling |
+|---|---|
+| `python orchestrator.py --mode once` | Una iteración |
+| `python orchestrator.py --mode loop` | Loop 24/7 |
 | `python orchestrator.py --mode once --market polymarket` | Solo Polymarket |
-| `python orchestrator.py --mode loop --paper` | Paper trading forzado |
-| `python orchestrator.py --backtest` | Ejecuta backtest de estrategias activas |
-| `python orchestrator.py --report` | Genera reporte de performance |
+| `python orchestrator.py --mode backtest` | Backtest sobre datos históricos |
+| `python orchestrator.py --mode report` | Resumen de portfolio |
+| `python dashboard.py` | Dashboard web :8050 |
+| `python tray_app.py` | Loop en system tray |
 
 ---
 
-## 4. Monitoreo
+## 3. Dashboard Web
 
-### Logs
-```bash
-# Ver últimas líneas del log
-Get-Content orchestrator.log -Tail 50   # Windows
-tail -50 orchestrator.log                # Linux/macOS
+### Páginas
+| Ruta | Qué muestra |
+|---|---|
+| `/` | Balance, P&L, posiciones abiertas, últimas señales, botones Start/Stop |
+| `/signals` | Últimas 50 señales generadas |
+| `/trades` | Historial de trades cerrados con P&L |
+| `/config` | Formulario editable de `config.yaml` |
+| `/logs` | Tail de `orchestrator.log` |
 
-# Logs de análisis detallado
-Get-Content data/cache/analysis_latest.json | python -m json.tool
-```
-
-### Alertas Telegram
-Si configuraste Telegram, recibirás:
-- ✅ **Entrada**: Señal + mercado + tamaño + precio
-- ❌ **Salida**: PnL + duración + razón
-- ⚠️ **Error**: Fallo en recolector/analizador
-- 📊 **Resumen diario**: 21:00 (configurable)
-
-### Archivos de Estado
-```
-data/cache/
-├── analysis_latest.json    # Último análisis completo
-├── polymarket_books.json   # Order books cacheados
-├── forex_prices.json       # Precios forex actuales
-└── stock_prices.json       # Precios acciones actuales
-```
+### Iniciar/Detener Loop desde la UI
+- Botón **▶ Iniciar Loop** → lanza `orchestrator.py --mode loop` como subproceso
+- Botón **■ Detener** → crea archivo `STOP`, el loop se detiene
+- Dashboard actualiza métricas automáticamente cada 10s
 
 ---
 
-## 5. Gestión de Posiciones
+## 4. System Tray (tray_app.py)
 
-### Ver Posiciones Abiertas
+| Acción | Comportamiento |
+|---|---|
+| Iniciar | `python tray_app.py` — aparece icono $ blanco en la bandeja |
+| Cerrar ventana de loop | La consola se oculta, el proceso sigue corriendo en tray |
+| Menú contextual | Show Dashboard, Pause Loop, Resume, Stop, Exit |
+| Tooltip | Muestra balance actual y estado del loop |
+| Detener desde tray | Exit → espera 5s y cierra todo |
+
+---
+
+## 5. Detener el Sistema
+
 ```bash
-python -c "
-from execution.paper_broker import PaperBroker
-from data.database import Database
-
-broker = PaperBroker()
-print('Balance:', broker.get_balance())
-print('Posiciones:', broker.get_positions())
-"
-```
-
-### Cerrar Posición Manualmente
-```bash
-python -c "
-from data.database import Database
-db = Database()
-db.close_trade(trade_id=123, exit_reason='manual', pnl=...)
-"
-```
-
-### Stop Global
-```bash
-# Crear archivo STOP para detener el orquestador
+# Opción 1: Archivo STOP (funciona siempre)
 echo "stop" > STOP
-# El orquestador detectará el archivo y se detendrá al final del ciclo
 
-# Eliminar para reanudar
-Remove-Item STOP   # Windows
-rm STOP            # Linux/macOS
+# Opción 2: Dashboard (si está corriendo)
+# Click en "■ Detener"
+
+# Opción 3: System tray
+# Click derecho → Stop Loop
+
+# Opción 4: Consola directa
+# Ctrl+C
 ```
 
 ---
 
-## 6. Backtesting
+## 6. Monitoreo
 
+### Desde consola
 ```bash
-# Backtest de estrategia actual sobre datos históricos
-python learning/backtest.py --market polymarket --days 30
-python learning/backtest.py --market forex --days 90
-python learning/backtest.py --market stocks --days 90
+# Últimas líneas del log
+Get-Content orchestrator.log -Tail 50
 
-# Con optimización de parámetros
-python learning/backtest.py --optimize --market all --days 60
+# Resumen de portfolio
+python orchestrator.py --mode report
 
-# Resultados guardados en:
-# data/cache/backtest_results.json
+# Posiciones abiertas
+type data\cache\paper_broker_state.json
+```
+
+### Desde dashboard
+Abrir `http://localhost:8050` en el navegador. Auto-refresh cada 10s.
+
+### Alertas
+Si configuraste Telegram o Discord webhook, recibirás:
+- 🟢 **Entrada**: Señal + mercado + tamaño + precio
+- ✅/❌ **Salida**: PnL + duración + razón
+- ⚠️ **Error**: Fallo en recolector/analizador
+
+---
+
+## 7. Gestión de Posiciones
+
+### Ver posiciones abiertas
+```bash
+python -c "from data.database import Database; db=Database(); print(db.get_open_trades())"
+```
+
+### Stop-loss automático
+El paper broker revisa stops cada iteración. Configurable en `config.yaml`:
+```yaml
+risk:
+  stop_loss_atr_multiplier: 1.5
+  take_profit_atr_multiplier: 3.0
 ```
 
 ---
 
-## 7. Auto-Aprendizaje
+## 8. Backtesting
 
-### Revisar Journal
 ```bash
-# Ver trade_journal.md
-type strategies\trade_journal.md    # Windows
-cat strategies/trade_journal.md     # Linux/macOS
+# Backtest por mercado
+python orchestrator.py --mode backtest --market forex
+python orchestrator.py --mode backtest --market stocks
 ```
 
-### Forzar Evolución de Estrategia
-```bash
-# OpenCode lee el journal y actualiza la estrategia
-python learning/strategy_evolver.py
-# Esto genera sugerencias en strategies/master_strategy.md
-```
-
-### Skills Auto-Generados
-```bash
-# Ver skills disponibles
-dir skills\*.md       # Windows
-ls skills/*.md        # Linux/macOS
-```
+Resultados: win rate, Sharpe ratio, profit factor, max drawdown.
 
 ---
 
-## 8. Solución de Problemas Comunes
+## 9. Configuración Rápida desde Dashboard
 
-### "No hay suficientes datos para análisis"
-- Esperar a que los colectores acumulen datos (1-2 días)
-- Verificar conectividad con las APIs
+El dashboard permite editar en vivo desde `http://localhost:8050/config`:
 
-### "Señal WAIT constante"
-- Revisar config.yaml: ¿pesos de capas muy bajos?
-- Verificar que las APIs de datos respondan
-- Ajustar `min_confidence` más bajo temporalmente
+- Activar/desactivar mercados
+- Ajustar `min_confidence` (más bajo → más señales)
+- Cambiar pesos de capas
+- Configurar riesgo
 
-### "Error: API key no configurada"
-- Verificar `.env` tiene las keys
-- Ejecutar en modo paper (no requiere keys de exchange)
-- DeepSeek API key es la única obligatoria
-
-### "Error: rate limit excedido"
-- Aumentar `check_interval_min` en config.yaml
-- Los colectores tienen cache automático (5 min default)
+> Los cambios se guardan a `config.yaml`. Requieren reinicio del loop para aplicarse.
 
 ---
 
-## 9. Seguridad
+## 10. Seguridad
 
-- **Nunca** commitees `.env` al repositorio
+- **Nunca** commitees `.env` al repositorio (`.gitignore` lo excluye)
 - **Nunca** compartas private keys de wallet
 - El modo paper **no** ejecuta trades reales
-- El modo real requiere `mode: real` explícito en config.yaml
-- Stop-loss es **obligatorio** en todas las operaciones
-- Revisa `orchestrator.log` diariamente al inicio
-
----
-
-## 10. Ejemplo de Sesión Típica
-
-```bash
-# 1. Iniciar sistema en paper
-python orchestrator.py --mode loop --paper
-
-# 2. (El sistema corre solo, recibe alertas en Telegram)
-
-# 3. Revisar performance después de 1 semana
-python orchestrator.py --report
-
-# 4. Ver journal
-type strategies\trade_journal.md
-
-# 5. Ajustar estrategia si es necesario
-# (OpenCode sugiere cambios basado en journal)
-
-# 6. Cuando esté consistentemente rentable:
-#    - Cambiar mode: paper → real en config.yaml
-#    - Configurar API keys de exchange en .env
-#    - Empezar con micro-montos ($10-50)
-```
+- El modo real requiere `mode: real` explícito en `config.yaml`
+- DeepSeek API key es la única obligatoria para operar
+- Sin API key → el sistema genera señales pero no ejecuta trades

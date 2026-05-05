@@ -204,6 +204,7 @@ class MarketAIOrchestrator:
                         onchain_result = self.onchain_analyzer.analyze({
                             "trade_history": self.pm_collector.get_trade_history(slug),
                             "market_details": m,
+                            "onchain_data": self.pm_collector.get_onchain_data(),
                         })
                         if onchain_result:
                             layer_results["onchain"] = onchain_result

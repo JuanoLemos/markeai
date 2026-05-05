@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Overview</h1>
+<div class="btn-group">
+  <button class="btn btn-primary" onclick="toggleLoop(true)" id="btn-start">▶ Iniciar Loop</button>
+  <button class="btn btn-danger" onclick="toggleLoop(false)" id="btn-stop">■ Detener</button>
+  <span class="flex" id="status-badge"><span class="status-dot stopped"></span><span id="status-text">Verificando...</span></span>
+</div>
+
+<div class="cards" id="metrics"></div>
+
+<div class="section">
+  <h2>Posiciones Abiertas</h2>
+  <table id="positions-table"><tr><td colspan="5" class="text-muted">Cargando...</td></tr></table>
+</div>
+
+<div class="section">
+  <h2>Últimas Señales</h2>
+  <table id="signals-table"><tr><td colspan="5" class="text-muted">Cargando...</td></tr></table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadMetrics() {
+  const s = await api('/api/summary');
+  document.getElementById('metrics').innerHTML = `
+    <div class="card"><div class="label">Balance</div><div class="value">$${s.balance.toLocaleString()}</div><div class="sub">Inicial: $${s.initial_balance.toLocaleString()}</div></div>
+    <div class="card"><div class="label">P&L Total</div><div class="value ${s.total_pnl >= 0 ? 'green' : 'red'}">${s.total_pnl >= 0 ? '+' : ''}$${s.total_pnl.toFixed(2)}</div><div class="sub ${s.total_pnl_pct >= 0 ? 'green' : 'red'}">${s.total_pnl_pct >= 0 ? '+' : ''}${s.total_pnl_pct.toFixed(1)}%</div></div>
+    <div class="card"><div class="label">Daily P&L</div><div class="value ${s.daily_pnl >= 0 ? 'green' : 'red'}">${s.daily_pnl >= 0 ? '+' : ''}$${s.daily_pnl.toFixed(2)}</div></div>
+    <div class="card"><div class="label">Open Positions</div><div class="value">${s.open_positions}</div><div class="sub">Exposición: $${s.exposure_usd.toFixed(2)}</div></div>
+    <div class="card"><div class="label">Win Rate</div><div class="value">${s.win_rate}%</div><div class="sub">${s.total_trades} trades total</div></div>
+    <div class="card"><div class="label">Trade Count</div><div class="value">${s.winning_trades}/${s.total_trades}</div><div class="sub">Wins / Total</div></div>
+  `;
+}
+
+async function loadPositions() {
+  const pos = await api('/api/positions');
+  const t = document.getElementById('positions-table');
+  if (!pos.length) { t.innerHTML = '<tr><td colspan="5" class="text-muted">Sin posiciones abiertas</td></tr>'; return; }
+  t.innerHTML = `<tr><th>Ticker</th><th>Señal</th><th>Entrada</th><th>Tamaño</th><th>SL / TP</th></tr>` +
+    pos.map(p => `<tr><td>${p.ticker}</td><td class="signal-${p.signal}">${p.signal}</td><td>$${p.entry_price}</td><td>$${p.size_usd}</td><td>${p.stop_loss_pct}% / ${p.take_profit_pct}%</td></tr>`).join('');
+}
+
+async function loadSignals() {
+  const sig = await api('/api/signals');
+  const t = document.getElementById('signals-table');
+  if (!sig.length) { t.innerHTML = '<tr><td colspan="5" class="text-muted">Sin señales generadas</td></tr>'; return; }
+  t.innerHTML = `<tr><th>Hora</th><th>Mercado</th><th>Ticker</th><th>Decisión</th><th>Confianza</th></tr>` +
+    sig.slice(0,10).map(s => `<tr><td>${s.timestamp.slice(11,19)}</td><td>${s.market}</td><td>${s.ticker}</td><td class="signal-${s.decision}">${s.decision}</td><td>${s.confidence}</td></tr>`).join('');
+}
+
+async function toggleLoop(start) {
+  const r = await api(start ? '/api/loop/start' : '/api/loop/stop');
+  loadStatus();
+}
+
+async function loadStatus() {
+  const st = await api('/api/status');
+  const dot = document.getElementById('status-badge').querySelector('.status-dot');
+  dot.className = 'status-dot ' + (st.running ? 'running' : 'stopped');
+  document.getElementById('status-text').textContent = st.running ? 'Corriendo' : 'Detenido';
+  document.getElementById('btn-start').disabled = st.running;
+  document.getElementById('btn-stop').disabled = !st.running;
+}
+
+loadMetrics(); loadPositions(); loadSignals(); loadStatus();
+setInterval(() => { loadMetrics(); loadPositions(); loadSignals(); }, 10000);
+</script>
+{% endblock %}

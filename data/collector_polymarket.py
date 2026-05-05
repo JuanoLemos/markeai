@@ -1,4 +1,5 @@
 import json
+import os
 import socket as _socket
 import time
 import hashlib
@@ -199,3 +200,74 @@ class PolymarketCollector:
     def get_market_details(self, slug: str) -> dict:
         m = self._find_market(slug)
         return m if m else {}
+
+    POLYSCAN_API_URL = "https://api.etherscan.io/v2/api"
+    USDC_POLYGON = "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174"
+    CLOB_EXCHANGE = "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E"
+    ONCHAIN_CACHE_TTL = 300
+
+    def get_onchain_data(self) -> dict:
+        cache_file = CACHE_DIR / "onchain_data.json"
+        if cache_file.exists():
+            age = time.time() - cache_file.stat().st_mtime
+            if age < self.ONCHAIN_CACHE_TTL:
+                try:
+                    with open(cache_file) as f:
+                        return json.load(f)
+                except Exception:
+                    cache_file.unlink(missing_ok=True)
+        api_key = os.getenv("POLYSCAN_API_KEY", "")
+        if not api_key or api_key in ("", "...", "tu-key-aqui"):
+            return {}
+        try:
+            resp = requests.get(self.POLYSCAN_API_URL, params={
+                "chainid": "137",
+                "module": "account",
+                "action": "tokentx",
+                "contractaddress": self.USDC_POLYGON,
+                "address": self.CLOB_EXCHANGE,
+                "sort": "desc",
+                "offset": 100,
+                "apikey": api_key,
+            }, timeout=20)
+            data = resp.json()
+        except requests.RequestException:
+            return {}
+        if data.get("status") != "1":
+            return {}
+        transfers = data.get("result", [])
+        if not transfers:
+            return {}
+        now = int(time.time())
+        cutoff = now - 172800
+        inflow_count = inflow_usd = outflow_count = outflow_usd = 0
+        addresses = set()
+        for tx in transfers:
+            ts = int(tx.get("timeStamp", 0))
+            if ts < cutoff:
+                continue
+            value = float(tx.get("value", 0)) / 10 ** int(tx.get("tokenDecimal", 6))
+            addr_from = tx.get("from", "").lower()
+            addr_to = tx.get("to", "").lower()
+            exchange = self.CLOB_EXCHANGE.lower()
+            if addr_to == exchange:
+                inflow_count += 1
+                inflow_usd += value
+            elif addr_from == exchange:
+                outflow_count += 1
+                outflow_usd += value
+            addresses.add(addr_from)
+            addresses.add(addr_to)
+        addresses.discard(self.CLOB_EXCHANGE.lower())
+        result = {
+            "inflow_count": inflow_count,
+            "inflow_usd": round(inflow_usd, 2),
+            "outflow_count": outflow_count,
+            "outflow_usd": round(outflow_usd, 2),
+            "net_usd": round(inflow_usd - outflow_usd, 2),
+            "unique_addresses": len(addresses),
+            "whale_transfers": inflow_count + outflow_count,
+        }
+        with open(cache_file, "w") as f:
+            json.dump(result, f)
+        return result

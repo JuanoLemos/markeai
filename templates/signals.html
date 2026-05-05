@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Señales</h1>
+<div class="section">
+  <table id="signals-table"><tr><th>Hora</th><th>Mercado</th><th>Ticker</th><th>Decisión</th><th>Confianza</th><th>Razonamiento</th></tr></table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function load() {
+  const sig = await api('/api/signals');
+  const t = document.getElementById('signals-table');
+  if (!sig.length) { return; }
+  t.innerHTML = `<tr><th>Hora</th><th>Mercado</th><th>Ticker</th><th>Decisión</th><th>Confianza</th><th>Razonamiento</th></tr>` +
+    sig.map(s => `<tr>
+      <td>${s.timestamp.slice(11,19)}</td>
+      <td>${s.market}</td>
+      <td>${s.ticker}</td>
+      <td class="signal-${s.decision}">${s.decision}</td>
+      <td>${s.confidence}</td>
+      <td class="text-muted">${(s.reasoning||'').slice(0,60)}</td>
+    </tr>`).join('');
+}
+load(); setInterval(load, 10000);
+</script>
+{% endblock %}

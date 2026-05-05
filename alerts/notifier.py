@@ -10,9 +10,10 @@ class Notifier:
     def __init__(self):
         self.telegram_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
         self.telegram_chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
-        self.discord_token = os.getenv("DISCORD_BOT_TOKEN", "")
-        self.telegram_enabled = all([self.telegram_token, self.telegram_chat_id])
-        self.discord_enabled = bool(self.discord_token)
+        self.discord_webhook = os.getenv("DISCORD_WEBHOOK_URL", "")
+        self._is_placeholder = lambda v: not v or v in ("...", "tu-key-aqui") or v.endswith("/...")
+        self.telegram_enabled = all([self.telegram_token, self.telegram_chat_id]) and not any(self._is_placeholder(v) for v in [self.telegram_token, self.telegram_chat_id])
+        self.discord_enabled = bool(self.discord_webhook) and not self._is_placeholder(self.discord_webhook)
 
     def send_trade_entry(self, trade: dict) -> bool:
         msg = (
@@ -80,4 +81,13 @@ class Notifier:
     def _send_discord(self, message: str) -> bool:
         if not self.discord_enabled:
             return False
-        return False
+        try:
+            import requests
+            resp = requests.post(
+                self.discord_webhook,
+                json={"content": message},
+                timeout=10,
+            )
+            return resp.status_code in (200, 204)
+        except Exception:
+            return False

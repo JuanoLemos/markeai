@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Trades</h1>
+<div class="section">
+  <table id="trades-table"><tr><th>Fecha</th><th>Mercado</th><th>Ticker</th><th>Señal</th><th>Entrada</th><th>Salida</th><th>PnL</th><th>Resultado</th></tr></table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function load() {
+  const t = await api('/api/trades');
+  const tbl = document.getElementById('trades-table');
+  if (!t.length) { return; }
+  tbl.innerHTML = `<tr><th>Fecha</th><th>Mercado</th><th>Ticker</th><th>Señal</th><th>Entrada</th><th>Salida</th><th>PnL</th><th>Resultado</th></tr>` +
+    t.map(r => {
+      const win = r.pnl_usd > 0;
+      return `<tr>
+        <td>${(r.exit_time||r.entry_time||'').slice(0,10)}</td>
+        <td>${r.market}</td>
+        <td>${r.ticker}</td>
+        <td class="signal-${r.signal}">${r.signal}</td>
+        <td>$${r.entry_price}</td>
+        <td>${r.exit_price ? '$'+r.exit_price : '-'}</td>
+        <td class="${win?'green':'red'}">${r.pnl_usd ? (win?'+':'')+'$'+r.pnl_usd.toFixed(2) : '-'}</td>
+        <td><span class="badge-win ${win?'win':'loss'}">${r.status||'-'}</span></td>
+      </tr>`;
+    }).join('');
+}
+load(); setInterval(load, 15000);
+</script>
+{% endblock %}
