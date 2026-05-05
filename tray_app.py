@@ -121,23 +121,32 @@ def build_menu():
 def main():
     global icon_instance
 
+    import ctypes
+    hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+    if hwnd:
+        ctypes.windll.user32.ShowWindow(hwnd, 0)
+
     icon = pystray.Icon("marketai", create_icon(), "MarketAI — Detenido")
     icon_instance = icon
 
     def tick():
-        while icon._running:
-            icon.title = get_status_text()
-            icon.menu = build_menu()
-            icon.update_menu()
+        time.sleep(1)
+        while getattr(icon, '_running', True):
+            try:
+                icon.title = get_status_text()
+                icon.menu = build_menu()
+                icon.update_menu()
+            except Exception:
+                pass
             time.sleep(3)
 
     threading.Thread(target=tick, daemon=True).start()
-
     start_loop()
 
-    import ctypes
-    kernel32 = ctypes.windll.kernel32
-    kernel32.FreeConsole()
+    hwnd = ctypes.windll.kernel32.GetConsoleWindow()
+    if hwnd:
+        ctypes.windll.user32.ShowWindow(hwnd, 1)
+    ctypes.windll.kernel32.FreeConsole()
 
     icon.run()
 

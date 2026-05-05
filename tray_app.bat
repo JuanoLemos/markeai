@@ -1,5 +1,4 @@
 @echo off
 cd /d "%~dp0"
-call venv\Scripts\activate
-python tray_app.py
-pause
+start /B "" "venv\Scripts\python.exe" "tray_app.py"
+exit
