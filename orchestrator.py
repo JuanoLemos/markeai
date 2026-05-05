@@ -33,6 +33,7 @@ from learning.journal import TradeJournal
 from learning.strategy_evolver import StrategyEvolver
 from learning.backtest import Backtester
 from alerts.notifier import Notifier
+from execution.risk_engine import RiskEngine
 
 CONFIG_PATH = Path(__file__).parent / "config.yaml"
 
@@ -91,6 +92,7 @@ class MarketAIOrchestrator:
         self.evolver = StrategyEvolver()
         self.backtester = Backtester()
         self.notifier = Notifier()
+        self.risk_engine = RiskEngine(initial_balance=1000)
 
     def run_iteration(self):
         self.log.info("=== Starting iteration ===")
@@ -109,6 +111,7 @@ class MarketAIOrchestrator:
     def _snapshot_portfolio(self):
         try:
             s = self.paper_broker.get_summary()
+            self.risk_engine.update_balance(s["balance"])
             self.db.insert_portfolio_snapshot(
                 balance=s["balance"],
                 open_positions=s["open_positions"],
@@ -149,6 +152,11 @@ class MarketAIOrchestrator:
                 decision = self.decider.decide(market, ticker, fused, market_data, fused.get("layer_scores", {}))
                 self.log.info(f"  DeepSeek: {decision.get('signal')} (conf:{decision.get('confidence')})")
                 if decision["signal"] != "WAIT":
+                    self.risk_engine.update_balance(self.paper_broker.balance)
+                    can_trade, reason = self.risk_engine.circuit_breakers()
+                    if not can_trade:
+                        self.log.warning(f"  Risk block: {reason}")
+                        return
                     trade = None
                     exec_mode = market_cfg.get("mode", "paper")
                     if exec_mode == "real":
@@ -166,18 +174,24 @@ class MarketAIOrchestrator:
                                 size_usd=decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50),
                             )
                     else:
+                        entry_price = decision.get("entry_price") or market_data.get(ticker, {}).get("price", 0) or market_data.get("price", 0)
+                        stop_pct = decision.get("stop_loss_pct") or 5
+                        stop_price = entry_price * (1 - stop_pct / 100)
+                        risk_size = self.risk_engine.position_size(entry_price, stop_price)
+                        size_usd = min(decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50), risk_size)
                         trade = self.paper_broker.open_position(
                             market=market,
                             ticker=ticker,
                             signal=decision["signal"],
-                            entry_price=decision.get("entry_price") or market_data.get(ticker, {}).get("price", 0) or market_data.get("price", 0),
-                            size_usd=decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50),
-                            stop_loss_pct=decision.get("stop_loss_pct") or 5,
+                            entry_price=entry_price,
+                            size_usd=size_usd,
+                            stop_loss_pct=stop_pct,
                             take_profit_pct=decision.get("take_profit_pct") or 10,
                             confidence=decision.get("confidence", fused.get("confidence", 0)),
                             strategy_used=f"{market}_{fused['signal']}",
                         )
                     if trade and "error" not in trade:
+                        self.risk_engine.record_trade(trade)
                         self.journal.record_trade(trade)
                         self.notifier.send_trade_entry(trade)
                         self.db.insert_trade({
@@ -360,6 +374,7 @@ class MarketAIOrchestrator:
             pass
         closed = self.paper_broker.check_stops(current_prices)
         for c in closed:
+            self.risk_engine.record_trade(c)
             self.journal.record_trade(c)
             self.notifier.send_trade_exit(c)
             self.db.close_trade(0, c["exit_price"], c["reason"], c["pnl_usd"], c["pnl_pct"])
