@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+
+# Virtual environment
+venv/
+.venv/
+
+# Secrets
+.env
+
+# Cache & generated data
+data/cache/
+orchestrator.log
+data/market.db
+strategies/trade_journal.md
+*.parquet
+
+# IDE
+.vscode/
+.idea/
+
+# Backups
+nppBackup/
+
+# OS
+.DS_Store
+Thumbs.db

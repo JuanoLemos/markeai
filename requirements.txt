@@ -1,0 +1,39 @@
+# ═══════════════════════════════════════════
+# MarketAI - Dependencias
+# ═══════════════════════════════════════════
+# Instalar: pip install -r requirements.txt
+
+# ── Datos de Mercado ──
+yfinance>=0.2.40
+py-clob-client>=0.3.0
+ccxt>=4.3.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+
+# ── Análisis Técnico ──
+pandas>=2.2.0
+numpy>=1.26.0
+ta>=0.11.0
+scipy>=1.12.0
+pyarrow>=18.0.0
+
+# ── Machine Learning (backtesting y optimización) ──
+scikit-learn>=1.4.0
+
+# ── Alertas ──
+python-telegram-bot>=20.0
+discord.py>=2.3.0
+
+# ── Scheduling ──
+schedule>=1.2.0
+
+# ── Configuración ──
+pyyaml>=6.0
+python-dotenv>=1.0.0
+
+# ── Visualización (opcional) ──
+matplotlib>=3.8.0
+plotly>=5.18.0
+
+# ── Testing ──
+pytest>=8.0.0

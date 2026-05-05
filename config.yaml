@@ -1,0 +1,115 @@
+# ═══════════════════════════════════════════
+# MarketAI - Configuración Central
+# ═══════════════════════════════════════════
+
+markets:
+  polymarket:
+    enabled: true
+    mode: paper                     # paper | real
+    check_interval_min: 15
+    max_position_usd: 50
+    min_confidence: 40
+    max_positions_concurrent: 2
+
+  forex:
+    enabled: true
+    pairs:
+      - "EURUSD=X"
+      - "GBPUSD=X"
+      - "USDJPY=X"
+      - "USDCAD=X"
+      - "AUDUSD=X"
+    mode: paper
+    check_interval_min: 60
+    max_position_usd: 30
+    min_confidence: 35
+
+  stocks:
+    enabled: true
+    tickers:
+      - "SPY"
+      - "QQQ"
+      - "AAPL"
+      - "MSFT"
+      - "GOOGL"
+      - "AMZN"
+      - "TSLA"
+    mode: paper
+    check_interval_min: 60
+    max_position_usd: 30
+    min_confidence: 40
+
+layers:
+  technical:
+    enabled: true
+    weight_polymarket: 0.25
+    weight_forex: 0.35
+    weight_stocks: 0.30
+
+  onchain:
+    enabled: true
+    weight_polymarket: 0.25
+    weight_forex: 0.10
+    weight_stocks: 0.10
+
+  sentiment:
+    enabled: true
+    weight_polymarket: 0.20
+    weight_forex: 0.20
+    weight_stocks: 0.25
+
+  orderbook:
+    enabled: true
+    weight_polymarket: 0.30
+    weight_forex: 0.00
+    weight_stocks: 0.00
+
+  fundamental:
+    enabled: true
+    weight_polymarket: 0.00
+    weight_forex: 0.10
+    weight_stocks: 0.20
+
+  cross_asset:
+    enabled: true
+    weight_polymarket: 0.00
+    weight_forex: 0.10
+    weight_stocks: 0.10
+
+  macro:
+    enabled: true
+    weight_polymarket: 0.00
+    weight_forex: 0.25
+    weight_stocks: 0.15
+
+risk:
+  max_position_pct: 0.05
+  max_daily_loss_pct: 0.10
+  stop_loss_atr_multiplier: 1.5
+  take_profit_atr_multiplier: 3.0
+  take_profit2_atr_multiplier: 5.0
+  correlation_threshold: 0.85
+
+deepseek:
+  model: deepseek-v4-pro
+  temperature: 0.3
+  max_tokens: 4000
+  timeout_seconds: 30
+
+alerts:
+  telegram:
+    enabled: false
+    notify_on_entry: true
+    notify_on_exit: true
+    notify_on_error: true
+    daily_summary: true
+    daily_summary_time: "21:00"
+  discord:
+    enabled: false
+
+orchestrator:
+  log_level: INFO
+  log_file: orchestrator.log
+  data_cache_ttl_minutes: 5
+  max_retries: 3
+  retry_delay_seconds: 10

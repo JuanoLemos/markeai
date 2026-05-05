@@ -1,0 +1,213 @@
+import json
+import sqlite3
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional
+
+
+class Database:
+    def __init__(self, db_path: str = None):
+        if db_path is None:
+            db_path = str(Path(__file__).parent / "market.db")
+        self.db_path = db_path
+        self._init_db()
+
+    def _get_conn(self):
+        conn = sqlite3.connect(self.db_path)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+        return conn
+
+    def _init_db(self):
+        conn = self._get_conn()
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS trades (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                market TEXT NOT NULL,
+                ticker TEXT NOT NULL,
+                signal TEXT NOT NULL CHECK(signal IN ('LONG','SHORT')),
+                entry_price REAL NOT NULL,
+                position_size_usd REAL NOT NULL,
+                stop_loss REAL,
+                take_profit REAL,
+                take_profit2 REAL,
+                entry_time TEXT NOT NULL DEFAULT (datetime('now')),
+                exit_time TEXT,
+                exit_price REAL,
+                exit_reason TEXT,
+                pnl_usd REAL,
+                pnl_pct REAL,
+                status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','closed','cancelled')),
+                confidence INTEGER,
+                strategy_used TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS signals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+                market TEXT NOT NULL,
+                ticker TEXT NOT NULL,
+                decision TEXT NOT NULL CHECK(decision IN ('LONG','SHORT','WAIT')),
+                confidence INTEGER NOT NULL,
+                layer_scores TEXT NOT NULL,
+                reasoning TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS market_data (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+                market TEXT NOT NULL,
+                ticker TEXT NOT NULL,
+                price REAL,
+                volume REAL,
+                high_24h REAL,
+                low_24h REAL,
+                change_24h_pct REAL,
+                extra_data TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS strategy_performance (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                strategy_name TEXT NOT NULL UNIQUE,
+                total_trades INTEGER DEFAULT 0,
+                wins INTEGER DEFAULT 0,
+                losses INTEGER DEFAULT 0,
+                win_rate REAL DEFAULT 0.0,
+                sharpe_ratio REAL DEFAULT 0.0,
+                profit_factor REAL DEFAULT 0.0,
+                max_drawdown REAL DEFAULT 0.0,
+                total_pnl REAL DEFAULT 0.0,
+                last_updated TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS portfolio (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+                market TEXT NOT NULL,
+                balance_usd REAL NOT NULL,
+                open_positions INTEGER DEFAULT 0,
+                daily_pnl REAL DEFAULT 0.0,
+                total_pnl REAL DEFAULT 0.0
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_trades_market ON trades(market);
+            CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status);
+            CREATE INDEX IF NOT EXISTS idx_trades_entry ON trades(entry_time);
+            CREATE INDEX IF NOT EXISTS idx_signals_timestamp ON signals(timestamp);
+            CREATE INDEX IF NOT EXISTS idx_market_data_ticker ON market_data(ticker);
+        """)
+        conn.commit()
+        conn.close()
+
+    def insert_trade(self, trade: dict) -> int:
+        conn = self._get_conn()
+        cursor = conn.execute("""
+            INSERT INTO trades (market, ticker, signal, entry_price, position_size_usd,
+                                stop_loss, take_profit, take_profit2, confidence, strategy_used)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            trade["market"], trade["ticker"], trade["signal"], trade["entry_price"],
+            trade["position_size_usd"], trade.get("stop_loss"), trade.get("take_profit"),
+            trade.get("take_profit2"), trade.get("confidence"), trade.get("strategy_used"),
+        ))
+        conn.commit()
+        trade_id = cursor.lastrowid
+        conn.close()
+        return trade_id
+
+    def close_trade(self, trade_id: int, exit_price: float, exit_reason: str, pnl_usd: float, pnl_pct: float):
+        conn = self._get_conn()
+        now = datetime.now(timezone.utc).isoformat()
+        conn.execute("""
+            UPDATE trades SET exit_time=?, exit_price=?, exit_reason=?,
+                              pnl_usd=?, pnl_pct=?, status='closed'
+            WHERE id=?
+        """, (now, exit_price, exit_reason, pnl_usd, pnl_pct, trade_id))
+        conn.commit()
+        conn.close()
+
+    def get_open_trades(self) -> list:
+        conn = self._get_conn()
+        rows = conn.execute("SELECT * FROM trades WHERE status='open'").fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+
+    def get_trade_history(self, limit: int = 50) -> list:
+        conn = self._get_conn()
+        rows = conn.execute(
+            "SELECT * FROM trades ORDER BY entry_time DESC LIMIT ?", (limit,)
+        ).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+
+    def insert_signal(self, signal: dict):
+        conn = self._get_conn()
+        conn.execute("""
+            INSERT INTO signals (market, ticker, decision, confidence, layer_scores, reasoning)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            signal["market"], signal["ticker"], signal["decision"],
+            signal["confidence"], json.dumps(signal.get("layer_scores", {})),
+            signal.get("reasoning", ""),
+        ))
+        conn.commit()
+        conn.close()
+
+    def get_recent_signals(self, limit: int = 10) -> list:
+        conn = self._get_conn()
+        rows = conn.execute(
+            "SELECT * FROM signals ORDER BY timestamp DESC LIMIT ?", (limit,)
+        ).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+
+    def insert_market_data(self, data: dict):
+        conn = self._get_conn()
+        conn.execute("""
+            INSERT INTO market_data (market, ticker, price, volume, high_24h, low_24h, change_24h_pct, extra_data)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            data["market"], data["ticker"], data.get("price"),
+            data.get("volume"), data.get("high_24h"), data.get("low_24h"),
+            data.get("change_24h_pct"), json.dumps(data.get("extra", {})),
+        ))
+        conn.commit()
+        conn.close()
+
+    def get_portfolio_summary(self) -> dict:
+        conn = self._get_conn()
+        open_trades = conn.execute("SELECT COUNT(*) as count, COALESCE(SUM(position_size_usd), 0) as exposure FROM trades WHERE status='open'").fetchone()
+        closed_trades = conn.execute("""
+            SELECT COUNT(*) as count, COALESCE(SUM(pnl_usd), 0) as total_pnl,
+                   COALESCE(AVG(CASE WHEN pnl_usd > 0 THEN 1 ELSE 0 END), 0) as win_rate
+            FROM trades WHERE status='closed'
+        """).fetchone()
+        conn.close()
+        return {
+            "open_positions": open_trades["count"],
+            "exposure_usd": open_trades["exposure"],
+            "total_closed_trades": closed_trades["count"],
+            "total_pnl_usd": closed_trades["total_pnl"],
+            "win_rate": round(closed_trades["win_rate"] * 100, 1),
+        }
+
+    def update_strategy_performance(self, name: str, metrics: dict):
+        conn = self._get_conn()
+        conn.execute("""
+            INSERT INTO strategy_performance (strategy_name, total_trades, wins, losses, win_rate,
+                                              sharpe_ratio, profit_factor, max_drawdown, total_pnl)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(strategy_name) DO UPDATE SET
+                total_trades=excluded.total_trades, wins=excluded.wins, losses=excluded.losses,
+                win_rate=excluded.win_rate, sharpe_ratio=excluded.sharpe_ratio,
+                profit_factor=excluded.profit_factor, max_drawdown=excluded.max_drawdown,
+                total_pnl=excluded.total_pnl, last_updated=datetime('now')
+        """, (
+            name, metrics.get("total_trades", 0), metrics.get("wins", 0),
+            metrics.get("losses", 0), metrics.get("win_rate", 0.0),
+            metrics.get("sharpe_ratio", 0.0), metrics.get("profit_factor", 0.0),
+            metrics.get("max_drawdown", 0.0), metrics.get("total_pnl", 0.0),
+        ))
+        conn.commit()
+        conn.close()
