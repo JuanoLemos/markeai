@@ -156,14 +156,14 @@ class MarketAIOrchestrator:
                             trade = self.pm_executor.place_order(
                                 market_slug=ticker,
                                 side=decision["signal"],
-                                size=decision.get("position_size_usd", market_cfg.get("max_position_usd", 50)),
+                                size=decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50),
                                 price=decision.get("entry_price", 0) or market_data.get("price", 0),
                             )
                         else:
                             trade = self.trad_executor.place_order(
                                 ticker=ticker,
                                 side=decision["signal"],
-                                size_usd=decision.get("position_size_usd", market_cfg.get("max_position_usd", 50)),
+                                size_usd=decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50),
                             )
                     else:
                         trade = self.paper_broker.open_position(
@@ -171,9 +171,9 @@ class MarketAIOrchestrator:
                             ticker=ticker,
                             signal=decision["signal"],
                             entry_price=decision.get("entry_price") or market_data.get(ticker, {}).get("price", 0) or market_data.get("price", 0),
-                            size_usd=decision.get("position_size_usd", market_cfg.get("max_position_usd", 50)),
-                            stop_loss_pct=decision.get("stop_loss_pct", 5),
-                            take_profit_pct=decision.get("take_profit_pct", 10),
+                            size_usd=decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50),
+                            stop_loss_pct=decision.get("stop_loss_pct") or 5,
+                            take_profit_pct=decision.get("take_profit_pct") or 10,
                             confidence=decision.get("confidence", fused.get("confidence", 0)),
                             strategy_used=f"{market}_{fused['signal']}",
                         )
@@ -495,9 +495,9 @@ class MarketAIOrchestrator:
                         trade = pb.open_position(
                             market=market, ticker=ticker, signal=decision["signal"],
                             entry_price=decision.get("entry_price", price) or price,
-                            size_usd=decision.get("position_size_usd", market_cfg.get("max_position_usd", 30)),
-                            stop_loss_pct=decision.get("stop_loss_pct", 5),
-                            take_profit_pct=decision.get("take_profit_pct", 10),
+                            size_usd=decision.get("position_size_usd") or market_cfg.get("max_position_usd", 30),
+                            stop_loss_pct=decision.get("stop_loss_pct") or 5,
+                            take_profit_pct=decision.get("take_profit_pct") or 10,
                             confidence=decision.get("confidence", fused.get("confidence", 50)),
                             strategy_used=f"{market}_{fused['signal']}",
                         )
