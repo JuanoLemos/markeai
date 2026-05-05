@@ -185,6 +185,57 @@ def create_app():
         )
         return jsonify({"output": proc.stdout, "error": proc.stderr})
 
+    @app.route("/analytics")
+    def analytics_page():
+        return render_template("analytics.html", page="analytics")
+
+    @app.route("/api/metrics/extended")
+    def api_metrics_extended():
+        return jsonify(_compute_extended_metrics())
+
+    @app.route("/api/metrics/by-market")
+    def api_metrics_by_market():
+        return jsonify(_metrics_by_market())
+
+    @app.route("/api/metrics/funnel")
+    def api_metrics_funnel():
+        return jsonify(_decision_funnel())
+
+    @app.route("/api/analytics/confidence-distribution")
+    def api_confidence_distribution():
+        return jsonify(_confidence_distribution())
+
+    @app.route("/api/analytics/layer-activity")
+    def api_layer_activity():
+        return jsonify(_layer_activity())
+
+    @app.route("/api/analytics/by-hour")
+    def api_by_hour():
+        return jsonify(_winrate_by_hour())
+
+    @app.route("/api/analytics/by-ticker")
+    def api_by_ticker():
+        return jsonify(_performance_by_ticker())
+
+    @app.route("/api/signals/<int:signal_id>")
+    def api_signal_detail(signal_id):
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(DB_PATH))
+            conn.row_factory = sqlite3.Row
+            row = conn.execute("SELECT * FROM signals WHERE id=?", (signal_id,)).fetchone()
+            conn.close()
+            if not row:
+                return jsonify({})
+            d = dict(row)
+            try:
+                d["layer_scores"] = json.loads(d.get("layer_scores", "{}"))
+            except Exception:
+                d["layer_scores"] = {}
+            return jsonify(d)
+        except Exception:
+            return jsonify({})
+
     return app
 
 
@@ -244,6 +295,171 @@ def _deep_merge(base: dict, updates: dict):
                         base[k] = num
                     except (ValueError, TypeError):
                         base[k] = v
+
+
+def _query_all(sql: str, params: tuple = ()) -> list:
+    try:
+        import sqlite3
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(sql, params).fetchall()
+        conn.close()
+        return [dict(r) for r in rows]
+    except Exception:
+        return []
+
+
+def _compute_extended_metrics() -> dict:
+    rows = _query_all("SELECT pnl_usd FROM trades WHERE status='closed' AND pnl_usd IS NOT NULL ORDER BY entry_time")
+    pnls = [r["pnl_usd"] for r in rows]
+    if not pnls:
+        return {"sharpe": 0, "profit_factor": 0, "max_drawdown": 0, "avg_win": 0, "avg_loss": 0, "trades": 0}
+    wins = [p for p in pnls if p > 0]
+    losses = [p for p in pnls if p < 0]
+    n = len(pnls)
+    mean = sum(pnls) / n
+    var = sum((p - mean) ** 2 for p in pnls) / n if n > 1 else 0
+    std = var ** 0.5
+    sharpe = (mean / std * (252 ** 0.5)) if std > 0 else 0
+    pf = (sum(wins) / abs(sum(losses))) if losses and sum(losses) != 0 else (float("inf") if wins else 0)
+    cum, peak, max_dd = 0.0, 0.0, 0.0
+    for p in pnls:
+        cum += p
+        peak = max(peak, cum)
+        max_dd = max(max_dd, peak - cum)
+    return {
+        "sharpe": round(sharpe, 2),
+        "profit_factor": round(pf, 2) if pf != float("inf") else 999.99,
+        "max_drawdown": round(max_dd, 2),
+        "avg_win": round(sum(wins) / len(wins), 2) if wins else 0,
+        "avg_loss": round(sum(losses) / len(losses), 2) if losses else 0,
+        "trades": n,
+    }
+
+
+def _metrics_by_market() -> list:
+    rows = _query_all("""
+        SELECT market,
+               COUNT(*) as trades,
+               COALESCE(SUM(pnl_usd), 0) as pnl,
+               COALESCE(AVG(CASE WHEN pnl_usd > 0 THEN 1.0 ELSE 0 END), 0) as wr,
+               SUM(CASE WHEN status='open' THEN 1 ELSE 0 END) as open_count
+        FROM trades
+        GROUP BY market
+    """)
+    for r in rows:
+        r["pnl"] = round(r["pnl"], 2)
+        r["wr"] = round(r["wr"] * 100, 1)
+    return rows
+
+
+def _decision_funnel() -> dict:
+    sigs = _query_all("""
+        SELECT
+          COUNT(*) as total,
+          SUM(CASE WHEN decision != 'WAIT' THEN 1 ELSE 0 END) as actionable
+        FROM signals
+        WHERE timestamp > datetime('now', '-7 days')
+    """)
+    trades = _query_all("""
+        SELECT COUNT(*) as opened
+        FROM trades
+        WHERE entry_time > datetime('now', '-7 days')
+    """)
+    by_market = _query_all("""
+        SELECT market,
+               COUNT(*) as total,
+               SUM(CASE WHEN decision != 'WAIT' THEN 1 ELSE 0 END) as actionable
+        FROM signals
+        WHERE timestamp > datetime('now', '-7 days')
+        GROUP BY market
+    """)
+    return {
+        "total_signals": sigs[0]["total"] if sigs else 0,
+        "actionable": sigs[0]["actionable"] if sigs else 0,
+        "executed": trades[0]["opened"] if trades else 0,
+        "by_market": by_market,
+    }
+
+
+def _confidence_distribution() -> dict:
+    rows = _query_all("SELECT confidence, decision FROM signals WHERE timestamp > datetime('now', '-30 days')")
+    bins = {"0-20": 0, "20-40": 0, "40-60": 0, "60-80": 0, "80-100": 0}
+    by_decision = {"LONG": 0, "SHORT": 0, "WAIT": 0}
+    for r in rows:
+        c = r["confidence"] or 0
+        if c < 20: bins["0-20"] += 1
+        elif c < 40: bins["20-40"] += 1
+        elif c < 60: bins["40-60"] += 1
+        elif c < 80: bins["60-80"] += 1
+        else: bins["80-100"] += 1
+        d = r["decision"] or "WAIT"
+        if d in by_decision:
+            by_decision[d] += 1
+    return {"bins": bins, "by_decision": by_decision, "total": len(rows)}
+
+
+def _layer_activity() -> dict:
+    rows = _query_all("SELECT layer_scores FROM signals WHERE timestamp > datetime('now', '-30 days')")
+    activity = {}
+    direction = {}
+    for r in rows:
+        try:
+            layers = json.loads(r["layer_scores"] or "{}")
+        except Exception:
+            continue
+        for name, info in layers.items():
+            activity[name] = activity.get(name, 0) + 1
+            if name not in direction:
+                direction[name] = {"LONG": 0, "SHORT": 0, "WAIT": 0}
+            sig = info.get("signal", "WAIT") if isinstance(info, dict) else "WAIT"
+            if sig in direction[name]:
+                direction[name][sig] += 1
+    items = sorted(
+        [{"layer": k, "count": v, "direction": direction.get(k, {})} for k, v in activity.items()],
+        key=lambda x: x["count"], reverse=True,
+    )
+    return {"layers": items, "total_signals": len(rows)}
+
+
+def _winrate_by_hour() -> list:
+    rows = _query_all("""
+        SELECT strftime('%H', entry_time) as hour,
+               COUNT(*) as trades,
+               COALESCE(AVG(CASE WHEN pnl_usd > 0 THEN 1.0 ELSE 0 END), 0) as wr,
+               COALESCE(SUM(pnl_usd), 0) as pnl
+        FROM trades
+        WHERE status='closed' AND pnl_usd IS NOT NULL
+        GROUP BY hour
+        ORDER BY hour
+    """)
+    out = []
+    for h in range(24):
+        hh = f"{h:02d}"
+        match = next((r for r in rows if r["hour"] == hh), None)
+        if match:
+            out.append({"hour": hh, "trades": match["trades"], "wr": round(match["wr"] * 100, 1), "pnl": round(match["pnl"], 2)})
+        else:
+            out.append({"hour": hh, "trades": 0, "wr": 0, "pnl": 0})
+    return out
+
+
+def _performance_by_ticker() -> list:
+    rows = _query_all("""
+        SELECT ticker, market,
+               COUNT(*) as trades,
+               SUM(CASE WHEN pnl_usd > 0 THEN 1 ELSE 0 END) as wins,
+               COALESCE(SUM(pnl_usd), 0) as pnl,
+               COALESCE(AVG(CASE WHEN pnl_usd > 0 THEN 1.0 ELSE 0 END), 0) as wr
+        FROM trades
+        WHERE status='closed' AND pnl_usd IS NOT NULL
+        GROUP BY ticker, market
+        ORDER BY pnl DESC
+    """)
+    for r in rows:
+        r["pnl"] = round(r["pnl"], 2)
+        r["wr"] = round(r["wr"] * 100, 1)
+    return rows
 
 
 if __name__ == "__main__":

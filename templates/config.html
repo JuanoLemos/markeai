@@ -21,34 +21,54 @@
 
 {% block scripts %}
 <script>
+let currentConfig = null;
+
+function renderMarketBlock(name, v) {
+  const tickers = v.tickers || v.pairs || null;
+  const tickersField = tickers ? `
+    <div class="form-group" style="grid-column:1/-1">
+      <label>${v.tickers ? 'Tickers' : 'Pares'} (separar por coma)</label>
+      <input name="markets.${name}.${v.tickers ? 'tickers' : 'pairs'}" value="${tickers.join(', ')}" data-array="true">
+    </div>` : '';
+  return `
+    <div style="margin-bottom:12px;padding:12px;background:var(--bg-primary);border-radius:6px">
+      <strong style="color:var(--accent-green)">${name}</strong>
+      <div class="form-row" style="margin-top:8px">
+        <div class="form-group"><label>Enabled</label><select name="markets.${name}.enabled">${['true','false'].map(o => `<option ${v.enabled==(o==='true')?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Mode</label><select name="markets.${name}.mode">${['paper','real'].map(o => `<option ${v.mode===o?'selected':''}>${o}</option>`).join('')}</select></div>
+        <div class="form-group"><label>Interval (min)</label><input name="markets.${name}.check_interval_min" value="${v.check_interval_min}" type="number" min="5"></div>
+        <div class="form-group"><label>Max Position USD</label><input name="markets.${name}.max_position_usd" value="${v.max_position_usd}" type="number" min="1"></div>
+        <div class="form-group"><label>Min Confidence</label><input name="markets.${name}.min_confidence" value="${v.min_confidence}" type="number" min="0" max="100"></div>
+        ${v.max_positions_concurrent != null ? `<div class="form-group"><label>Max Concurrent</label><input name="markets.${name}.max_positions_concurrent" value="${v.max_positions_concurrent}" type="number" min="1"></div>` : ''}
+        ${tickersField}
+      </div>
+    </div>`;
+}
+
 async function loadConfig() {
   const c = await api('/api/config');
-  const mkt = document.getElementById('markets');
-  mkt.innerHTML = Object.entries(c.markets).map(([k,v]) => `
-    <div style="margin-bottom:12px;padding:12px;background:var(--bg-primary);border-radius:6px">
-      <strong style="color:var(--accent-green)">${k}</strong>
-      <div class="form-row" style="margin-top:8px">
-        <div class="form-group"><label>Enabled</label><select name="markets.${k}.enabled">${['true','false'].map(o => `<option ${v.enabled==(o==='true')?'selected':''}>${o}</option>`).join('')}</select></div>
-        <div class="form-group"><label>Interval (min)</label><input name="markets.${k}.check_interval_min" value="${v.check_interval_min}" type="number" min="5"></div>
-        <div class="form-group"><label>Max Position USD</label><input name="markets.${k}.max_position_usd" value="${v.max_position_usd}" type="number" min="1"></div>
-        <div class="form-group"><label>Min Confidence</label><input name="markets.${k}.min_confidence" value="${v.min_confidence}" type="number" min="0" max="100"></div>
-      </div>
-    </div>`).join('');
+  currentConfig = c;
+  document.getElementById('markets').innerHTML = Object.entries(c.markets).map(([k,v]) => renderMarketBlock(k, v)).join('');
   const r = document.getElementById('risk');
-  r.innerHTML = Object.entries({max_position_pct:c.risk.max_position_pct, max_daily_loss_pct:c.risk.max_daily_loss_pct}).map(([k,v]) =>
+  r.innerHTML = Object.entries(c.risk).map(([k,v]) =>
     `<div class="form-group"><label>${k}</label><input name="risk.${k}" value="${v}" step="0.01" type="number"></div>`
   ).join('');
   const d = document.getElementById('deepseek');
   d.innerHTML = `<div class="form-group"><label>Model</label><input name="deepseek.model" value="${c.deepseek.model}"></div>
     <div class="form-group"><label>Temperature</label><input name="deepseek.temperature" value="${c.deepseek.temperature}" step="0.1" type="number"></div>
-    <div class="form-group"><label>Max Tokens</label><input name="deepseek.max_tokens" value="${c.deepseek.max_tokens}" type="number"></div>`;
+    <div class="form-group"><label>Max Tokens</label><input name="deepseek.max_tokens" value="${c.deepseek.max_tokens}" type="number"></div>
+    <div class="form-group"><label>Timeout (s)</label><input name="deepseek.timeout_seconds" value="${c.deepseek.timeout_seconds||30}" type="number"></div>`;
 }
 
 document.getElementById('config-form').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const fd = new FormData(e.target);
   const data = {};
-  for (const [k, v] of fd) {
+  document.querySelectorAll('#config-form [name]').forEach(el => {
+    const k = el.name;
+    let v = el.value;
+    if (el.dataset.array === 'true') {
+      v = v.split(',').map(s => s.trim()).filter(Boolean);
+    }
     const parts = k.split('.');
     let o = data;
     for (let i = 0; i < parts.length - 1; i++) {
@@ -56,10 +76,14 @@ document.getElementById('config-form').addEventListener('submit', async (e) => {
       o = o[parts[i]];
     }
     o[parts[parts.length - 1]] = v;
-  }
+  });
+  const msg = document.getElementById('save-msg');
+  msg.textContent = 'Guardando…';
   const r = await fetch('/api/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
   const res = await r.json();
-  document.getElementById('save-msg').textContent = res.ok ? '✓ Guardado' : '✗ Error: ' + (res.error||'');
+  msg.textContent = res.ok ? '✓ Guardado correctamente' : '✗ Error: ' + (res.error||'');
+  msg.style.color = res.ok ? 'var(--accent-green)' : 'var(--accent-red)';
+  setTimeout(() => { msg.textContent = ''; msg.style.color = ''; }, 4000);
 });
 
 loadConfig();

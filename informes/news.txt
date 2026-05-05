@@ -1,153 +1,192 @@
 ═══════════════════════════════════════════════════════════════════
-MarketAI — Informe de Novedades y Auditoría
-Fecha: 2026-05-05
-Revisado por: Claude Sonnet 4.6
+MarketAI — Informe de Auditoría (Claude Sonnet 4.6)
+Scope: templates/, static/style.css, dashboard.py
 ═══════════════════════════════════════════════════════════════════
 
+NOTA: Los archivos VITALES no se tocan. Los bugs de backend se
+documentan aquí para quien corresponda (DeepSeek).
 
-── 1. ESTADO GENERAL ──────────────────────────────────────────────
+───────────────────────────────────────────────────────────────────
+BACKEND (fuera de mi scope — para DeepSeek)
+───────────────────────────────────────────────────────────────────
 
-El sistema está ACTIVO en modo loop. El archivo STOP fue detectado
-y procesado correctamente: el orquestador lo leyó, lo borró y se
-detuvo. El mecanismo funciona como está diseñado.
+## 2026-05-05 - Bug Crítico: NoneType en paper_broker
+Estado: propuesto
+Descripción:
+  DeepSeek devuelve null para position_size_usd, stop_loss_pct o
+  take_profit_pct. dict.get("key", default) en Python NO usa el
+  default si la clave existe con null → pasa None al paper_broker
+  → crash en "size_usd > self.balance".
+  Log: "Iteration error: '>' not supported between NoneType and float"
+  Bloquea toda apertura de posiciones cuando DeepSeek da LONG/SHORT.
+Archivos afectados: [orchestrator.py] (VITAL)
 
-Stack completo verificado:
-  - Python 3.14.0 (Windows)
-  - 6 commits en git (historial limpio)
-  - market.db: 245 KB (con datos reales)
-  - orchestrator.log: 84 KB (logs acumulados)
-  - Dashboard Flask disponible en :8050
+## 2026-05-05 - Forex señal SHORT descartada por zona neutra
+Estado: propuesto
+Descripción:
+  Score 47.3, confianza 100% SHORT — correcto, pero el FusionEngine
+  descarta señales con score 45-55 (zona WAIT). La dirección está
+  bien detectada, no se ejecuta por umbral conservador.
+Archivos afectados: [engine/fusion.py, config.yaml] (VITALES)
 
+## 2026-05-05 - Verificar ID del modelo DeepSeek
+Estado: propuesto
+Descripción:
+  config.yaml usa "deepseek-v4-pro". Confirmar contra la API actual.
+Archivos afectados: [config.yaml] (VITAL)
 
-── 2. BUG CRÍTICO ENCONTRADO ──────────────────────────────────────
+## 2026-05-05 - SPY/QQQ sin fundamentals en YFinance (ruido)
+Estado: propuesto
+Descripción:
+  HTTP 404 al pedir fundamentals de ETFs. Correcto técnicamente
+  (los ETFs no tienen fundamentals), pero genera ruido en el log.
+Archivos afectados: [data/collector_yfinance.py] (VITAL)
 
-ARCHIVO: orchestrator.py línea 167-178 / paper_broker.py línea 71
-ERROR EN LOG: "Iteration error: '>' not supported between instances
-              of 'NoneType' and 'float'"
+───────────────────────────────────────────────────────────────────
+DISEÑO (dentro de mi scope)
+───────────────────────────────────────────────────────────────────
 
-CAUSA RAÍZ:
-DeepSeek a veces devuelve null (None) para campos como
-"position_size_usd", "entry_price", "stop_loss_pct" o
-"take_profit_pct" aunque estos aparezcan en el JSON de respuesta.
+───────────────────────────────────────────────────────────────────
+CAMBIOS IMPLEMENTADOS - 2026-05-05
+───────────────────────────────────────────────────────────────────
 
-Python dict.get("key", default) SOLO usa el default si la clave NO
-existe. Si la clave existe con valor null → retorna None, no default.
-
-Ejemplo del fallo:
-  DeepSeek responde → {"position_size_usd": null}
-  orchestrator.py  → decision.get("position_size_usd", 50) = None
-  paper_broker.py  → if size_usd > self.balance  ← CRASH
-
-Esto interrumpe la iteración completa cuando DeepSeek da LONG/SHORT.
-Ya ocurrió: el log muestra AMZN y TSLA con LONG conf:100 y luego crash.
-
-SOLUCIÓN SUGERIDA (en orchestrator.py, en la llamada a open_position):
-  Sanitizar con "or" o "if x is not None":
-  size_usd = decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50)
-  entry_price = decision.get("entry_price") or market_data.get(ticker, {}).get("price", 0)
-  stop_loss_pct = decision.get("stop_loss_pct") or 5.0
-  take_profit_pct = decision.get("take_profit_pct") or 10.0
-
-
-── 3. ANÁLISIS DE SEÑALES ─────────────────────────────────────────
-
-FOREX: siempre retorna WAIT (score:47.3, conf:100)
-  - Problema: solo hay 2 capas activas para forex (technical + macro)
-  - El score 47.3 está entre 45 y 55 → el fusion engine dice WAIT
-  - La confianza 100 indica que ambas capas votan SHORT de forma unánime
-  - Pero el score no supera el umbral para emitir una señal SHORT
-  - Efecto neto: señal SHORT válida se descarta por estar en zona gris
-
-POLYMARKET: siempre retorna WAIT (score:50, conf:0)
-  - Solo la capa orderbook o onchain genera señal
-  - Muchos mercados devuelven score=50 → fusion los ignora
-  - Sin noticias crypto activas, sentiment también da 50
-
-STOCKS: empezó a generar LONG (score:55.0, conf:100) en fecha actual
-  - EMA9 > EMA21 tras el rebote de mercado (mayo 2026)
-  - 5 de 7 tickers generan LONG válido
-  - DeepSeek confirma LONG en QQQ, MSFT, AMZN (intermitente en otros)
-  - Bloqueado por el bug de NoneType antes de ejecutar posiciones
+## 2026-05-05 - WORKFLOW: bitácora obligatoria en news.txt
+Estado: implementado
+Descripción:
+  El usuario fija como regla permanente que cada cambio de este
+  agente (Claude Sonnet/Opus, scope diseño) debe registrarse aquí
+  con el formato de reglas.md (Fecha, Tema, Estado, Descripción,
+  Archivos afectados). Aplica también a hallazgos en archivos
+  VITALES aunque no se toquen (se anotan como "propuesto" para
+  que DeepSeek los recoja).
+  Regla guardada en la memoria persistente del agente para que
+  sobreviva entre sesiones.
+Archivos afectados: [informes/news.txt] (este archivo)
 
 
-── 4. RESULTADO DEL BACKTESTING (replay 90 días) ─────────────────
+## 2026-05-05 - FIX: CSS responsive para mobile
+Estado: implementado
+Descripción:
+  Añadido @media (max-width: 768px) en style.css.
+  - Sidebar se transforma en drawer deslizable (transform: translateX)
+  - Botón hamburguesa fijo arriba-izquierda en mobile
+  - Cards se reorganizan a 1-2 columnas (minmax 150px)
+  - Funnel pasa de horizontal a vertical
+  - hour-grid pasa de 24 a 12 columnas
+  - Form-row colapsa a 1 columna
+  - Auto-cierre del sidebar al navegar
+Archivos afectados: [static/style.css, templates/base.html]
 
-Ticker    Trades  Win%   PnL      Sharpe   MaxDD
-SPY       19      0.0%   -$30.65  -107.01  $28.95  ← muy malo
-QQQ       49      16.3%  -$17.11  -8.56    $38.50
-AAPL      39      5.1%   -$42.14  -18.99   $40.41
-MSFT      30      66.7%  +$36.54  +9.11    $6.90   ← ÚNICO POSITIVO
-GOOGL     (datos incompletos en log)
-AMZN      (datos incompletos en log)
-TSLA      (datos incompletos en log)
+## 2026-05-05 - FIX: Badge en trades.html para abiertos
+Estado: implementado
+Descripción:
+  Añadida variante .badge-win.open (gris). Lógica corregida:
+  abiertos → badge gris "open", cerrados ganadores → verde,
+  cerrados perdedores → rojo. Antes los abiertos se mostraban
+  todos en rojo (porque pnl_usd null > 0 es false).
+Archivos afectados: [templates/trades.html, static/style.css]
 
-OBSERVACIONES:
-  - MSFT es el único ticker rentable en backtesting histórico
-  - SPY tiene 0 trades ganadores → la estrategia RSI<30+EMA no se activa
-  - Backtester usa señal simplificada (RSI+EMA2, sin las 7 capas reales)
-  - El backtester NO es representativo del sistema real de 7 capas
-  - Riesgo/recompensa del backtester: SL 2% / TP 5% → ratio 1:2.5 correcto
+## 2026-05-05 - FIX: Estados vacíos en tablas
+Estado: implementado
+Descripción:
+  Añadida clase .empty-state (caja con borde discontinuo) en
+  signals.html, trades.html, overview.html (positions table,
+  signals table, by-market table).
+Archivos afectados: [templates/signals.html, templates/trades.html, templates/overview.html, static/style.css]
 
+## 2026-05-05 - FIX: config.html soporta arrays
+Estado: implementado
+Descripción:
+  Tickers y pairs ahora se editan como input separado por comas.
+  El JS hace data-array="true" para split y enviar como list al
+  POST /api/config. _deep_merge en dashboard.py acepta listas
+  (caen al fallback final que las asigna tal cual).
+  Añadidos también: campo Mode (paper/real), max_positions_concurrent,
+  timeout_seconds para deepseek.
+Archivos afectados: [templates/config.html]
 
-── 5. ARQUITECTURA — PUNTOS FUERTES ──────────────────────────────
+## 2026-05-05 - NEW: Métricas avanzadas en Overview
+Estado: implementado
+Descripción:
+  Nuevo endpoint /api/metrics/extended que computa desde la DB:
+  Sharpe ratio (anualizado * sqrt(252)), Profit Factor (sum_wins /
+  abs(sum_losses)), Max Drawdown (peak-to-trough acumulado), Avg
+  Win, Avg Loss. Coloreado: verde si Sharpe > 1 / PF > 1.5,
+  rojo si Sharpe < 0 / PF < 1.
+Archivos afectados: [dashboard.py, templates/overview.html]
 
-+ Separación limpia de capas (data / analyzers / engine / execution)
-+ Sistema de pesos configurables por mercado en config.yaml
-+ PaperBroker robusto: slippage, comisiones, estado persistente en JSON
-+ StrategyEvolver: auto-genera estrategias .md y skills/ tras 10 trades
-+ STOP file: mecanismo elegante para detener el loop sin matar el proceso
-+ FusionEngine: diseño correcto de votación ponderada
-+ Dashboard Flask: 6 rutas HTML + API endpoints bien definidos
-+ Tests en tests/ (collectors y analyzers)
+## 2026-05-05 - NEW: Breakdown por mercado en Overview
+Estado: implementado
+Descripción:
+  Tabla en Overview con trades por mercado (polymarket/forex/stocks):
+  número de trades, abiertos, win rate, PnL coloreado.
+  Endpoint: /api/metrics/by-market.
+Archivos afectados: [dashboard.py, templates/overview.html]
 
+## 2026-05-05 - NEW: Decision Funnel widget
+Estado: implementado
+Descripción:
+  Visualización de embudo de decisión (últimos 7 días):
+  Señales generadas → Fused ≠ WAIT → Ejecutadas.
+  Muestra el % de drop-off entre cada etapa, lo que permite
+  diagnosticar si el problema es Fusion (zona neutra demasiado
+  amplia) o DeepSeek (rechazando demasiadas señales válidas).
+  Endpoint: /api/metrics/funnel.
+Archivos afectados: [dashboard.py, templates/overview.html, static/style.css]
 
-── 6. ISSUES MENORES ──────────────────────────────────────────────
+## 2026-05-05 - NEW: Página /analytics
+Estado: implementado
+Descripción:
+  Nueva página con 4 visualizaciones:
 
-a) HTTP 404 al obtener fundamentals de SPY y QQQ:
-   "No fundamentals data found for symbol: SPY"
-   → YFinance no tiene fundamentals para ETFs (correcto, son fondos)
-   → FundamentalAnalyzer retorna WAIT para ETFs, sin impacto real
+  1. Distribución de Confianza: histograma horizontal con buckets
+     0-20, 20-40, 40-60, 60-80, 80-100 + cards LONG/SHORT/WAIT.
+     Detecta si la calibración del confidence está sesgada.
 
-b) strategies/master_strategy.md está vacío (1 línea en blanco)
-   → StrategyEvolver aún no ha generado sugerencias (necesita 10+ trades)
-   → Bloqueado por el bug NoneType que impide abrir posiciones
+  2. Actividad por Capa: barra de uso por cada uno de los 7
+     analizadores, con desglose direccional (% LONG / SHORT / WAIT).
+     Permite ver cuál capa contribuye más y si está sesgada.
 
-c) skills/ está vacío
-   → Igual que el punto anterior, sin trades cerrados no hay skills
+  3. Win Rate por Hora (UTC): heatmap de 24 celdas. Verde > 50% WR,
+     rojo < 50%, opacidad = volumen de trades. Identifica las
+     mejores horas para operar.
 
-d) DeepSeek inconstante: para el mismo ticker en iteraciones consecutivas
-   da WAIT y luego LONG. Normal con temperature=0.3, pero reduce confianza
-   en la señal final.
+  4. Rendimiento por Ticker: tabla ordenada por PnL con wins,
+     win rate, trades por ticker.
 
-e) config.yaml tiene "deepseek-v4-pro" como modelo pero la API oficial
-   de DeepSeek usa "deepseek-chat" o "deepseek-reasoner". Verificar.
+  Endpoints nuevos:
+  /api/analytics/confidence-distribution
+  /api/analytics/layer-activity
+  /api/analytics/by-hour
+  /api/analytics/by-ticker
+Archivos afectados: [dashboard.py, templates/analytics.html, templates/base.html, static/style.css]
 
+## 2026-05-05 - NEW: Filtros + expansión de capas en Signals
+Estado: implementado
+Descripción:
+  - Chips de filtro por decisión (LONG/SHORT/WAIT) y por mercado
+  - Click en una fila expande un panel con:
+    * Cada capa: nombre, señal, score, peso, barra de score coloreada
+      (verde > 55, rojo < 45, ámbar zona neutra)
+    * Razonamiento completo
+  - Endpoint: /api/signals/<id> que parsea layer_scores JSON
+Archivos afectados: [dashboard.py, templates/signals.html, static/style.css]
 
-── 7. PRÓXIMOS PASOS RECOMENDADOS ────────────────────────────────
+## 2026-05-05 - NEW: Resumen y filtros en Trades
+Estado: implementado
+Descripción:
+  - 4 cards arriba: total trades, cerrados (W/L), PnL acumulado, WR
+  - Chips: filtro por status (abiertos/cerrados) y por resultado
+    (wins/losses)
+  - Status visual: badge gris para abiertos
+Archivos afectados: [templates/trades.html]
 
-PRIORIDAD ALTA:
-  1. Corregir bug NoneType en orchestrator.py (ver sección 2)
-     Esto desbloquea la ejecución real de posiciones
+## 2026-05-05 - DESIGN: Reordenamiento del menú
+Estado: implementado
+Descripción:
+  Sidebar reordenado en orden de uso lógico:
+  Overview → Señales → Trades → Analytics → Backtest → Config → Logs
+  Antes Backtest estaba al final, ahora va junto a Analytics.
+Archivos afectados: [templates/base.html]
 
-  2. Verificar nombre del modelo DeepSeek en .env / config.yaml
-     Confirmar si "deepseek-v4-pro" es el ID correcto o usar "deepseek-chat"
-
-PRIORIDAD MEDIA:
-  3. Ajustar umbrales de fusión para forex:
-     Bajar el umbral de score de 55 a 52 o reducir la zona WAIT (45-55)
-     para que señales SHORT con score 47 y conf 100 se ejecuten
-
-  4. Añadir sanity check en FusionEngine:
-     Si confidence >= 80 y signal es WAIT por score en zona gris,
-     considerar emitir SHORT/LONG con advertencia
-
-  5. Incluir más capas en forex y polymarket (actualmente solo 2-3 activas)
-
-PRIORIDAD BAJA:
-  6. Mejorar backtester para usar las 7 capas reales en lugar de solo RSI+EMA
-  7. Activar alertas Telegram/Discord para trades en vivo
-  8. Añadir validación de API key al startup con mensaje claro
-
-═══════════════════════════════════════════════════════════════════
-Fin del informe — MarketAI v1 (6 commits, modo paper)
 ═══════════════════════════════════════════════════════════════════

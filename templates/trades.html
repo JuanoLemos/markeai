@@ -1,31 +1,90 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Trades</h1>
+
+<div class="cards" id="trades-summary"></div>
+
+<div class="filter-bar">
+  <button class="chip active" data-filter="status" data-val="ALL">Todos</button>
+  <button class="chip" data-filter="status" data-val="open">Abiertos</button>
+  <button class="chip" data-filter="status" data-val="closed">Cerrados</button>
+  <span class="text-muted" style="font-size:12px;align-self:center;margin-left:16px">Resultado:</span>
+  <button class="chip active" data-filter="result" data-val="ALL">Todos</button>
+  <button class="chip" data-filter="result" data-val="win">Wins</button>
+  <button class="chip" data-filter="result" data-val="loss">Losses</button>
+</div>
+
+<div class="text-muted mb-2" style="font-size:12px"><span id="result-count">—</span> trades</div>
+
 <div class="section">
-  <table id="trades-table"><tr><th>Fecha</th><th>Mercado</th><th>Ticker</th><th>Señal</th><th>Entrada</th><th>Salida</th><th>PnL</th><th>Resultado</th></tr></table>
+  <table id="trades-table"><tr><td colspan="8"><div class="empty-state">Cargando…</div></td></tr></table>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-async function load() {
-  const t = await api('/api/trades');
+let allTrades = [];
+const filters = { status: 'ALL', result: 'ALL' };
+
+function render() {
+  const filtered = allTrades.filter(t => {
+    if (filters.status !== 'ALL' && t.status !== filters.status) return false;
+    if (filters.result === 'win' && !(t.pnl_usd > 0)) return false;
+    if (filters.result === 'loss' && !(t.pnl_usd < 0)) return false;
+    return true;
+  });
+  document.getElementById('result-count').textContent = filtered.length;
+
+  // resumen rápido
+  const closed = allTrades.filter(t => t.status === 'closed' && t.pnl_usd !== null);
+  const wins = closed.filter(t => t.pnl_usd > 0);
+  const losses = closed.filter(t => t.pnl_usd < 0);
+  const totalPnl = closed.reduce((a, t) => a + (t.pnl_usd || 0), 0);
+  document.getElementById('trades-summary').innerHTML = `
+    <div class="card"><div class="label">Total Trades</div><div class="value">${allTrades.length}</div><div class="sub">${allTrades.filter(t=>t.status==='open').length} abiertos</div></div>
+    <div class="card"><div class="label">Cerrados</div><div class="value">${closed.length}</div><div class="sub">${wins.length}W / ${losses.length}L</div></div>
+    <div class="card"><div class="label">PnL Acumulado</div><div class="value ${totalPnl>=0?'green':'red'}">${totalPnl>=0?'+':''}$${totalPnl.toFixed(2)}</div></div>
+    <div class="card"><div class="label">Win Rate</div><div class="value">${closed.length ? (wins.length/closed.length*100).toFixed(1) : 0}%</div></div>
+  `;
+
   const tbl = document.getElementById('trades-table');
-  if (!t.length) { return; }
-  tbl.innerHTML = `<tr><th>Fecha</th><th>Mercado</th><th>Ticker</th><th>Señal</th><th>Entrada</th><th>Salida</th><th>PnL</th><th>Resultado</th></tr>` +
-    t.map(r => {
+  if (!filtered.length) {
+    tbl.innerHTML = '<tr><td colspan="8"><div class="empty-state">Sin trades que coincidan con los filtros</div></td></tr>';
+    return;
+  }
+  tbl.innerHTML = `<tr><th>Fecha</th><th>Mercado</th><th>Ticker</th><th>Señal</th><th>Entrada</th><th>Salida</th><th>PnL</th><th>Estado</th></tr>` +
+    filtered.map(r => {
+      const isOpen = r.status === 'open';
       const win = r.pnl_usd > 0;
+      const loss = r.pnl_usd < 0;
+      const badgeClass = isOpen ? 'open' : (win ? 'win' : loss ? 'loss' : 'open');
+      const pnlClass = win ? 'green' : loss ? 'red' : 'text-muted';
       return `<tr>
         <td>${(r.exit_time||r.entry_time||'').slice(0,10)}</td>
         <td>${r.market}</td>
         <td>${r.ticker}</td>
         <td class="signal-${r.signal}">${r.signal}</td>
         <td>$${r.entry_price}</td>
-        <td>${r.exit_price ? '$'+r.exit_price : '-'}</td>
-        <td class="${win?'green':'red'}">${r.pnl_usd ? (win?'+':'')+'$'+r.pnl_usd.toFixed(2) : '-'}</td>
-        <td><span class="badge-win ${win?'win':'loss'}">${r.status||'-'}</span></td>
+        <td>${r.exit_price ? '$'+r.exit_price : '—'}</td>
+        <td class="${pnlClass}">${r.pnl_usd != null ? (win?'+':'')+'$'+r.pnl_usd.toFixed(2) : '—'}</td>
+        <td><span class="badge-win ${badgeClass}">${r.status||'—'}</span></td>
       </tr>`;
     }).join('');
+}
+
+document.querySelectorAll('.chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const f = btn.dataset.filter;
+    document.querySelectorAll(`.chip[data-filter="${f}"]`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filters[f] = btn.dataset.val;
+    render();
+  });
+});
+
+async function load() {
+  allTrades = await api('/api/trades');
+  render();
 }
 load(); setInterval(load, 15000);
 </script>

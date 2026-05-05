@@ -10,8 +10,23 @@
 <div class="cards" id="metrics"></div>
 
 <div class="section">
+  <h2>Métricas Avanzadas</h2>
+  <div class="cards" id="metrics-extended"></div>
+</div>
+
+<div class="section">
+  <h2>Funnel de Decisión <span class="text-muted" style="font-size:12px;font-weight:400">— últimos 7 días</span></h2>
+  <div class="funnel" id="funnel"></div>
+</div>
+
+<div class="section">
   <h2>Equity Curve</h2>
   <div id="equity-chart" style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:260px;text-align:center;color:var(--text-muted);padding-top:100px;">Cargando...</div>
+</div>
+
+<div class="section">
+  <h2>Rendimiento por Mercado</h2>
+  <table id="by-market-table"><tr><td colspan="5" class="text-muted">Cargando...</td></tr></table>
 </div>
 
 <div class="section">
@@ -44,10 +59,54 @@ async function loadMetrics() {
   `;
 }
 
+async function loadExtended() {
+  const m = await api('/api/metrics/extended');
+  const sharpeColor = m.sharpe > 1 ? 'green' : m.sharpe < 0 ? 'red' : '';
+  const pfColor = m.profit_factor > 1.5 ? 'green' : m.profit_factor < 1 ? 'red' : '';
+  document.getElementById('metrics-extended').innerHTML = `
+    <div class="card"><div class="label">Sharpe Ratio</div><div class="value ${sharpeColor}">${m.sharpe}</div><div class="sub">${m.trades} trades cerrados</div></div>
+    <div class="card"><div class="label">Profit Factor</div><div class="value ${pfColor}">${m.profit_factor}</div><div class="sub">wins/losses ratio</div></div>
+    <div class="card"><div class="label">Max Drawdown</div><div class="value red">$${m.max_drawdown}</div><div class="sub">peor caída acum.</div></div>
+    <div class="card"><div class="label">Avg Win</div><div class="value green">+$${m.avg_win}</div></div>
+    <div class="card"><div class="label">Avg Loss</div><div class="value red">$${m.avg_loss}</div></div>
+  `;
+}
+
+async function loadFunnel() {
+  const f = await api('/api/metrics/funnel');
+  const total = f.total_signals || 0;
+  const action = f.actionable || 0;
+  const exec = f.executed || 0;
+  const pctAction = total > 0 ? (action / total * 100).toFixed(1) : 0;
+  const pctExec = action > 0 ? (exec / action * 100).toFixed(1) : 0;
+  document.getElementById('funnel').innerHTML = `
+    <div class="funnel-step"><div class="num">${total}</div><div class="lbl">Señales generadas</div><div class="pct">100%</div></div>
+    <div class="funnel-step"><div class="num">${action}</div><div class="lbl">Fused ≠ WAIT</div><div class="pct">${pctAction}% pasan</div></div>
+    <div class="funnel-step"><div class="num">${exec}</div><div class="lbl">Ejecutadas</div><div class="pct">${pctExec}% confirmadas</div></div>
+  `;
+}
+
+async function loadByMarket() {
+  const rows = await api('/api/metrics/by-market');
+  const t = document.getElementById('by-market-table');
+  if (!rows.length) {
+    t.innerHTML = '<tr><td colspan="5"><div class="empty-state">Sin trades registrados aún</div></td></tr>';
+    return;
+  }
+  t.innerHTML = `<tr><th>Mercado</th><th>Trades</th><th>Abiertos</th><th>Win Rate</th><th>PnL</th></tr>` +
+    rows.map(r => `<tr>
+      <td><strong>${r.market}</strong></td>
+      <td>${r.trades}</td>
+      <td>${r.open_count}</td>
+      <td>${r.wr}%</td>
+      <td class="${r.pnl >= 0 ? 'green' : 'red'}">${r.pnl >= 0 ? '+' : ''}$${r.pnl}</td>
+    </tr>`).join('');
+}
+
 async function loadEquity() {
   const h = await api('/api/portfolio/history');
   const el = document.getElementById('equity-chart');
-  if (!h.length) { el.innerHTML = '<div style="padding:100px 0;color:var(--text-muted)">Sin datos de portfolio aun. Corre el loop para empezar a graficar.</div>'; return; }
+  if (!h.length) { el.innerHTML = '<div style="padding:100px 0;color:var(--text-muted)">Sin datos de portfolio aún. Corre el loop para empezar a graficar.</div>'; return; }
   const labels = h.map(p => p.timestamp.slice(5,16));
   const data = h.map(p => p.balance_usd);
   const min = Math.min(...data) * 0.995;
@@ -55,15 +114,15 @@ async function loadEquity() {
   const w = el.clientWidth || 800;
   const h2 = 240;
   const pad = {t:20,r:20,b:30,l:50};
-  const xs = data.map((_,i) => pad.l + i/(data.length-1)*(w-pad.l-pad.r));
-  const ys = data.map(v => pad.t + (max-v)/(max-min)*(h2-pad.t-pad.b));
+  const xs = data.map((_,i) => pad.l + i/(Math.max(1,data.length-1))*(w-pad.l-pad.r));
+  const ys = data.map(v => pad.t + (max-v)/(max-min || 1)*(h2-pad.t-pad.b));
   const line = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(0)},${ys[i].toFixed(0)}`).join(' ');
   const last = data[data.length-1];
   const first = data[0];
   const color = last >= first ? 'var(--accent-green)' : 'var(--accent-red)';
   el.innerHTML = `<svg width="${w}" height="${h2}" style="display:block">
-    <text x="${pad.l}" y="${pad.t-4}" fill="var(--text-muted)" font-size="11">$${(max/1000).toFixed(0)}K</text>
-    <text x="${pad.l}" y="${h2-pad.b+14}" fill="var(--text-muted)" font-size="11">$${(min/1000).toFixed(0)}K</text>
+    <text x="${pad.l}" y="${pad.t-4}" fill="var(--text-muted)" font-size="11">$${(max/1000).toFixed(2)}K</text>
+    <text x="${pad.l}" y="${h2-pad.b+14}" fill="var(--text-muted)" font-size="11">$${(min/1000).toFixed(2)}K</text>
     <path d="${line}" fill="none" stroke="${color}" stroke-width="2"/>
     <circle cx="${xs[xs.length-1]}" cy="${ys[ys.length-1]}" r="3" fill="${color}"/>
   </svg>`;
@@ -79,7 +138,10 @@ async function loadHealth() {
 async function loadPositions() {
   const pos = await api('/api/positions');
   const t = document.getElementById('positions-table');
-  if (!pos.length) { t.innerHTML = '<tr><td colspan="5" class="text-muted">Sin posiciones abiertas</td></tr>'; return; }
+  if (!pos.length) {
+    t.innerHTML = '<tr><td colspan="5"><div class="empty-state">Sin posiciones abiertas</div></td></tr>';
+    return;
+  }
   t.innerHTML = `<tr><th>Ticker</th><th>Señal</th><th>Entrada</th><th>Tamaño</th><th>SL / TP</th></tr>` +
     pos.map(p => `<tr><td>${p.ticker}</td><td class="signal-${p.signal}">${p.signal}</td><td>$${p.entry_price}</td><td>$${p.size_usd}</td><td>${p.stop_loss_pct}% / ${p.take_profit_pct}%</td></tr>`).join('');
 }
@@ -87,7 +149,10 @@ async function loadPositions() {
 async function loadSignals() {
   const sig = await api('/api/signals');
   const t = document.getElementById('signals-table');
-  if (!sig.length) { t.innerHTML = '<tr><td colspan="5" class="text-muted">Sin señales generadas</td></tr>'; return; }
+  if (!sig.length) {
+    t.innerHTML = '<tr><td colspan="5"><div class="empty-state">Sin señales generadas</div></td></tr>';
+    return;
+  }
   t.innerHTML = `<tr><th>Hora</th><th>Mercado</th><th>Ticker</th><th>Decisión</th><th>Confianza</th></tr>` +
     sig.slice(0,10).map(s => `<tr><td>${s.timestamp.slice(11,19)}</td><td>${s.market}</td><td>${s.ticker}</td><td class="signal-${s.decision}">${s.decision}</td><td>${s.confidence}</td></tr>`).join('');
 }
@@ -106,7 +171,11 @@ async function loadStatus() {
   document.getElementById('btn-stop').disabled = !st.running;
 }
 
-loadMetrics(); loadEquity(); loadHealth(); loadPositions(); loadSignals(); loadStatus();
-setInterval(() => { loadMetrics(); loadEquity(); loadHealth(); loadPositions(); loadSignals(); }, 10000);
+function loadAll() {
+  loadMetrics(); loadExtended(); loadFunnel(); loadByMarket();
+  loadEquity(); loadHealth(); loadPositions(); loadSignals();
+}
+loadAll(); loadStatus();
+setInterval(loadAll, 10000);
 </script>
 {% endblock %}
