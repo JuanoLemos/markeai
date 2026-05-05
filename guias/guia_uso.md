@@ -13,6 +13,8 @@
 | `loop.bat` | Inicia el loop de trading 24/7 |
 | `dashboard.bat` | Inicia el dashboard web en `http://localhost:8050` |
 | `tray_app.bat` | Inicia el loop minimizado a system tray (icono $) |
+| `cron_daily.bat` | Reporte diario manual (ejecutar 1 vez al día) |
+| `cron_hourly.bat` | Health check manual (cada hora) |
 
 ### Modo Manual (una iteración)
 ```bash
@@ -170,7 +172,60 @@ El dashboard permite editar en vivo desde `http://localhost:8050/config`:
 
 ---
 
-## 10. Seguridad
+## 10. Cron — Tareas Automáticas
+
+El orquestador soporta 3 tareas programables que se pueden ejecutar manualmente o via Windows Task Scheduler.
+
+### Tareas disponibles
+
+| Tarea | Archivo | Frecuencia recomendada | Qué hace |
+|---|---|---|---|
+| `daily` | `cron_daily.bat` | 1 vez al día (21:00) | Ejecuta una iteración + envía resumen a Telegram/Discord |
+| `weekly` | `cron_weekly.bat` | 1 vez por semana (lunes) | Ejecuta backtest en todos los mercados |
+| `hourly` | `cron_hourly.bat` | Cada hora | Snapshot de portfolio + health check (cuenta errores en log) |
+
+### Ejecutar manualmente
+
+```bash
+.\cron_daily.bat
+.\cron_weekly.bat
+.\cron_hourly.bat
+```
+
+### Programar en Windows Task Scheduler (automático)
+
+Ejecutar PowerShell como Administrador:
+
+```powershell
+# Diario 21:00
+schtasks /create /tn "MarketAI-Daily" /tr "C:\xampp\htdocs\MarketAI\cron_daily.bat" /sc daily /st 21:00
+
+# Semanal lunes 08:00
+schtasks /create /tn "MarketAI-Weekly" /tr "C:\xampp\htdocs\MarketAI\cron_weekly.bat" /sc weekly /d MON /st 08:00
+
+# Cada hora
+schtasks /create /tn "MarketAI-Hourly" /tr "C:\xampp\htdocs\MarketAI\cron_hourly.bat" /sc hourly
+```
+
+### Verificar tareas instaladas
+
+```powershell
+schtasks /query /tn "MarketAI-Daily"
+schtasks /query /tn "MarketAI-Weekly"
+schtasks /query /tn "MarketAI-Hourly"
+```
+
+### Eliminar tareas si ya no se necesitan
+
+```powershell
+schtasks /delete /tn "MarketAI-Daily" /f
+schtasks /delete /tn "MarketAI-Weekly" /f
+schtasks /delete /tn "MarketAI-Hourly" /f
+```
+
+---
+
+## 11. Seguridad
 
 - **Nunca** commitees `.env` al repositorio (`.gitignore` lo excluye)
 - **Nunca** compartas private keys de wallet
