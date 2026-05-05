@@ -104,6 +104,19 @@ class MarketAIOrchestrator:
             self.log.error(f"Iteration error: {e}")
             self.notifier.send_error(f"Iteration failed: {e}")
         self.log.info("=== Iteration complete ===")
+        self._snapshot_portfolio()
+
+    def _snapshot_portfolio(self):
+        try:
+            s = self.paper_broker.get_summary()
+            self.db.insert_portfolio_snapshot(
+                balance=s["balance"],
+                open_positions=s["open_positions"],
+                daily_pnl=s["daily_pnl"],
+                total_pnl=s["total_pnl"],
+            )
+        except Exception:
+            pass
 
     def _process_market(self, market: str, market_cfg: dict):
         layer_results = {}
@@ -401,12 +414,62 @@ class MarketAIOrchestrator:
         print(json.dumps(s, indent=2))
         return s
 
+    def run_cron(self, task: str = "daily"):
+        from datetime import datetime
+        now = datetime.now().strftime("%Y-%m-%d %H:%M")
+        self.log.info(f"Cron [{task}] - {now}")
+        if task == "daily":
+            self.run_once()
+            s = self.paper_broker.get_summary()
+            self.notifier.send_daily_summary(s)
+        elif task == "weekly":
+            self.run_backtest()
+        elif task == "hourly":
+            self._snapshot_portfolio()
+            status = "OK"
+            err = 0
+            try:
+                with open(self.orchestrator_cfg.get("log_file", "orchestrator.log")) as f:
+                    for line in f:
+                        if "[ERROR]" in line:
+                            err += 1
+                if err > 5:
+                    status = f"WARN({err} errors)"
+            except Exception:
+                pass
+            self.log.info(f"Cron health: {status}")
+
+    def run_replay(self, market: str, days: int = 30):
+        self.log.info(f"Replay {market} - {days} dias")
+        market_cfg = self.markets_cfg.get(market, {})
+        if not market_cfg:
+            self.log.error(f"Unknown market: {market}")
+            return
+        mock_paper = __import__("copy").deepcopy(self.paper_broker)
+        import pandas as pd
+        yf = self.yf_collector
+        tickers = market_cfg.get("pairs", market_cfg.get("tickers", []))
+        for ticker in tickers:
+            self.log.info(f"  Replaying {ticker}...")
+            data = yf.get_historical(ticker, f"{days}d", "1h")
+            if data.empty:
+                continue
+            for i in range(50, len(data), 5):
+                chunk = data.iloc[:i]
+                fused, market_data = self._analyze_stocks(market_cfg) if market == "stocks" else self._analyze_forex(market_cfg)
+                _ = self.fusion_engine.fuse(fused, market)
+                mock_paper.check_stops({ticker: float(chunk["close"].iloc[-1])})
+            self.log.info(f"  {ticker}: done")
+        self.log.info("Replay complete")
+
 
 def main():
     parser = argparse.ArgumentParser(description="MarketAI - Trading Multi-Capa")
-    parser.add_argument("--mode", choices=["once", "loop", "backtest", "report"], default="once")
+    parser.add_argument("--mode", choices=["once", "loop", "backtest", "report", "cron", "replay"], default="once")
     parser.add_argument("--paper", action="store_true", default=True)
     parser.add_argument("--market", type=str, default=None)
+    parser.add_argument("--task", type=str, default="daily")
+    parser.add_argument("--days", type=int, default=30)
     args = parser.parse_args()
     config = load_config()
     if args.market:
@@ -422,6 +485,10 @@ def main():
         orch.run_backtest()
     elif args.mode == "report":
         orch.run_report()
+    elif args.mode == "cron":
+        orch.run_cron(task=args.task)
+    elif args.mode == "replay":
+        orch.run_replay(market=args.market or "stocks", days=args.days)
 
 
 if __name__ == "__main__":

@@ -43,6 +43,10 @@ def create_app():
     def logs():
         return render_template("logs.html", page="logs")
 
+    @app.route("/backtest")
+    def backtest_page():
+        return render_template("backtest.html", page="backtest")
+
     # ─── API routes ──────────────────────────────────────
 
     @app.route("/api/status")
@@ -156,6 +160,31 @@ def create_app():
             stop_file.unlink()
         return jsonify({"ok": True})
 
+    @app.route("/api/portfolio/history")
+    def api_portfolio_history():
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(DB_PATH))
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute("SELECT * FROM portfolio ORDER BY timestamp ASC LIMIT 200").fetchall()
+            conn.close()
+            return jsonify([dict(r) for r in rows])
+        except Exception:
+            return jsonify([])
+
+    @app.route("/api/health")
+    def api_health():
+        return jsonify(_check_health())
+
+    @app.route("/api/backtest/run")
+    def api_backtest_run():
+        market = request.args.get("market", "forex")
+        proc = subprocess.run(
+            [sys.executable, str(BASE_DIR / "orchestrator.py"), "--mode", "backtest", "--market", market],
+            cwd=str(BASE_DIR), capture_output=True, text=True, timeout=120,
+        )
+        return jsonify({"output": proc.stdout, "error": proc.stderr})
+
     return app
 
 
@@ -165,6 +194,37 @@ def _read_state() -> dict:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
+
+
+def _check_health() -> dict:
+    apis = {}
+    try:
+        import requests
+        r = requests.get("https://api.etherscan.io/v2/api", params={
+            "chainid": "137", "module": "account", "action": "balance",
+            "address": "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E",
+            "apikey": os.getenv("POLYSCAN_API_KEY", ""),
+        }, timeout=5)
+        apis["polyscan"] = r.status_code == 200 and r.json().get("status") == "1"
+    except Exception:
+        apis["polyscan"] = False
+    try:
+        r = requests.get("https://api.deepseek.com/chat/completions",
+            headers={"Authorization": f"Bearer {os.getenv('DEEPSEEK_API_KEY','')}"},
+            json={"model": "deepseek-v4-pro", "messages": [{"role":"user","content":"ping"}], "max_tokens":5},
+            timeout=5,
+        )
+        apis["deepseek"] = r.status_code == 200
+    except Exception:
+        apis["deepseek"] = False
+    apis["yfinance"] = True
+    try:
+        import yfinance as yf
+        d = yf.download("SPY", period="1d", interval="1m", progress=False)
+        apis["yfinance"] = not d.empty
+    except Exception:
+        apis["yfinance"] = False
+    return apis
 
 
 def _deep_merge(base: dict, updates: dict):

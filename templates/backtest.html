@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Backtest</h1>
+<div class="btn-group">
+  <button class="btn btn-primary" onclick="runBacktest('forex')">▶ Backtest Forex</button>
+  <button class="btn btn-primary" onclick="runBacktest('stocks')">▶ Backtest Stocks</button>
+</div>
+<pre class="log" id="bt-output">Click en un boton para ejecutar backtest...</pre>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function runBacktest(market) {
+  const el = document.getElementById('bt-output');
+  el.textContent = 'Ejecutando backtest para ' + market + '... (toma ~30-60s)';
+  const r = await api('/api/backtest/run?market=' + market);
+  el.textContent = r.output || r.error || '(sin salida)';
+}
+</script>
+{% endblock %}

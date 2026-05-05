@@ -44,6 +44,7 @@ class StrategyEvolver:
         if best_strat and best_win_rate > 0.6:
             suggestions.append(f"- ✅ La estrategia '{best_strat}' tiene {best_win_rate*100:.0f}% win rate. Considera darle más peso.")
         self._update_strategy_md(suggestions, performance, strategies_used)
+        self._write_skills(suggestions, performance, strategies_used)
         return "; ".join(suggestions) if suggestions else "no_suggestions"
 
     def _update_strategy_md(self, suggestions: list, performance: dict, strategies: dict):
@@ -85,3 +86,29 @@ class StrategyEvolver:
         content += "- Salir si VIX > 30 (volatilidad extrema)\n"
         with open(self.strategy_path, "w") as f:
             f.write(content)
+
+    def _write_skills(self, suggestions: list, performance: dict, strategies: dict):
+        skills_dir = Path(__file__).parent.parent / "skills"
+        skills_dir.mkdir(exist_ok=True)
+        for strat, stats in strategies.items():
+            total = stats["wins"] + stats["losses"]
+            if total < 3:
+                continue
+            wr = f"{stats['wins']/total*100:.0f}%"
+            skill = f"# Estrategia: {strat}\n\n"
+            skill += f"- Trades: {total}\n"
+            skill += f"- Wins: {stats['wins']}\n"
+            skill += f"- Losses: {stats['losses']}\n"
+            skill += f"- Win Rate: {wr}\n"
+            skill += f"- PnL: ${stats['total_pnl']:.2f}\n"
+            safe_name = strat.replace("/", "_").replace(" ", "_")
+            (skills_dir / f"{safe_name}.md").write_text(skill)
+        overview = "# Skills Auto-Generados\n\n"
+        overview += "Estrategias con 3+ trades ejecutados.\n\n"
+        overview += f"Actualizado: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}\n\n"
+        for strat, stats in sorted(strategies.items(), key=lambda x: x[1]["total_pnl"], reverse=True):
+            total = stats["wins"] + stats["losses"]
+            if total < 3:
+                continue
+            overview += f"- [{strat}]({strat.replace('/', '_').replace(' ', '_')}.md): {stats['wins']}/{total} wins, ${stats['total_pnl']:.2f}\n"
+        (skills_dir / "README.md").write_text(overview)

@@ -211,3 +211,20 @@ class Database:
         ))
         conn.commit()
         conn.close()
+
+    def insert_portfolio_snapshot(self, balance: float, open_positions: int, daily_pnl: float, total_pnl: float):
+        conn = self._get_conn()
+        conn.execute("""
+            INSERT INTO portfolio (market, balance_usd, open_positions, daily_pnl, total_pnl)
+            VALUES ('all', ?, ?, ?, ?)
+        """, (balance, open_positions, daily_pnl, total_pnl))
+        conn.commit()
+        conn.close()
+
+    def get_portfolio_history(self, limit: int = 200) -> list:
+        conn = self._get_conn()
+        rows = conn.execute(
+            "SELECT * FROM portfolio ORDER BY timestamp DESC LIMIT ?", (limit,)
+        ).fetchall()
+        conn.close()
+        return reversed([dict(r) for r in rows])

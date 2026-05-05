@@ -10,6 +10,16 @@
 <div class="cards" id="metrics"></div>
 
 <div class="section">
+  <h2>Equity Curve</h2>
+  <div id="equity-chart" style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:260px;text-align:center;color:var(--text-muted);padding-top:100px;">Cargando...</div>
+</div>
+
+<div class="section">
+  <h2>Estado de APIs</h2>
+  <div class="cards" id="health-cards"></div>
+</div>
+
+<div class="section">
   <h2>Posiciones Abiertas</h2>
   <table id="positions-table"><tr><td colspan="5" class="text-muted">Cargando...</td></tr></table>
 </div>
@@ -34,6 +44,38 @@ async function loadMetrics() {
   `;
 }
 
+async function loadEquity() {
+  const h = await api('/api/portfolio/history');
+  const el = document.getElementById('equity-chart');
+  if (!h.length) { el.innerHTML = '<div style="padding:100px 0;color:var(--text-muted)">Sin datos de portfolio aun. Corre el loop para empezar a graficar.</div>'; return; }
+  const labels = h.map(p => p.timestamp.slice(5,16));
+  const data = h.map(p => p.balance_usd);
+  const min = Math.min(...data) * 0.995;
+  const max = Math.max(...data) * 1.005;
+  const w = el.clientWidth || 800;
+  const h2 = 240;
+  const pad = {t:20,r:20,b:30,l:50};
+  const xs = data.map((_,i) => pad.l + i/(data.length-1)*(w-pad.l-pad.r));
+  const ys = data.map(v => pad.t + (max-v)/(max-min)*(h2-pad.t-pad.b));
+  const line = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(0)},${ys[i].toFixed(0)}`).join(' ');
+  const last = data[data.length-1];
+  const first = data[0];
+  const color = last >= first ? 'var(--accent-green)' : 'var(--accent-red)';
+  el.innerHTML = `<svg width="${w}" height="${h2}" style="display:block">
+    <text x="${pad.l}" y="${pad.t-4}" fill="var(--text-muted)" font-size="11">$${(max/1000).toFixed(0)}K</text>
+    <text x="${pad.l}" y="${h2-pad.b+14}" fill="var(--text-muted)" font-size="11">$${(min/1000).toFixed(0)}K</text>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="2"/>
+    <circle cx="${xs[xs.length-1]}" cy="${ys[ys.length-1]}" r="3" fill="${color}"/>
+  </svg>`;
+}
+
+async function loadHealth() {
+  const h = await api('/api/health');
+  document.getElementById('health-cards').innerHTML = Object.entries(h).map(([k,v]) =>
+    `<div class="card" style="text-align:center"><div class="label">${k}</div><div style="font-size:28px;margin-top:4px">${v ? '🟢' : '🔴'}</div></div>`
+  ).join('');
+}
+
 async function loadPositions() {
   const pos = await api('/api/positions');
   const t = document.getElementById('positions-table');
@@ -51,7 +93,7 @@ async function loadSignals() {
 }
 
 async function toggleLoop(start) {
-  const r = await api(start ? '/api/loop/start' : '/api/loop/stop');
+  await api(start ? '/api/loop/start' : '/api/loop/stop');
   loadStatus();
 }
 
@@ -64,7 +106,7 @@ async function loadStatus() {
   document.getElementById('btn-stop').disabled = !st.running;
 }
 
-loadMetrics(); loadPositions(); loadSignals(); loadStatus();
-setInterval(() => { loadMetrics(); loadPositions(); loadSignals(); }, 10000);
+loadMetrics(); loadEquity(); loadHealth(); loadPositions(); loadSignals(); loadStatus();
+setInterval(() => { loadMetrics(); loadEquity(); loadHealth(); loadPositions(); loadSignals(); }, 10000);
 </script>
 {% endblock %}
