@@ -1,0 +1,153 @@
+═══════════════════════════════════════════════════════════════════
+MarketAI — Informe de Novedades y Auditoría
+Fecha: 2026-05-05
+Revisado por: Claude Sonnet 4.6
+═══════════════════════════════════════════════════════════════════
+
+
+── 1. ESTADO GENERAL ──────────────────────────────────────────────
+
+El sistema está ACTIVO en modo loop. El archivo STOP fue detectado
+y procesado correctamente: el orquestador lo leyó, lo borró y se
+detuvo. El mecanismo funciona como está diseñado.
+
+Stack completo verificado:
+  - Python 3.14.0 (Windows)
+  - 6 commits en git (historial limpio)
+  - market.db: 245 KB (con datos reales)
+  - orchestrator.log: 84 KB (logs acumulados)
+  - Dashboard Flask disponible en :8050
+
+
+── 2. BUG CRÍTICO ENCONTRADO ──────────────────────────────────────
+
+ARCHIVO: orchestrator.py línea 167-178 / paper_broker.py línea 71
+ERROR EN LOG: "Iteration error: '>' not supported between instances
+              of 'NoneType' and 'float'"
+
+CAUSA RAÍZ:
+DeepSeek a veces devuelve null (None) para campos como
+"position_size_usd", "entry_price", "stop_loss_pct" o
+"take_profit_pct" aunque estos aparezcan en el JSON de respuesta.
+
+Python dict.get("key", default) SOLO usa el default si la clave NO
+existe. Si la clave existe con valor null → retorna None, no default.
+
+Ejemplo del fallo:
+  DeepSeek responde → {"position_size_usd": null}
+  orchestrator.py  → decision.get("position_size_usd", 50) = None
+  paper_broker.py  → if size_usd > self.balance  ← CRASH
+
+Esto interrumpe la iteración completa cuando DeepSeek da LONG/SHORT.
+Ya ocurrió: el log muestra AMZN y TSLA con LONG conf:100 y luego crash.
+
+SOLUCIÓN SUGERIDA (en orchestrator.py, en la llamada a open_position):
+  Sanitizar con "or" o "if x is not None":
+  size_usd = decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50)
+  entry_price = decision.get("entry_price") or market_data.get(ticker, {}).get("price", 0)
+  stop_loss_pct = decision.get("stop_loss_pct") or 5.0
+  take_profit_pct = decision.get("take_profit_pct") or 10.0
+
+
+── 3. ANÁLISIS DE SEÑALES ─────────────────────────────────────────
+
+FOREX: siempre retorna WAIT (score:47.3, conf:100)
+  - Problema: solo hay 2 capas activas para forex (technical + macro)
+  - El score 47.3 está entre 45 y 55 → el fusion engine dice WAIT
+  - La confianza 100 indica que ambas capas votan SHORT de forma unánime
+  - Pero el score no supera el umbral para emitir una señal SHORT
+  - Efecto neto: señal SHORT válida se descarta por estar en zona gris
+
+POLYMARKET: siempre retorna WAIT (score:50, conf:0)
+  - Solo la capa orderbook o onchain genera señal
+  - Muchos mercados devuelven score=50 → fusion los ignora
+  - Sin noticias crypto activas, sentiment también da 50
+
+STOCKS: empezó a generar LONG (score:55.0, conf:100) en fecha actual
+  - EMA9 > EMA21 tras el rebote de mercado (mayo 2026)
+  - 5 de 7 tickers generan LONG válido
+  - DeepSeek confirma LONG en QQQ, MSFT, AMZN (intermitente en otros)
+  - Bloqueado por el bug de NoneType antes de ejecutar posiciones
+
+
+── 4. RESULTADO DEL BACKTESTING (replay 90 días) ─────────────────
+
+Ticker    Trades  Win%   PnL      Sharpe   MaxDD
+SPY       19      0.0%   -$30.65  -107.01  $28.95  ← muy malo
+QQQ       49      16.3%  -$17.11  -8.56    $38.50
+AAPL      39      5.1%   -$42.14  -18.99   $40.41
+MSFT      30      66.7%  +$36.54  +9.11    $6.90   ← ÚNICO POSITIVO
+GOOGL     (datos incompletos en log)
+AMZN      (datos incompletos en log)
+TSLA      (datos incompletos en log)
+
+OBSERVACIONES:
+  - MSFT es el único ticker rentable en backtesting histórico
+  - SPY tiene 0 trades ganadores → la estrategia RSI<30+EMA no se activa
+  - Backtester usa señal simplificada (RSI+EMA2, sin las 7 capas reales)
+  - El backtester NO es representativo del sistema real de 7 capas
+  - Riesgo/recompensa del backtester: SL 2% / TP 5% → ratio 1:2.5 correcto
+
+
+── 5. ARQUITECTURA — PUNTOS FUERTES ──────────────────────────────
+
++ Separación limpia de capas (data / analyzers / engine / execution)
++ Sistema de pesos configurables por mercado en config.yaml
++ PaperBroker robusto: slippage, comisiones, estado persistente en JSON
++ StrategyEvolver: auto-genera estrategias .md y skills/ tras 10 trades
++ STOP file: mecanismo elegante para detener el loop sin matar el proceso
++ FusionEngine: diseño correcto de votación ponderada
++ Dashboard Flask: 6 rutas HTML + API endpoints bien definidos
++ Tests en tests/ (collectors y analyzers)
+
+
+── 6. ISSUES MENORES ──────────────────────────────────────────────
+
+a) HTTP 404 al obtener fundamentals de SPY y QQQ:
+   "No fundamentals data found for symbol: SPY"
+   → YFinance no tiene fundamentals para ETFs (correcto, son fondos)
+   → FundamentalAnalyzer retorna WAIT para ETFs, sin impacto real
+
+b) strategies/master_strategy.md está vacío (1 línea en blanco)
+   → StrategyEvolver aún no ha generado sugerencias (necesita 10+ trades)
+   → Bloqueado por el bug NoneType que impide abrir posiciones
+
+c) skills/ está vacío
+   → Igual que el punto anterior, sin trades cerrados no hay skills
+
+d) DeepSeek inconstante: para el mismo ticker en iteraciones consecutivas
+   da WAIT y luego LONG. Normal con temperature=0.3, pero reduce confianza
+   en la señal final.
+
+e) config.yaml tiene "deepseek-v4-pro" como modelo pero la API oficial
+   de DeepSeek usa "deepseek-chat" o "deepseek-reasoner". Verificar.
+
+
+── 7. PRÓXIMOS PASOS RECOMENDADOS ────────────────────────────────
+
+PRIORIDAD ALTA:
+  1. Corregir bug NoneType en orchestrator.py (ver sección 2)
+     Esto desbloquea la ejecución real de posiciones
+
+  2. Verificar nombre del modelo DeepSeek en .env / config.yaml
+     Confirmar si "deepseek-v4-pro" es el ID correcto o usar "deepseek-chat"
+
+PRIORIDAD MEDIA:
+  3. Ajustar umbrales de fusión para forex:
+     Bajar el umbral de score de 55 a 52 o reducir la zona WAIT (45-55)
+     para que señales SHORT con score 47 y conf 100 se ejecuten
+
+  4. Añadir sanity check en FusionEngine:
+     Si confidence >= 80 y signal es WAIT por score en zona gris,
+     considerar emitir SHORT/LONG con advertencia
+
+  5. Incluir más capas en forex y polymarket (actualmente solo 2-3 activas)
+
+PRIORIDAD BAJA:
+  6. Mejorar backtester para usar las 7 capas reales en lugar de solo RSI+EMA
+  7. Activar alertas Telegram/Discord para trades en vivo
+  8. Añadir validación de API key al startup con mensaje claro
+
+═══════════════════════════════════════════════════════════════════
+Fin del informe — MarketAI v1 (6 commits, modo paper)
+═══════════════════════════════════════════════════════════════════
