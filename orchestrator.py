@@ -24,6 +24,7 @@ from analyzers.orderbook import OrderBookAnalyzer
 from analyzers.fundamental import FundamentalAnalyzer
 from analyzers.macro import MacroAnalyzer
 from analyzers.cross_asset import CrossAssetAnalyzer
+from analyzers.ict_smc import ICTAnalyzer
 from engine.fusion import FusionEngine
 from engine.decider import DeepSeekDecider
 from execution.paper_broker import PaperBroker
@@ -93,6 +94,7 @@ class MarketAIOrchestrator:
         self.backtester = Backtester()
         self.notifier = Notifier()
         self.risk_engine = RiskEngine(initial_balance=1000)
+        self.ict_analyzer = ICTAnalyzer()
 
     def run_iteration(self):
         self.log.info("=== Starting iteration ===")
@@ -269,6 +271,13 @@ class MarketAIOrchestrator:
                             layer_results["technical"] = tr
                 except Exception as e:
                     self.log.error(f"Forex technical error: {e}")
+                try:
+                    if self.config["layers"]["ict_smc"]["enabled"]:
+                        ict_r = self.ict_analyzer.analyze(data)
+                        if ict_r and ict_r.get("score", 50) != 50:
+                            layer_results["ict_smc"] = ict_r
+                except Exception as e:
+                    self.log.error(f"Forex ict_smc error: {e}")
                 break
             try:
                 if self.config["layers"]["sentiment"]["enabled"]:
@@ -314,6 +323,14 @@ class MarketAIOrchestrator:
                         layer_results["technical"] = tr
             except Exception as e:
                 self.log.error(f"Stocks technical[{primary}] error: {e}")
+
+            try:
+                if self.config["layers"]["ict_smc"]["enabled"]:
+                    ict_r = self.ict_analyzer.analyze(data)
+                    if ict_r and ict_r.get("score", 50) != 50:
+                        layer_results["ict_smc"] = ict_r
+            except Exception as e:
+                self.log.error(f"Stocks ict_smc error: {e}")
 
             try:
                 if self.config["layers"]["fundamental"]["enabled"]:

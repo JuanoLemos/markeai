@@ -5,6 +5,7 @@ from .orderbook import OrderBookAnalyzer
 from .fundamental import FundamentalAnalyzer
 from .macro import MacroAnalyzer
 from .cross_asset import CrossAssetAnalyzer
+from .ict_smc import ICTAnalyzer
 
 __all__ = [
     "TechnicalAnalyzer",
@@ -14,4 +15,5 @@ __all__ = [
     "FundamentalAnalyzer",
     "MacroAnalyzer",
     "CrossAssetAnalyzer",
+    "ICTAnalyzer",
 ]
