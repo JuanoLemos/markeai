@@ -109,17 +109,16 @@ Archivos críticos: `config.yaml`, `.env`, `orchestrator.py`, `data/database.py`
 | Directorio | Propósito |
 |---|---|
 | `engine/` | Fusión de señales + decisión DeepSeek |
-| `analyzers/` | 7 analizadores (técnico, on-chain, sentimiento, etc.) |
+| `analyzers/` | **8 analizadores** (técnico, on-chain, sentimiento, orderbook, fundamental, macro, cross-asset, ICT/SMC) |
 | `data/` | Recolectores + database |
-| `execution/` | Paper broker + ejecutores reales |
-| `learning/` | Journal + strategy evolver + backtest |
+| `execution/` | Paper broker, risk engine + ejecutores reales (Alpaca/OANDA) |
+| `learning/` | Journal + strategy evolver + backtest + replay |
 | `alerts/` | Telegram + Discord notifier |
 | `strategies/` | Estrategias documentadas + trade journal |
 | `guias/` | Guías de instalación, configuración, uso |
 | `documentos/` | Roadmap, checklist, metodología |
 | `informes/` | Reportes, reglas para agentes IA, ideas de sesión |
-| `informes/ideas/` | Ideas de sesión registradas vía `/newidea` |
 | `templates/` | HTML templates del dashboard Flask |
 | `static/` | CSS y assets del dashboard |
 | `tests/` | Tests pytest |
-| `skills/` | Skills cargables para tareas recurrentes |
+| `skills/` | Skills cargables + ICT FVG standalone |

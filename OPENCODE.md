@@ -26,16 +26,16 @@
 ## 2. ARQUITECTURA (5 Capas)
 
 ```
-Datos → 7 Analizadores → Fusión → DeepSeek → Ejecución → Journal
-```
+Datos → 8 Analizadores → Fusión → DeepSeek → Ejecución → Journal
 
 | Capa | Módulo | Función |
 |---|---|---|
 | Recolección | `data/collector_*.py` | Polymarket CLOB, Yahoo Finance, NewsAPI |
-| Análisis | `analyzers/*.py` | 7 analizadores en paralelo: técnico, on-chain, sentimiento, order book, fundamental, macro, cross-asset |
-| Decisión | `engine/fusion.py` + `engine/decider.py` | Pesos configurables → DeepSeek decide LONG/SHORT/WAIT |
-| Ejecución | `execution/` | Paper broker (activo) + Executors reales (stubs) |
-| Auto-aprendizaje | `learning/` | Journal, Strategy Evolver, Backtest |
+| Análisis | `analyzers/*.py` | **8 analizadores** en paralelo: técnico, on-chain, sentimiento, order book, fundamental, macro, cross-asset, ICT/SMC |
+| Decisión | `engine/fusion.py` + `engine/decider.py` | Pesos configurables → DeepSeek decide LONG/SHORT/WAIT (sistema de doble prompt con reglas de riesgo) |
+| Riesgo | `execution/risk_engine.py` | Kelly fraccional (25%), ATR position sizing adaptativo, circuit breakers |
+| Ejecución | `execution/paper_broker.py` + `executor_*.py` | Paper broker (activo) + Executors reales (Alpaca/OANDA API listas) |
+| Auto-aprendizaje | `learning/` | Journal, Strategy Evolver, Backtest, Replay mode |
 
 ---
 
@@ -141,7 +141,25 @@ CIERRE INSTANCIA XX — [Fecha]
 
 ## 9. ESTADO ACTUAL
 
-**Fase 8 — Producción:** Paper trading en curso (validación 2-4 semanas).
+**Fase 8 — Producción:** Paper trading en curso (validación). Dashboard web corriendo en `:8050`.
+
+### Completado en esta versión
+| Feature | Estado |
+|---|---|
+| Dashboard web (Flask, 6 páginas, responsive) | ✅ |
+| Tray app (icono $ en system tray, loop sin ventana) | ✅ |
+| 8 analizadores (técnico, on-chain, sentimiento, orderbook, fundamental, macro, cross-asset, ICT/SMC) | ✅ |
+| Risk Engine (Kelly, ATR stops, circuit breakers) | ✅ |
+| DeepSeek decider (doble prompt, reglas de riesgo) | ✅ |
+| On-chain analyzer (Polyscan API) | ✅ |
+| Fundamental analyzer (P/E, market cap, beta, earnings) | ✅ |
+| Discord notifier (webhook) | ✅ |
+| Modo cron (daily/weekly/hourly + schtasks) | ✅ |
+| Modo replay (walk-forward histórico) | ✅ |
+| Skills auto-generados (strategy_evolver escribe a skills/) | ✅ |
+| Portfolio snapshots + equity curve | ✅ |
+| Documentación (README, roadmap, checklist, 3 guías) | ✅ |
+| Paper trading 24/7 | 🔄 Corriendo |
 
 ### Pendientes P1
 | ID | Qué |
@@ -149,8 +167,6 @@ CIERRE INSTANCIA XX — [Fecha]
 | 8.1 | Paper trading 2-4 semanas sin errores |
 | 8.2 | Micro-montos reales ($10-50) |
 | 8.3 | Monitoreo diario con ajustes manuales |
-| 8.4 | Estrategia madura → capital progresivo |
-| 8.5 | Modo replay histórico para QA sin APIs live |
 
 Ver `documentos/roadmap.md` para backlog completo.
 
