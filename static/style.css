@@ -1,4 +1,4 @@
-:root {
+:root, [data-theme="dark"] {
   --bg-primary: #0d1117;
   --bg-card: #161b22;
   --bg-hover: #1c2333;
@@ -13,6 +13,81 @@
   --loss-bg: rgba(255,23,68,0.12);
 }
 
+[data-theme="light"] {
+  --bg-primary: #f6f8fa;
+  --bg-card: #ffffff;
+  --bg-hover: #eef1f5;
+  --border: #d0d7de;
+  --text: #1f2328;
+  --text-muted: #636c76;
+  --accent-green: #1a7f64;
+  --accent-red: #d1242f;
+  --accent-blue: #0969da;
+  --accent-wait: #e16f24;
+  --win-bg: rgba(26,127,100,0.1);
+  --loss-bg: rgba(209,36,47,0.1);
+}
+
+[data-theme="bloomberg"] {
+  --bg-primary: #000000;
+  --bg-card: #0c0c0c;
+  --bg-hover: #161616;
+  --border: #333333;
+  --text: #ff8c00;
+  --text-muted: #995500;
+  --accent-green: #ff8c00;
+  --accent-red: #ff2222;
+  --accent-blue: #ffaa00;
+  --accent-wait: #ffdd00;
+  --win-bg: rgba(255,140,0,0.1);
+  --loss-bg: rgba(255,34,34,0.1);
+}
+
+[data-theme="mint"] {
+  --bg-primary: #0d1f1a;
+  --bg-card: #122b24;
+  --bg-hover: #1a3d33;
+  --border: #2a5a4a;
+  --text: #d4f5e9;
+  --text-muted: #7abda0;
+  --accent-green: #00e5a0;
+  --accent-red: #ff5577;
+  --accent-blue: #00cccc;
+  --accent-wait: #ffe066;
+  --win-bg: rgba(0,229,160,0.12);
+  --loss-bg: rgba(255,85,119,0.12);
+}
+
+[data-theme="cyberpunk"] {
+  --bg-primary: #0a0010;
+  --bg-card: #110020;
+  --bg-hover: #1a0035;
+  --border: #3d0070;
+  --text: #f0e0ff;
+  --text-muted: #a070d0;
+  --accent-green: #00ffcc;
+  --accent-red: #ff0066;
+  --accent-blue: #bf00ff;
+  --accent-wait: #ffee00;
+  --win-bg: rgba(0,255,204,0.1);
+  --loss-bg: rgba(255,0,102,0.1);
+}
+
+[data-theme="solarized"] {
+  --bg-primary: #fdf6e3;
+  --bg-card: #eee8d5;
+  --bg-hover: #e5dfc8;
+  --border: #cdc8b4;
+  --text: #073642;
+  --text-muted: #657b83;
+  --accent-green: #2aa198;
+  --accent-red: #dc322f;
+  --accent-blue: #268bd2;
+  --accent-wait: #b58900;
+  --win-bg: rgba(42,161,152,0.1);
+  --loss-bg: rgba(220,50,47,0.1);
+}
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-primary); color: var(--text); font-size: 14px; }
 a { color: var(--accent-blue); text-decoration: none; }
@@ -20,7 +95,8 @@ a { color: var(--accent-blue); text-decoration: none; }
 .sidebar {
   position: fixed; left: 0; top: 0; bottom: 0; width: 200px;
   background: var(--bg-card); border-right: 1px solid var(--border);
-  padding: 20px 0; display: flex; flex-direction: column;
+  padding: 20px 0; display: flex; flex-direction: column; height: 100%;
+  overflow-y: auto;
 }
 .sidebar h2 {
   font-size: 14px; font-weight: 600; padding: 0 20px 20px;
@@ -129,7 +205,7 @@ pre.log {
   border: 1px solid var(--border); cursor: pointer; transition: all .15s;
 }
 .chip:hover { color: var(--text); border-color: var(--accent-blue); }
-.chip.active { background: var(--accent-green); color: #000; border-color: var(--accent-green); font-weight: 600; }
+.chip.active, .chip-active { background: var(--accent-blue); color: #fff; border-color: var(--accent-blue); font-weight: 600; }
 .chip.active.short { background: var(--accent-red); color: #fff; border-color: var(--accent-red); }
 .chip.active.wait { background: var(--accent-wait); color: #000; border-color: var(--accent-wait); }
 
@@ -191,6 +267,31 @@ tr.expanded td { border-bottom: 1px dashed var(--accent-blue); }
 }
 .hour-cell.has-data { color: var(--text); font-weight: 600; }
 .hour-cell .h { font-size: 8px; opacity: 0.6; }
+
+/* theme switcher */
+.theme-switcher {
+  margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border);
+}
+.theme-switcher .lbl { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+.theme-dots { display: flex; gap: 6px; flex-wrap: wrap; }
+.theme-dot {
+  width: 18px; height: 18px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: transform .15s, border-color .15s;
+}
+.theme-dot:hover { transform: scale(1.2); }
+.theme-dot.active { border-color: var(--text); }
+
+/* position extra info */
+.sl-tp-bar {
+  display: flex; gap: 2px; height: 6px; border-radius: 3px; overflow: hidden;
+  width: 80px; background: var(--border);
+}
+.sl-tp-bar .sl { background: var(--accent-red); }
+.sl-tp-bar .tp { background: var(--accent-green); }
+.time-open { color: var(--text-muted); font-size: 12px; }
+
+/* market emoji tags */
+.market-tag { font-size: 12px; }
 
 /* mobile menu toggle */
 .menu-toggle {

@@ -12,6 +12,7 @@ class PaperBroker:
         self.balance = initial_balance
         self.slippage_pct = slippage_pct
         self.commission_pct = commission_pct
+        self.max_total_exposure_pct = 0.40
         self.positions = {}
         self.trade_log = []
         self.daily_pnl = 0.0
@@ -68,6 +69,9 @@ class PaperBroker:
         can_open, reason = self.can_open_position()
         if not can_open:
             return {"error": reason}
+        total_exposure = sum(p["size_usd"] for p in self.positions.values())
+        if total_exposure + size_usd > self.initial_balance * self.max_total_exposure_pct:
+            return {"error": "max_total_exposure"}
         if size_usd > self.balance:
             size_usd = self.balance * 0.95
         if size_usd > self.balance * 0.05:

@@ -14,6 +14,38 @@
     <h3>DeepSeek</h3>
     <div class="form-row" id="deepseek"></div>
   </div>
+  <div class="config-section">
+    <h3>Apariencia</h3>
+    <div class="form-group">
+      <label>Tema del dashboard</label>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px" id="theme-picker">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <div style="width:22px;height:22px;border-radius:50%;background:#161b22;border:2px solid #30363d;flex-shrink:0"></div>
+          <input type="radio" name="theme" value="dark" style="display:none"> Dark
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <div style="width:22px;height:22px;border-radius:50%;background:#ffffff;border:2px solid #aaaaaa;flex-shrink:0"></div>
+          <input type="radio" name="theme" value="light" style="display:none"> Light
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <div style="width:22px;height:22px;border-radius:50%;background:#000000;border:2px solid #ff8c00;flex-shrink:0"></div>
+          <input type="radio" name="theme" value="bloomberg" style="display:none"> Bloomberg
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <div style="width:22px;height:22px;border-radius:50%;background:#122b24;border:2px solid #00e5a0;flex-shrink:0"></div>
+          <input type="radio" name="theme" value="mint" style="display:none"> Mint
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <div style="width:22px;height:22px;border-radius:50%;background:#110020;border:2px solid #00ffcc;flex-shrink:0"></div>
+          <input type="radio" name="theme" value="cyberpunk" style="display:none"> Cyberpunk
+        </label>
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+          <div style="width:22px;height:22px;border-radius:50%;background:#fdf6e3;border:2px solid #2aa198;flex-shrink:0"></div>
+          <input type="radio" name="theme" value="solarized" style="display:none"> Solarized
+        </label>
+      </div>
+    </div>
+  </div>
   <button class="btn btn-primary" type="submit">Guardar cambios</button>
   <span id="save-msg" class="text-muted ml-2"></span>
 </form>
@@ -87,5 +119,26 @@ document.getElementById('config-form').addEventListener('submit', async (e) => {
 });
 
 loadConfig();
+
+// theme picker
+(function() {
+  const current = localStorage.getItem('theme') || 'dark';
+  document.querySelectorAll('#theme-picker input[name="theme"]').forEach(radio => {
+    if (radio.value === current) radio.checked = true;
+    const lbl = radio.closest('label');
+    if (radio.value === current) lbl.style.fontWeight = '700';
+    radio.addEventListener('change', () => {
+      const t = radio.value;
+      document.documentElement.setAttribute('data-theme', t);
+      localStorage.setItem('theme', t);
+      document.querySelectorAll('#theme-picker label').forEach(l => l.style.fontWeight = '');
+      lbl.style.fontWeight = '700';
+      // sincronizar dots del sidebar
+      document.querySelectorAll('.theme-dot').forEach(d => {
+        d.style.outline = d.dataset.theme === t ? '2px solid var(--text)' : '';
+      });
+    });
+  });
+})();
 </script>
 {% endblock %}

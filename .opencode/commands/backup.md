@@ -1,6 +1,6 @@
 # /backup — Backup de archivos críticos
 
-Copia los archivos críticos del proyecto a un directorio `.bak_<fecha>/` antes de editarlos.
+Ejecuta `scripts/backup-critical.py` para respaldar los archivos críticos del proyecto antes de editarlos.
 
 ## Archivos críticos
 1. `config.yaml` — configuración central del sistema
@@ -10,9 +10,10 @@ Copia los archivos críticos del proyecto a un directorio `.bak_<fecha>/` antes 
 5. `engine/decider.py` — motor de decisión DeepSeek
 
 ## Qué hace
-1. Crea `.bak_<YYYY-MM-DD>/` en la raíz del proyecto
-2. Copia los archivos críticos con timestamp
-3. Reporta archivos respaldados
+1. Ejecuta `python scripts/backup-critical.py`
+2. Crea `.bak_<YYYY-MM-DD>/` en la raíz del proyecto
+3. Copia archivos con timestamp
+4. Reporta archivos respaldados
 
 ## Diferencia con /backupall
 - `/backup` → respalda archivos críticos individuales (rápido, pre-edit)

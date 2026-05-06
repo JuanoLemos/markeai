@@ -47,6 +47,14 @@ def create_app():
     def backtest_page():
         return render_template("backtest.html", page="backtest")
 
+    @app.route("/ticker/<symbol>")
+    def ticker_page(symbol):
+        return render_template("ticker.html", page="ticker", symbol=symbol)
+
+    @app.route("/news")
+    def news_page():
+        return render_template("news.html", page="news")
+
     # ─── API routes ──────────────────────────────────────
 
     @app.route("/api/status")
@@ -81,10 +89,96 @@ def create_app():
             "win_rate": round(winning_trades / closed_trades * 100, 1) if closed_trades > 0 else 0,
         })
 
+    @app.route("/api/daily-brief")
+    def api_daily_brief():
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(DB_PATH))
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            state = _read_state()
+
+            # signals, trades, positions hoy
+            import datetime
+            today = datetime.date.today().isoformat()
+            cur.execute("SELECT COUNT(*) as cnt, SUM(CASE WHEN decision='LONG' THEN 1 ELSE 0 END) as longs, SUM(CASE WHEN decision='SHORT' THEN 1 ELSE 0 END) as shorts FROM signals WHERE date(timestamp) = ?", (today,))
+            sig = dict(cur.fetchone() or {"cnt": 0, "longs": 0, "shorts": 0})
+
+            cur.execute("SELECT SUM(CASE WHEN pnl_usd > 0 THEN 1 ELSE 0 END) as wins, COUNT(*) as total, SUM(pnl_usd) as pnl FROM trades WHERE date(closed_at) = ? AND closed_at IS NOT NULL", (today,))
+            trd = dict(cur.fetchone() or {"wins": 0, "total": 0, "pnl": 0})
+            conn.close()
+
+            # generar resumen narrativo
+            opened = len(state.get("positions", {})) if state else 0
+            signals_cnt = sig.get("cnt") or 0
+            trades_closed = trd.get("total") or 0
+            pnl_today = round(trd.get("pnl") or 0, 2)
+
+            brief = ""
+            if signals_cnt == 0:
+                brief = "El bot no detectó señales hoy. Mercado en espera."
+            else:
+                brief = f"Hoy: {signals_cnt} señal(es) ({sig.get('longs') or 0}L/{sig.get('shorts') or 0}S). "
+                if trades_closed > 0:
+                    brief += f"Cerré {trades_closed} trade(s): {'+' if pnl_today >= 0 else ''}{pnl_today}$. "
+                if opened > 0:
+                    brief += f"{opened} posición(es) abierta(s) aún."
+                else:
+                    brief += "Sin posiciones abiertas."
+            brief += " Estado: todo OK ✓"
+
+            return jsonify({"brief": brief, "signals": signals_cnt, "trades_closed": trades_closed, "pnl_today": pnl_today, "open_positions": opened})
+        except Exception as e:
+            return jsonify({"brief": f"Error cargando brief (sin datos aún)", "error": str(e)})
+
     @app.route("/api/positions")
     def api_positions():
+        import sqlite3
         state = _read_state()
-        return jsonify(list(state.get("positions", {}).values()) if state else [])
+        positions = list(state.get("positions", {}).values()) if state else []
+        if not positions:
+            return jsonify([])
+        try:
+            conn = sqlite3.connect(str(DB_PATH))
+            conn.row_factory = sqlite3.Row
+            tickers = [p.get("ticker") for p in positions if p.get("ticker")]
+            placeholders = ",".join("?" * len(tickers))
+            rows = conn.execute(
+                f"SELECT ticker, price FROM market_data WHERE ticker IN ({placeholders}) GROUP BY ticker HAVING MAX(timestamp)",
+                tickers
+            ).fetchall()
+            conn.close()
+            price_map = {r["ticker"]: r["price"] for r in rows}
+        except Exception:
+            price_map = {}
+        for p in positions:
+            ticker = p.get("ticker")
+            entry = p.get("entry_price") or 0
+            current = price_map.get(ticker)
+            p["current_price"] = current
+            if current and entry:
+                raw_delta = (current - entry) / entry * 100
+                p["delta_pct"] = round(raw_delta if p.get("signal") == "LONG" else -raw_delta, 2)
+            else:
+                p["delta_pct"] = None
+        return jsonify(positions)
+
+    @app.route("/api/positions/<pos_id>/close", methods=["POST"])
+    def api_close_position(pos_id):
+        state = _read_state()
+        positions = state.get("positions", {})
+        if pos_id not in positions:
+            matched = next((k for k, v in positions.items() if str(v.get("ticker")) == pos_id), None)
+            if not matched:
+                return jsonify({"ok": False, "error": "not found"}), 404
+            pos_id = matched
+        del state["positions"][pos_id]
+        try:
+            with open(STATE_PATH, "w") as f:
+                json.dump(state, f, indent=2)
+            return jsonify({"ok": True})
+        except Exception as e:
+            return jsonify({"ok": False, "error": str(e)}), 500
 
     @app.route("/api/signals")
     def api_signals():
@@ -163,14 +257,33 @@ def create_app():
     @app.route("/api/portfolio/history")
     def api_portfolio_history():
         try:
-            import sqlite3
+            import sqlite3, datetime
+            period = request.args.get("period", "all")
             conn = sqlite3.connect(str(DB_PATH))
             conn.row_factory = sqlite3.Row
-            rows = conn.execute("SELECT * FROM portfolio ORDER BY timestamp ASC LIMIT 200").fetchall()
+            if period == "1d":
+                cutoff = (datetime.datetime.utcnow() - datetime.timedelta(days=1)).isoformat()
+            elif period == "7d":
+                cutoff = (datetime.datetime.utcnow() - datetime.timedelta(days=7)).isoformat()
+            elif period == "30d":
+                cutoff = (datetime.datetime.utcnow() - datetime.timedelta(days=30)).isoformat()
+            else:
+                cutoff = None
+            if cutoff:
+                rows = conn.execute("SELECT * FROM portfolio WHERE timestamp >= ? ORDER BY timestamp ASC LIMIT 500", (cutoff,)).fetchall()
+            else:
+                rows = conn.execute("SELECT * FROM portfolio ORDER BY timestamp ASC LIMIT 500").fetchall()
+            # trades cerrados con timestamp para overlay
+            trade_rows = conn.execute(
+                "SELECT ticker, signal, pnl_usd, closed_at FROM trades WHERE closed_at IS NOT NULL ORDER BY closed_at ASC"
+            ).fetchall()
             conn.close()
-            return jsonify([dict(r) for r in rows])
+            return jsonify({
+                "history": [dict(r) for r in rows],
+                "trades": [dict(r) for r in trade_rows]
+            })
         except Exception:
-            return jsonify([])
+            return jsonify({"history": [], "trades": []})
 
     @app.route("/api/health")
     def api_health():
@@ -214,6 +327,62 @@ def create_app():
     @app.route("/analytics")
     def analytics_page():
         return render_template("analytics.html", page="analytics")
+
+    @app.route("/watchlist")
+    def watchlist_page():
+        return render_template("watchlist.html", page="watchlist")
+
+    @app.route("/api/watchlist")
+    def api_watchlist():
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(DB_PATH))
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            cur.execute("""
+                SELECT ticker, market,
+                  COUNT(*) AS total_signals,
+                  SUM(CASE WHEN decision='LONG' THEN 1 ELSE 0 END) AS longs,
+                  SUM(CASE WHEN decision='SHORT' THEN 1 ELSE 0 END) AS shorts,
+                  AVG(confidence) AS avg_conf,
+                  MAX(timestamp) AS last_signal
+                FROM signals GROUP BY ticker, market ORDER BY total_signals DESC
+            """)
+            signals_by_ticker = {r["ticker"]: dict(r) for r in cur.fetchall()}
+            cur.execute("""
+                SELECT ticker,
+                  COUNT(*) AS trades,
+                  SUM(CASE WHEN pnl_usd > 0 THEN 1 ELSE 0 END) AS wins,
+                  SUM(CASE WHEN pnl_usd IS NOT NULL AND pnl_usd <= 0 THEN 1 ELSE 0 END) AS losses,
+                  SUM(COALESCE(pnl_usd, 0)) AS total_pnl,
+                  SUM(CASE WHEN closed_at IS NULL THEN 1 ELSE 0 END) AS open_count
+                FROM trades GROUP BY ticker
+            """)
+            trades_by_ticker = {r["ticker"]: dict(r) for r in cur.fetchall()}
+            conn.close()
+            tickers = sorted(set(list(signals_by_ticker.keys()) + list(trades_by_ticker.keys())))
+            result = []
+            for t in tickers:
+                s = signals_by_ticker.get(t, {})
+                tr = trades_by_ticker.get(t, {})
+                wins = tr.get("wins", 0) or 0
+                closed = (tr.get("wins", 0) or 0) + (tr.get("losses", 0) or 0)
+                result.append({
+                    "ticker": t,
+                    "market": s.get("market", "—"),
+                    "total_signals": s.get("total_signals", 0),
+                    "longs": s.get("longs", 0),
+                    "shorts": s.get("shorts", 0),
+                    "avg_conf": round(s.get("avg_conf") or 0, 1),
+                    "last_signal": s.get("last_signal", ""),
+                    "trades": tr.get("trades", 0),
+                    "open_count": tr.get("open_count", 0),
+                    "win_rate": round(wins / closed * 100, 1) if closed > 0 else None,
+                    "total_pnl": round(tr.get("total_pnl") or 0, 2),
+                })
+            return jsonify(result)
+        except Exception as e:
+            return jsonify([])
 
     @app.route("/api/metrics/extended")
     def api_metrics_extended():
@@ -261,6 +430,233 @@ def create_app():
             return jsonify(d)
         except Exception:
             return jsonify({})
+
+    @app.route("/api/benchmark")
+    def api_benchmark():
+        try:
+            import sqlite3, datetime, math
+            conn = sqlite3.connect(str(DB_PATH))
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute("SELECT timestamp, balance_usd FROM portfolio ORDER BY timestamp ASC LIMIT 500").fetchall()
+            conn.close()
+            if not rows:
+                return jsonify({"series": [], "summary": {}})
+            initial = 1000.0
+            spy_daily = (1.10 ** (1/252)) - 1
+            btc_daily = (1.60 ** (1/365)) - 1
+            bank_daily = (1.04 ** (1/365)) - 1
+            series = []
+            for i, r in enumerate(rows):
+                ts = r["timestamp"]
+                bot = r["balance_usd"]
+                spy = round(initial * ((1 + spy_daily) ** i), 2)
+                btc = round(initial * ((1 + btc_daily) ** i), 2)
+                bank = round(initial * ((1 + bank_daily) ** i), 2)
+                series.append({"ts": ts, "bot": bot, "spy": spy, "btc": btc, "bank": bank})
+            last = series[-1]
+            def pct(v): return round((v - initial) / initial * 100, 2)
+            return jsonify({
+                "series": series,
+                "summary": {
+                    "bot": {"balance": last["bot"], "pct": pct(last["bot"])},
+                    "spy": {"balance": last["spy"], "pct": pct(last["spy"]), "note": "SPY ~10%/yr"},
+                    "btc": {"balance": last["btc"], "pct": pct(last["btc"]), "note": "BTC ~60%/yr"},
+                    "bank": {"balance": last["bank"], "pct": pct(last["bank"]), "note": "Banco ~4%/yr"},
+                },
+            })
+        except Exception as e:
+            return jsonify({"error": str(e), "series": [], "summary": {}})
+
+    @app.route("/api/ticker/<symbol>")
+    def api_ticker(symbol):
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(DB_PATH))
+            conn.row_factory = sqlite3.Row
+            sigs = conn.execute(
+                "SELECT id, timestamp, market, decision, confidence, layer_scores, reasoning FROM signals WHERE ticker=? ORDER BY timestamp DESC LIMIT 50",
+                (symbol,)
+            ).fetchall()
+            trades_rows = conn.execute(
+                "SELECT * FROM trades WHERE ticker=? ORDER BY entry_time DESC LIMIT 50",
+                (symbol,)
+            ).fetchall()
+            price_rows = conn.execute(
+                "SELECT timestamp, price, volume, change_24h_pct FROM market_data WHERE ticker=? ORDER BY timestamp ASC LIMIT 200",
+                (symbol,)
+            ).fetchall()
+            conn.close()
+            signals_out = []
+            for s in sigs:
+                d = dict(s)
+                try:
+                    d["layer_scores"] = json.loads(d.get("layer_scores") or "{}")
+                except Exception:
+                    d["layer_scores"] = {}
+                signals_out.append(d)
+            return jsonify({
+                "symbol": symbol,
+                "signals": signals_out,
+                "trades": [dict(r) for r in trades_rows],
+                "price_history": [dict(r) for r in price_rows],
+            })
+        except Exception as e:
+            return jsonify({"error": str(e), "signals": [], "trades": [], "price_history": []})
+
+    @app.route("/api/news")
+    def api_news():
+        try:
+            market = request.args.get("market", "all")
+            sentiment_filter = request.args.get("sentiment", "all")
+            cache_map = {
+                "forex": BASE_DIR / "data" / "cache" / "news_forex_24h.json",
+                "stocks": BASE_DIR / "data" / "cache" / "news_stocks_24h.json",
+                "crypto": BASE_DIR / "data" / "cache" / "news_crypto_24h.json",
+            }
+            if market == "all":
+                articles = []
+                seen = set()
+                for mkt in ["crypto", "stocks", "forex"]:
+                    try:
+                        with open(cache_map[mkt]) as f:
+                            batch = json.load(f)
+                        for a in batch:
+                            key = a.get("url", "") or a.get("title", "")
+                            if key and key not in seen:
+                                seen.add(key)
+                                articles.append(a)
+                    except (FileNotFoundError, json.JSONDecodeError):
+                        continue
+            else:
+                cache_file = cache_map.get(market)
+                if cache_file:
+                    try:
+                        with open(cache_file) as f:
+                            articles = json.load(f)
+                    except (FileNotFoundError, json.JSONDecodeError):
+                        articles = []
+                else:
+                    articles = []
+            # normalize sentiment labels
+            sentiment_map = {"positive": "bullish", "negative": "bearish", "bullish": "bullish", "bearish": "bearish"}
+            for a in articles:
+                a["sentiment"] = sentiment_map.get(a.get("sentiment", ""), "neutral")
+            if sentiment_filter != "all":
+                articles = [a for a in articles if a.get("sentiment") == sentiment_filter]
+            articles.sort(key=lambda a: a.get("published_at", ""), reverse=True)
+            bullish = sum(1 for a in articles if a.get("sentiment") == "bullish")
+            bearish = sum(1 for a in articles if a.get("sentiment") == "bearish")
+            neutral = len(articles) - bullish - bearish
+            return jsonify({
+                "articles": articles[:60],
+                "total": len(articles),
+                "bullish": bullish,
+                "bearish": bearish,
+                "neutral": neutral,
+            })
+        except Exception as e:
+            return jsonify({"error": str(e), "articles": [], "total": 0, "bullish": 0, "bearish": 0, "neutral": 0})
+
+    @app.route("/api/risk-snapshot")
+    def api_risk_snapshot():
+        state = _read_state()
+        positions = state.get("positions", {})
+        balance = state.get("balance", 1000)
+        items = []
+        total_exposure = 0.0
+        total_max_loss = 0.0
+        for ticker, p in positions.items():
+            size = p.get("size_usd") or 0
+            sl_pct = p.get("stop_loss_pct") or 0
+            max_loss = round(size * sl_pct / 100, 2)
+            total_exposure += size
+            total_max_loss += max_loss
+            items.append({
+                "ticker": ticker,
+                "market": p.get("market", ""),
+                "signal": p.get("signal", ""),
+                "size_usd": round(size, 2),
+                "stop_loss_pct": sl_pct,
+                "max_loss_usd": max_loss,
+            })
+        worst_balance = round(balance - total_max_loss, 2)
+        pct_at_risk = round(total_max_loss / balance * 100, 2) if balance > 0 else 0
+        return jsonify({
+            "balance": round(balance, 2),
+            "positions": items,
+            "total_exposure_usd": round(total_exposure, 2),
+            "total_max_loss_usd": round(total_max_loss, 2),
+            "worst_balance": worst_balance,
+            "pct_at_risk": pct_at_risk,
+        })
+
+    @app.route("/api/projection")
+    def api_projection():
+        try:
+            import sqlite3, datetime, math
+            conn = sqlite3.connect(str(DB_PATH))
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+            # PnL por día de los últimos 30 días
+            cutoff = (datetime.datetime.utcnow() - datetime.timedelta(days=30)).isoformat()
+            cur.execute("""
+                SELECT date(closed_at) as day, SUM(pnl_usd) as daily_pnl, COUNT(*) as cnt
+                FROM trades WHERE closed_at >= ? AND closed_at IS NOT NULL
+                GROUP BY day ORDER BY day ASC
+            """, (cutoff,))
+            rows = [dict(r) for r in cur.fetchall()]
+            cur.execute("SELECT SUM(CASE WHEN pnl_usd>0 THEN 1 ELSE 0 END)*100.0/COUNT(*) as wr, AVG(CASE WHEN pnl_usd>0 THEN pnl_usd END) as avg_win, AVG(CASE WHEN pnl_usd<0 THEN pnl_usd END) as avg_loss FROM trades WHERE closed_at IS NOT NULL")
+            stats = dict(cur.fetchone() or {})
+            conn.close()
+
+            state = _read_state()
+            balance = state.get("balance", 1000)
+            initial = 1000.0
+
+            avg_daily = sum(r["daily_pnl"] for r in rows) / len(rows) if rows else 0
+            wr = round(stats.get("wr") or 0, 1)
+            avg_win = round(stats.get("avg_win") or 0, 2)
+            avg_loss = round(stats.get("avg_loss") or 0, 2)
+
+            days_to_double = None
+            if avg_daily > 0:
+                days_to_double = math.ceil(balance / avg_daily)
+
+            streak = 0
+            best_streak = 0
+            cur_streak = 0
+            state_trades = sorted(state.get("trade_log", []), key=lambda x: x.get("timestamp",""))
+            for t in state_trades:
+                if t.get("type") == "close":
+                    if (t.get("pnl") or 0) > 0:
+                        cur_streak += 1
+                        best_streak = max(best_streak, cur_streak)
+                    else:
+                        cur_streak = 0
+
+            # badge por racha
+            badge = None
+            if best_streak >= 10:
+                badge = {"icon": "🏆", "label": f"¡{best_streak} wins seguidos!", "level": "gold"}
+            elif best_streak >= 5:
+                badge = {"icon": "🥈", "label": f"{best_streak} wins en racha", "level": "silver"}
+            elif best_streak >= 3:
+                badge = {"icon": "🥉", "label": f"{best_streak} wins seguidos", "level": "bronze"}
+
+            return jsonify({
+                "balance": round(balance, 2),
+                "initial": initial,
+                "avg_daily_pnl": round(avg_daily, 2),
+                "days_to_double": days_to_double,
+                "win_rate": wr,
+                "avg_win": avg_win,
+                "avg_loss": avg_loss,
+                "best_streak": best_streak,
+                "badge": badge,
+                "daily_history": rows[-14:],
+            })
+        except Exception as e:
+            return jsonify({"error": str(e), "avg_daily_pnl": 0, "days_to_double": None, "badge": None})
 
     return app
 

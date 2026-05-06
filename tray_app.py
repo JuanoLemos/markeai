@@ -38,17 +38,17 @@ def create_icon():
 def get_status_text():
     global loop_process, paused, status
     if loop_process is None or loop_process.poll() is not None:
-        return "MarketAI — Detenido"
+        return "BotEscucha — Detenido"
     if paused:
-        return "MarketAI — En pausa"
+        return "BotEscucha — En pausa"
     try:
         with open(STATE_PATH) as f:
             state = json.load(f)
         balance = state.get("balance", 0)
         pnl = state.get("balance", 1000) - 1000
-        return f"MarketAI — Corriendo | Balance: ${balance:.0f} | PnL: ${pnl:+.0f}"
+        return f"BotEscucha — Corriendo | Balance: ${balance:.0f} | PnL: ${pnl:+.0f}"
     except Exception:
-        return "MarketAI — Corriendo"
+        return "BotEscucha — Corriendo"
 
 
 def start_loop():
@@ -121,7 +121,7 @@ def build_menu():
 def main():
     global icon_instance
 
-    icon = pystray.Icon("marketai", create_icon(), "MarketAI — Detenido")
+    icon = pystray.Icon("marketai", create_icon(), "BotEscucha — Detenido")
     icon_instance = icon
 
     def tick():

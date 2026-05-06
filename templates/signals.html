@@ -83,7 +83,7 @@ async function toggleExpand(id) {
     const sig = l.signal || 'WAIT';
     const w = l.weight ? (l.weight * 100).toFixed(0) + '%' : '—';
     return `<div class="layer-row">
-      <span class="layer-name">${name}</span>
+      <span class="layer-name">${layerLabel(name)}</span>
       <span class="signal-${sig}">${sig}</span>
       <span>${score}</span>
       <span class="text-muted">w: ${w}</span>

@@ -90,6 +90,7 @@ layers:
 
 risk:
   max_position_pct: 0.05
+  max_total_exposure_pct: 0.40
   max_daily_loss_pct: 0.10
   stop_loss_atr_multiplier: 1.5
   take_profit_atr_multiplier: 3.0
