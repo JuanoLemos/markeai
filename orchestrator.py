@@ -178,6 +178,10 @@ class MarketAIOrchestrator:
                     else:
                         entry_price = decision.get("entry_price") or market_data.get(ticker, {}).get("price", 0) or market_data.get("price", 0)
                         stop_pct = decision.get("stop_loss_pct") or 5
+                        sl_cfg = self.config["risk"]
+                        stop_pct = max(sl_cfg.get("sl_min_pct", 1), min(sl_cfg.get("sl_max_pct", 8), stop_pct))
+                        tp_pct = decision.get("take_profit_pct") or 10
+                        tp_pct = max(sl_cfg.get("tp_min_pct", 2), min(sl_cfg.get("tp_max_pct", 15), tp_pct))
                         stop_price = entry_price * (1 - stop_pct / 100)
                         risk_size = self.risk_engine.position_size(entry_price, stop_price)
                         size_usd = min(decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50), risk_size)
@@ -188,7 +192,7 @@ class MarketAIOrchestrator:
                             entry_price=entry_price,
                             size_usd=size_usd,
                             stop_loss_pct=stop_pct,
-                            take_profit_pct=decision.get("take_profit_pct") or 10,
+                            take_profit_pct=tp_pct,
                             confidence=decision.get("confidence", fused.get("confidence", 0)),
                             strategy_used=f"{market}_{fused['signal']}",
                         )
@@ -381,14 +385,16 @@ class MarketAIOrchestrator:
 
     def check_stops_and_evolve(self):
         current_prices = {}
-        try:
-            summary = self.yf_collector.get_market_summary()
-            for tk, d in summary.get("stocks", {}).items():
-                current_prices[tk] = d.get("price")
-            for tk, d in summary.get("forex", {}).items():
-                current_prices[tk] = d.get("price")
-        except Exception:
-            pass
+        positions = self.paper_broker.get_positions()
+        if positions:
+            tickers = set(p["ticker"] for p in positions)
+            for tk in tickers:
+                try:
+                    price = self.yf_collector.get_current_price(tk)
+                    if price:
+                        current_prices[tk] = price
+                except Exception:
+                    pass
         closed = self.paper_broker.check_stops(current_prices)
         for c in closed:
             self.risk_engine.record_trade(c)
@@ -524,12 +530,17 @@ class MarketAIOrchestrator:
                     if use_deepseek:
                         decision = self.decider.decide(market, ticker, fused, {}, fused.get("layer_scores", {}))
                     if decision and decision.get("signal", "WAIT") != "WAIT":
+                        sl_pct = decision.get("stop_loss_pct") or 5
+                        tp_pct = decision.get("take_profit_pct") or 10
+                        sl_cfg = self.config["risk"]
+                        sl_pct = max(sl_cfg.get("sl_min_pct", 1), min(sl_cfg.get("sl_max_pct", 8), sl_pct))
+                        tp_pct = max(sl_cfg.get("tp_min_pct", 2), min(sl_cfg.get("tp_max_pct", 15), tp_pct))
                         trade = pb.open_position(
                             market=market, ticker=ticker, signal=decision["signal"],
                             entry_price=decision.get("entry_price", price) or price,
                             size_usd=decision.get("position_size_usd") or market_cfg.get("max_position_usd", 30),
-                            stop_loss_pct=decision.get("stop_loss_pct") or 5,
-                            take_profit_pct=decision.get("take_profit_pct") or 10,
+                            stop_loss_pct=sl_pct,
+                            take_profit_pct=tp_pct,
                             confidence=decision.get("confidence", fused.get("confidence", 50)),
                             strategy_used=f"{market}_{fused['signal']}",
                         )

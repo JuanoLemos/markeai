@@ -13,6 +13,7 @@ class PaperBroker:
         self.slippage_pct = slippage_pct
         self.commission_pct = commission_pct
         self.max_total_exposure_pct = 0.40
+        self.max_position_age_hours = 72
         self.positions = {}
         self.trade_log = []
         self.daily_pnl = 0.0
@@ -69,13 +70,13 @@ class PaperBroker:
         can_open, reason = self.can_open_position()
         if not can_open:
             return {"error": reason}
-        total_exposure = sum(p["size_usd"] for p in self.positions.values())
-        if total_exposure + size_usd > self.initial_balance * self.max_total_exposure_pct:
-            return {"error": "max_total_exposure"}
         if size_usd > self.balance:
             size_usd = self.balance * 0.95
         if size_usd > self.balance * 0.05:
             size_usd = self.balance * 0.05
+        total_exposure = sum(p["size_usd"] for p in self.positions.values())
+        if total_exposure + size_usd > self.initial_balance * self.max_total_exposure_pct:
+            return {"error": "max_total_exposure"}
         slippage = entry_price * self.slippage_pct * (1 if signal == "LONG" else -1)
         exec_price = entry_price + slippage
         commission = size_usd * self.commission_pct
@@ -178,6 +179,16 @@ class PaperBroker:
                     result = self.close_position(pid, price, "take_profit")
                     if result:
                         closed.append(result)
+        for pid, pos in list(self.positions.items()):
+            age_hours = (time.time() - time.mktime(time.strptime(pos["entry_time"][:19], "%Y-%m-%dT%H:%M:%S"))) / 3600
+            if age_hours > self.max_position_age_hours:
+                ticker = pos["ticker"]
+                price = current_prices.get(ticker)
+                if not price:
+                    price = pos["entry_price"]
+                result = self.close_position(pid, price, "time_exit")
+                if result:
+                    closed.append(result)
         return closed
 
     def get_summary(self) -> dict:
