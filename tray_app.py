@@ -98,6 +98,19 @@ def on_show():
     webbrowser_open("http://localhost:8050")
 
 
+def restart_dashboard():
+    try:
+        subprocess.run(["taskkill", "/f", "/im", "python.exe", "/fi", "WINDOWTITLE eq *dashboard*"], capture_output=True)
+    except Exception:
+        pass
+    subprocess.Popen(
+        [sys.executable, str(BASE_DIR / "dashboard.py")],
+        cwd=str(BASE_DIR),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+
+
 def webbrowser_open(url):
     import webbrowser
     webbrowser.open(url)
@@ -108,6 +121,7 @@ def build_menu():
     running = loop_process is not None and loop_process.poll() is None
     return pystray.Menu(
         pystray.MenuItem("Mostrar Dashboard", on_show, default=True),
+        pystray.MenuItem("Reiniciar Dashboard", restart_dashboard),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem("▶ Reanudar" if paused else "⏸ Pausar",
                          do_resume if paused else do_pause,

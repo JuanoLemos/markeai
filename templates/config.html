@@ -3,50 +3,22 @@
 <h1>Configuración</h1>
 <form id="config-form">
   <div class="config-section">
-    <h3>Mercados</h3>
-    <div id="markets"></div>
+    <h3 onclick="this.parentElement.classList.toggle('collapsed')">Mercados</h3>
+    <div class="config-body"><div id="markets"></div></div>
   </div>
   <div class="config-section">
-    <h3>Riesgo</h3>
-    <div class="form-row" id="risk"></div>
+    <h3 onclick="this.parentElement.classList.toggle('collapsed')">Riesgo</h3>
+    <div class="config-body"><div class="form-row" id="risk"></div></div>
   </div>
   <div class="config-section">
-    <h3>DeepSeek</h3>
-    <div class="form-row" id="deepseek"></div>
+    <h3 onclick="this.parentElement.classList.toggle('collapsed')">DeepSeek</h3>
+    <div class="config-body"><div class="form-row" id="deepseek"></div></div>
   </div>
-  <div class="config-section">
-    <h3>Apariencia</h3>
-    <div class="form-group">
-      <label>Tema del dashboard</label>
-      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px" id="theme-picker">
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <div style="width:22px;height:22px;border-radius:50%;background:#161b22;border:2px solid #30363d;flex-shrink:0"></div>
-          <input type="radio" name="theme" value="dark" style="display:none"> Dark
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <div style="width:22px;height:22px;border-radius:50%;background:#ffffff;border:2px solid #aaaaaa;flex-shrink:0"></div>
-          <input type="radio" name="theme" value="light" style="display:none"> Light
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <div style="width:22px;height:22px;border-radius:50%;background:#000000;border:2px solid #ff8c00;flex-shrink:0"></div>
-          <input type="radio" name="theme" value="bloomberg" style="display:none"> Bloomberg
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <div style="width:22px;height:22px;border-radius:50%;background:#122b24;border:2px solid #00e5a0;flex-shrink:0"></div>
-          <input type="radio" name="theme" value="mint" style="display:none"> Mint
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <div style="width:22px;height:22px;border-radius:50%;background:#110020;border:2px solid #00ffcc;flex-shrink:0"></div>
-          <input type="radio" name="theme" value="cyberpunk" style="display:none"> Cyberpunk
-        </label>
-        <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-          <div style="width:22px;height:22px;border-radius:50%;background:#fdf6e3;border:2px solid #2aa198;flex-shrink:0"></div>
-          <input type="radio" name="theme" value="solarized" style="display:none"> Solarized
-        </label>
-      </div>
-    </div>
+  <div class="config-section collapsed">
+    <h3 onclick="this.parentElement.classList.toggle('collapsed')">Capas</h3>
+    <div class="config-body"><div id="layers"></div></div>
   </div>
-  <button class="btn btn-primary" type="submit">Guardar cambios</button>
+  <button class="btn btn-primary" type="submit" style="margin-top:16px">Guardar cambios</button>
   <span id="save-msg" class="text-muted ml-2"></span>
 </form>
 {% endblock %}
@@ -90,6 +62,14 @@ async function loadConfig() {
     <div class="form-group"><label>Temperature</label><input name="deepseek.temperature" value="${c.deepseek.temperature}" step="0.1" type="number"></div>
     <div class="form-group"><label>Max Tokens</label><input name="deepseek.max_tokens" value="${c.deepseek.max_tokens}" type="number"></div>
     <div class="form-group"><label>Timeout (s)</label><input name="deepseek.timeout_seconds" value="${c.deepseek.timeout_seconds||30}" type="number"></div>`;
+  const l = document.getElementById('layers');
+  const layers = c.layers || {};
+  l.innerHTML = Object.entries(layers).map(([name, cfg]) => `
+    <div style="margin-bottom:10px;padding:8px 12px;background:var(--bg-primary);border-radius:6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <strong style="min-width:100px">${name}</strong>
+      <label style="font-size:12px;display:flex;align-items:center;gap:4px"><input type="checkbox" name="layers.${name}.enabled" ${cfg.enabled ? 'checked' : ''} onchange="this.previousElementSibling.value=this.checked"> Enabled</label>
+      ${['polymarket','forex','stocks'].map(m => `<div class="form-group" style="margin:0"><label style="font-size:10px">${m[0].toUpperCase()}</label><input name="layers.${name}.weight_${m}" value="${cfg['weight_'+m]||0}" step="0.01" type="number" style="width:55px;padding:4px 6px;font-size:12px"></div>`).join('')}
+    </div>`).join('');
 }
 
 document.getElementById('config-form').addEventListener('submit', async (e) => {
@@ -100,6 +80,8 @@ document.getElementById('config-form').addEventListener('submit', async (e) => {
     let v = el.value;
     if (el.dataset.array === 'true') {
       v = v.split(',').map(s => s.trim()).filter(Boolean);
+    } else if (el.type === 'checkbox') {
+      v = el.checked ? true : false;
     }
     const parts = k.split('.');
     let o = data;
@@ -119,26 +101,5 @@ document.getElementById('config-form').addEventListener('submit', async (e) => {
 });
 
 loadConfig();
-
-// theme picker
-(function() {
-  const current = localStorage.getItem('theme') || 'dark';
-  document.querySelectorAll('#theme-picker input[name="theme"]').forEach(radio => {
-    if (radio.value === current) radio.checked = true;
-    const lbl = radio.closest('label');
-    if (radio.value === current) lbl.style.fontWeight = '700';
-    radio.addEventListener('change', () => {
-      const t = radio.value;
-      document.documentElement.setAttribute('data-theme', t);
-      localStorage.setItem('theme', t);
-      document.querySelectorAll('#theme-picker label').forEach(l => l.style.fontWeight = '');
-      lbl.style.fontWeight = '700';
-      // sincronizar dots del sidebar
-      document.querySelectorAll('.theme-dot').forEach(d => {
-        d.style.outline = d.dataset.theme === t ? '2px solid var(--text)' : '';
-      });
-    });
-  });
-})();
 </script>
 {% endblock %}
