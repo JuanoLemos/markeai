@@ -122,3 +122,15 @@ Archivos críticos: `config.yaml`, `.env`, `orchestrator.py`, `data/database.py`
 | `static/` | CSS y assets del dashboard |
 | `tests/` | Tests pytest |
 | `skills/` | Skills cargables + ICT FVG standalone |
+
+---
+
+## Reglas post-edit (para agentes IA)
+
+Después de CADA edición de >5 líneas:
+
+1. Leer 15 líneas antes y después del sitio editado.
+2. Verificar que no haya `const`/`let`/`function` duplicados en el mismo bloque `<script>`.
+3. Si la edición reemplazó un bloque con declaraciones (`const`, `let`, `function`), confirmar que cada identificador nuevo sea único en ese scope.
+4. Ejecutar `rg "const NOMBRE" archivo` sobre el símbolo modificado para confirmar unicidad.
+5. Si se extrajo o movió código a otro archivo, verificar que no quede un identificador duplicado en el origen.
