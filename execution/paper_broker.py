@@ -180,7 +180,8 @@ class PaperBroker:
                     if result:
                         closed.append(result)
         for pid, pos in list(self.positions.items()):
-            age_hours = (time.time() - time.mktime(time.strptime(pos["entry_time"][:19], "%Y-%m-%dT%H:%M:%S"))) / 3600
+            entry_dt = datetime.fromisoformat(pos["entry_time"])
+            age_hours = (datetime.now(timezone.utc) - entry_dt).total_seconds() / 3600
             if age_hours > self.max_position_age_hours:
                 ticker = pos["ticker"]
                 price = current_prices.get(ticker)
