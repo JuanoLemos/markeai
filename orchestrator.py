@@ -35,6 +35,7 @@ from learning.strategy_evolver import StrategyEvolver
 from learning.backtest import Backtester
 from alerts.notifier import Notifier
 from execution.risk_engine import RiskEngine
+from execution.entry_filters import session_hours
 
 CONFIG_PATH = Path(__file__).parent / "config.yaml"
 
@@ -168,6 +169,10 @@ class MarketAIOrchestrator:
                     can_trade, reason = self.risk_engine.circuit_breakers()
                     if not can_trade:
                         self.log.warning(f"  Risk block: {reason}")
+                        return
+                    hour = datetime.now(timezone.utc).hour
+                    if not session_hours(market, hour):
+                        self.log.info(f"  Session filter blocked {market} at hour {hour}")
                         return
                     trade = None
                     exec_mode = market_cfg.get("mode", "paper")

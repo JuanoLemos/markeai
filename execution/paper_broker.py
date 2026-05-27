@@ -200,6 +200,28 @@ class PaperBroker:
                     if result:
                         closed.append(result)
         for pid, pos in list(self.positions.items()):
+            ticker = pos["ticker"]
+            price = current_prices.get(ticker)
+            if not price:
+                continue
+            atr_est = abs(pos["entry_price"] - pos["entry_price"] * (1 - pos["stop_loss_pct"] / 100))
+            if atr_est <= 0:
+                atr_est = pos["entry_price"] * 0.005
+            if pos["signal"] == "LONG":
+                target = price - atr_est * 2.5
+                if target > pos["entry_price"] * (1 - pos["stop_loss_pct"] / 100):
+                    pos["stop_loss_pct"] = max(0.1, (1 - target / pos["entry_price"]) * 100)
+                if not pos.get("_be_applied") and (price - pos["entry_price"]) / pos["entry_price"] >= atr_est * 1.5 / pos["entry_price"]:
+                    pos["stop_loss_pct"] = 0.1
+                    pos["_be_applied"] = True
+            else:
+                target = price + atr_est * 2.5
+                if target < pos["entry_price"] * (1 + pos["stop_loss_pct"] / 100):
+                    pos["stop_loss_pct"] = max(0.1, (target / pos["entry_price"] - 1) * 100)
+                if not pos.get("_be_applied") and (pos["entry_price"] - price) / pos["entry_price"] >= atr_est * 1.5 / pos["entry_price"]:
+                    pos["stop_loss_pct"] = 0.1
+                    pos["_be_applied"] = True
+        for pid, pos in list(self.positions.items()):
             entry_dt = datetime.fromisoformat(pos["entry_time"])
             age_hours = (datetime.now(timezone.utc) - entry_dt).total_seconds() / 3600
             max_hours = self._get_time_exit_hours(pos, current_prices)
