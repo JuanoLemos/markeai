@@ -180,44 +180,107 @@ Gráficos avanzados para ver patrones:
 
 ### 4.5 Backtest
 
-Simula cómo se habría comportado MarketAI en el pasado. Sirve para probar la configuración sin esperar días reales.
+Simula cómo se habría comportado MarketAI en los últimos 90 días. Sirve para probar la configuración sin esperar.
 
-```powershell
-Botón "Backtest Forex" o "Backtest Stocks" → esperar 30-60s → resultados
+**¿Cómo se usa?**
+```
+1. Click en "▶ Backtest Forex" o "▶ Backtest Stocks"
+2. Esperar 30-60 segundos (el sistema analiza 90 días de datos históricos)
+3. Aparece una tabla con los resultados por ticker
 ```
 
-Muestra: trades simulados, win rate, ganancias, Sharpe ratio.
+**Qué significa cada columna:**
+
+| Columna | Significado |
+|---|---|
+| **Ticker** | Activo analizado |
+| **Trades** | Cantidad de operaciones generadas en la simulación |
+| **W/L** | Wins (ganadas) / Losses (perdidas) |
+| **Win Rate** | % de aciertos sobre el total |
+| **PnL** | Ganancia (+) o pérdida (-) total simulada |
+| **Sharpe** | Indicador de riesgo/rentabilidad. >1 = bueno, >2 = excelente |
+| **Profit Factor** | Cada $1 perdido, cuánto se ganó. >1.5 = bueno |
+
+> El backtest **no usa DeepSeek** para ahorrar costos. Usa directamente la fusión de analizadores.
 
 ### 4.6 Config
 
-Aquí se cambia cómo opera MarketAI. Los cambios se guardan a `config.yaml`.
+Aquí se cambia la configuración de MarketAI. Los cambios se guardan a `config.yaml` (el archivo principal del sistema).
 
-**Secciones:**
+**Las secciones están en acordeones:** click en cada título para expandir o colapsar.
 
 | Sección | Qué se configura |
 |---|---|
-| **Mercados** | Qué mercados operar, cada cuánto revisar, tamaño máximo por operación |
-| **Riesgo** | SL mínimo/máximo, TP mínimo/máximo, exposición total máxima |
-| **DeepSeek** | Modelo de IA (temperatura, tokens) |
-| **Capas** | Peso de cada analizador en la decisión final |
+| **Mercados** | Qué mercados operar (activo/inactivo), cada cuánto revisar (minutos), tamaño máximo por operación, confianza mínima |
+| **Riesgo** | SL mínimo/máximo, TP mínimo/máximo, exposición total máxima, límite de pérdida diaria |
+| **DeepSeek** | Modelo de IA, temperatura, tokens máximos, timeout |
+| **Capas** | Peso de cada analizador en la decisión. Tres columnas: peso en polymarket, forex y stocks |
 
-> Los cambios requieren reiniciar el loop para aplicarse.
+**Capas** muestra los 8 analizadores con su peso por mercado. Podés activar/desactivar cada uno con el checkbox y ajustar el peso (0.0 a 1.0) en cada mercado.
+
+> Los cambios requieren reiniciar el loop para aplicarse. Los parámetros se escriben directamente al archivo `config.yaml`.
 
 ### 4.7 Logs
 
-Muestra las últimas líneas que MarketAI va escribiendo mientras funciona. Útil para ver si hay errores.
+Muestra las últimas 80 líneas que MarketAI escribe mientras funciona. Se actualiza automáticamente cada 5 segundos.
 
 ```
 2026-05-19 14:30:01 [INFO] Analizando EURUSD...
 2026-05-19 14:30:02 [INFO] Fused: SHORT (score:45 conf:100)
-2026-05-19 14:30:15 [INFO] DeepSeek: SHORT (conf:80)
+2026-05-19 14:30:15 [ERROR] HTTP Error 404: No fundamentals for SPY
+2026-05-19 14:30:16 [WARNING] Risk block: max_drawdown_exceeded
 ```
 
-Si ves `[ERROR]` no te alarmes — muchos son ruido inofensivo de conexiones.
+**Niveles de log:**
+
+| Nivel | Color | Significado |
+|---|---|---|
+| **INFO** | Normal | Informativo. El sistema funcionando normalmente |
+| **WARNING** | Amarillo | Algo no esperado, pero no crítico. Ej: límite de riesgo alcanzado |
+| **ERROR** | Rojo | Algo falló. Muchos son ruido inofensivo (API temporalmente caída) |
+
+**Botones:** "Ir arriba" e "Ir abajo" para navegar el log rápidamente.
 
 ### 4.8 Noticias
 
-Artículos de noticias financieras con su sentimiento clasificado (🟢 bullish = positivo, 🔴 bearish = negativo).
+Artículos de noticias financieras con clasificación de sentimiento. Los artículos se obtienen de NewsAPI (necesita API key en `.env`).
+
+**Filtros disponibles:**
+
+| Filtro | Opciones |
+|---|---|
+| **Mercado** | Todos / Forex / Stocks / Crypto |
+| **Sentimiento** | Todos / Bullish (positivo) / Bearish (negativo) / Neutral |
+
+**Barra de mood:** arriba de todo muestra el sentimiento general del mercado:
+- 🟢 **Mercado optimista** = más noticias positivas que negativas
+- 🔴 **Mercado pesimista** = más noticias negativas
+- 😐 **Sentimiento mixto** = equilibrado
+
+Cada noticia tiene un indicador de sentimiento: 🟢 bullish, 🔴 bearish, ⚪ neutral. Click en el título para abrir la noticia completa en el navegador.
+
+> Las noticias se actualizan cada vez que el loop corre. Si no ves ninguna, verificá que `NEWSAPI_KEY` esté configurada en `.env`.
+
+### 4.9 Watchlist
+
+Página de seguimiento de precios en vivo. Muestra los activos que MarketAI está monitoreando, con su precio actual, cambio porcentual en 24 horas, y color indicador.
+
+```
+┌──────────┬────────┬────────┬───────┐
+│ Ticker   │ Mercado│ Precio │ 24h % │
+├──────────┼────────┼────────┼───────┤
+│ EURUSD=X │ forex  │ 1.101  │ -0.2% │
+│ GBPUSD=X │ forex  │ 1.351  │ +0.1% │
+│ SPY      │ stocks │ 718.07 │ +1.2% │
+│ AAPL     │ stocks │ 276.84 │ -0.5% │
+└──────────┴────────┴────────┴───────┘
+```
+
+- **Verde** 🟢 = el precio subió en las últimas 24 horas
+- **Rojo** 🔴 = el precio bajó en las últimas 24 horas
+- Los tickers corresponden a los configurados en `config.yaml` (forex pairs + stocks tickers)
+
+La Watchlist se actualiza automáticamente cada 15 segundos con los precios en vivo de Yahoo Finance.
 
 ---
 
