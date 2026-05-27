@@ -10,7 +10,7 @@ import pystray
 from PIL import Image, ImageDraw, ImageFont
 
 BASE_DIR = Path(__file__).parent
-STATE_PATH = BASE_DIR / "data" / "cache" / "paper_broker_state.json"
+STATE_PATH = BASE_DIR / "data" / "cache" / "pb_normal.json"
 STOP_FILE = BASE_DIR / "STOP"
 
 loop_process = None
@@ -38,17 +38,20 @@ def create_icon():
 def get_status_text():
     global loop_process, paused, status
     if loop_process is None or loop_process.poll() is not None:
-        return "BotEscucha — Detenido"
+        return "servermktai — Detenido"
     if paused:
-        return "BotEscucha — En pausa"
+        return "servermktai — En pausa"
     try:
         with open(STATE_PATH) as f:
             state = json.load(f)
-        balance = state.get("balance", 0)
-        pnl = state.get("balance", 1000) - 1000
-        return f"BotEscucha — Corriendo | Balance: ${balance:.0f} | PnL: ${pnl:+.0f}"
+        s = list(state.values())[0] if isinstance(state, dict) and "normal" not in state else state.get("balance", None)
+        if s is None:
+            s = state.get("normal", {}).get("balance", 0)
+        balance = float(s) if s else 0
+        pnl = balance - 1000
+        return f"servermktai — Corriendo | Balance: ${balance:.0f} | PnL: ${pnl:+.0f}"
     except Exception:
-        return "BotEscucha — Corriendo"
+        return "servermktai — Corriendo"
 
 
 def start_loop():
@@ -98,12 +101,15 @@ def on_show():
     webbrowser_open("http://localhost:8050")
 
 
-def restart_dashboard():
+def start_dashboard():
     try:
-        subprocess.run([
+        result = subprocess.run([
             "powershell", "-Command",
-            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'dashboard' } | Stop-Process -Force"
-        ], capture_output=True, timeout=10)
+            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'dashboard' } | Measure-Object | Select-Object -ExpandProperty Count"
+        ], capture_output=True, text=True, timeout=10)
+        count = int(result.stdout.strip()) if result.stdout.strip().isdigit() else 0
+        if count > 0:
+            return
     except Exception:
         pass
     try:
@@ -117,6 +123,21 @@ def restart_dashboard():
         pass
 
 
+def restart_dashboard():
+    try:
+        subprocess.run([
+            "powershell", "-Command",
+            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'dashboard' } | Stop-Process -Force"
+        ], capture_output=True, timeout=10)
+    except Exception:
+        try:
+            subprocess.run("wmic process where \"name='python.exe' and commandline like '%dashboard%'\" delete", shell=True, capture_output=True, timeout=10)
+        except Exception:
+            pass
+    time.sleep(1)
+    start_dashboard()
+
+
 def webbrowser_open(url):
     import webbrowser
     webbrowser.open(url)
@@ -128,12 +149,12 @@ def build_menu():
     return pystray.Menu(
         pystray.MenuItem("Mostrar Dashboard", on_show, default=True),
         pystray.MenuItem("Reiniciar Dashboard", restart_dashboard),
-        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Separador", None, enabled=False, visible=False),
         pystray.MenuItem("▶ Reanudar" if paused else "⏸ Pausar",
                          do_resume if paused else do_pause,
                          enabled=paused or running),
         pystray.MenuItem("■ Detener", stop_loop, enabled=running and not paused),
-        pystray.Menu.SEPARATOR,
+        pystray.MenuItem("Separador2", None, enabled=False, visible=False),
         pystray.MenuItem("Salir", do_exit),
     )
 
@@ -141,7 +162,7 @@ def build_menu():
 def main():
     global icon_instance
 
-    icon = pystray.Icon("marketai", create_icon(), "BotEscucha — Detenido")
+    icon = pystray.Icon("servermktai", create_icon(), "servermktai", menu=build_menu())
     icon_instance = icon
 
     def tick():
@@ -150,13 +171,13 @@ def main():
             try:
                 icon.title = get_status_text()
                 icon.menu = build_menu()
-                icon.update_menu()
             except Exception:
                 pass
             time.sleep(3)
 
     threading.Thread(target=tick, daemon=True).start()
     start_loop()
+    start_dashboard()
     icon.run()
 
 
