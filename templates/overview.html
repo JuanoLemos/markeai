@@ -75,14 +75,24 @@
 <script>
 async function loadMetrics() {
   const s = await api('/api/summary');
-  document.getElementById('metrics').innerHTML = `
-    <div class="card"><div class="label">Balance</div><div class="value">$${s.balance.toLocaleString()}</div><div class="sub">Inicial: $${s.initial_balance.toLocaleString()}</div></div>
-    <div class="card"><div class="label">P&L Total</div><div class="value ${s.total_pnl >= 0 ? 'green' : 'red'}">${s.total_pnl >= 0 ? '+' : ''}$${s.total_pnl.toFixed(2)}</div><div class="sub ${s.total_pnl_pct >= 0 ? 'green' : 'red'}">${s.total_pnl_pct >= 0 ? '+' : ''}${s.total_pnl_pct.toFixed(1)}%</div></div>
-    <div class="card"><div class="label">Daily P&L</div><div class="value ${s.daily_pnl >= 0 ? 'green' : 'red'}">${s.daily_pnl >= 0 ? '+' : ''}$${s.daily_pnl.toFixed(2)}</div></div>
-    <div class="card"><div class="label">Open Positions</div><div class="value">${s.open_positions}</div><div class="sub">Exposición: $${s.exposure_usd.toFixed(2)}</div></div>
-    <div class="card"><div class="label">Win Rate</div><div class="value">${s.win_rate}%</div><div class="sub">${s.total_trades} trades total</div></div>
-    <div class="card"><div class="label">Trade Count</div><div class="value">${s.winning_trades}/${s.total_trades}</div><div class="sub">Wins / Total</div></div>
-  `;
+  const profiles = ['normal', 'fast'];
+  const P = {};
+  profiles.forEach(n => { if (s[n]) P[n] = s[n]; });
+  const labels = { normal: 'Normal', fast: 'Fast' };
+  const colors = { normal: 'var(--accent-green)', fast: 'var(--accent-blue)' };
+  document.getElementById('metrics').innerHTML = profiles.map(n => {
+    const d = P[n] || {};
+    const cls = (v) => v >= 0 ? 'green' : 'red';
+    const sign = (v) => v >= 0 ? '+' : '';
+    return `<div style="grid-column:${profiles.indexOf(n) === 0 ? '1/span 3' : '4/span 3'}"><h3 style="font-size:13px;color:${colors[n]};margin-bottom:8px">${labels[n]}</h3>
+      <div class="cards">
+        <div class="card"><div class="label">Balance</div><div class="value">$${(d.balance||1000).toLocaleString()}</div><div class="sub">Inicial: $1,000</div></div>
+        <div class="card"><div class="label">PnL Total</div><div class="value ${cls(d.total_pnl)}">${sign(d.total_pnl)}$${(d.total_pnl||0).toFixed(2)}</div><div class="sub ${cls(d.total_pnl_pct)}">${sign(d.total_pnl_pct)}${(d.total_pnl_pct||0).toFixed(1)}%</div></div>
+        <div class="card"><div class="label">Open Positions</div><div class="value">${d.open_positions||0}</div><div class="sub">Exp: $${(d.exposure_usd||0).toFixed(2)}</div></div>
+        <div class="card"><div class="label">Trades</div><div class="value">${d.winning_trades||0}/${d.total_trades||0}</div><div class="sub">Win Rate: ${d.win_rate||0}%</div></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 async function loadDailyBrief() {

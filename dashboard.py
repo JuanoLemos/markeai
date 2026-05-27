@@ -65,29 +65,7 @@ def create_app():
 
     @app.route("/api/summary")
     def api_summary():
-        state = _read_state()
-        if not state:
-            return jsonify({
-                "balance": 1000, "initial_balance": 1000,
-                "total_pnl": 0, "total_pnl_pct": 0, "daily_pnl": 0,
-                "open_positions": 0, "exposure_usd": 0,
-                "total_trades": 0, "winning_trades": 0, "win_rate": 0,
-            })
-        closed_trades = len([t for t in state.get("trade_log", []) if t["type"] == "close"])
-        winning_trades = len([t for t in state.get("trade_log", []) if t["type"] == "close" and t.get("pnl", 0) > 0])
-        total_invested = sum(p["size_usd"] for p in state.get("positions", {}).values())
-        return jsonify({
-            "balance": round(state.get("balance", 1000), 2),
-            "initial_balance": 1000,
-            "total_pnl": round(state.get("balance", 1000) - 1000, 2),
-            "total_pnl_pct": round((state.get("balance", 1000) - 1000) / 10, 2),
-            "daily_pnl": round(state.get("daily_pnl", 0), 2),
-            "open_positions": len(state.get("positions", {})),
-            "exposure_usd": round(total_invested, 2),
-            "total_trades": closed_trades,
-            "winning_trades": winning_trades,
-            "win_rate": round(winning_trades / closed_trades * 100, 1) if closed_trades > 0 else 0,
-        })
+        return jsonify(_read_all_profiles())
 
     @app.route("/api/daily-brief")
     def api_daily_brief():
@@ -667,6 +645,40 @@ def _read_state() -> dict:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         return {}
+
+
+def _profile_from_file(name: str) -> dict:
+    path = BASE_DIR / "data" / "cache" / f"pb_{name}.json"
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+
+def _summarize_state(state: dict) -> dict:
+    if not state:
+        return {"balance": 1000, "initial_balance": 1000, "total_pnl": 0, "total_pnl_pct": 0, "daily_pnl": 0, "open_positions": 0, "exposure_usd": 0, "total_trades": 0, "winning_trades": 0, "win_rate": 0}
+    closed = len([t for t in state.get("trade_log", []) if t["type"] == "close"])
+    wins = len([t for t in state.get("trade_log", []) if t["type"] == "close" and t.get("pnl", 0) > 0])
+    bal = state.get("balance", 1000)
+    inv = sum(p["size_usd"] for p in state.get("positions", {}).values())
+    return {
+        "balance": round(bal, 2), "initial_balance": 1000,
+        "total_pnl": round(bal - 1000, 2), "total_pnl_pct": round((bal - 1000) / 1000 * 100, 2),
+        "daily_pnl": round(state.get("daily_pnl", 0), 2),
+        "open_positions": len(state.get("positions", {})), "exposure_usd": round(inv, 2),
+        "total_trades": closed, "winning_trades": wins,
+        "win_rate": round(wins / closed * 100, 1) if closed > 0 else 0,
+    }
+
+
+def _read_all_profiles() -> dict:
+    result = {}
+    for name in ("normal", "fast"):
+        result[name] = _summarize_state(_profile_from_file(name))
+    result["active"] = [n for n, s in result.items() if s["total_trades"] > 0 or s["open_positions"] > 0]
+    return result
 
 
 def _check_health() -> dict:

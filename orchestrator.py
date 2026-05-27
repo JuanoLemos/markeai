@@ -86,8 +86,18 @@ class MarketAIOrchestrator:
             temperature=self.config.get("deepseek", {}).get("temperature", 0.3),
             max_tokens=self.config.get("deepseek", {}).get("max_tokens", 500),
         )
-        self.paper_broker = PaperBroker()
-        self.paper_broker.set_time_exit_config(self.config.get("risk", {}).get("time_exit", {}))
+        self.paper_brokers = {}
+        self.profiles_config = self.config.get("profiles", {"normal": {"label":"Normal","sl_min_pct":1,"sl_max_pct":5,"tp_min_pct":2,"tp_max_pct":10}})
+        for prof_name, prof_cfg in self.profiles_config.items():
+            pb = PaperBroker(
+                initial_balance=1000,
+                state_path=str(Path(__file__).parent / "data" / "cache" / f"pb_{prof_name}.json"),
+            )
+            pb.set_time_exit_config(self.config.get("risk", {}).get("time_exit", {}))
+            pb.max_total_exposure_pct = self.config["risk"].get("max_total_exposure_pct", 0.40)
+            setattr(self, f"pb_{prof_name}", pb)
+            self.paper_brokers[prof_name] = pb
+        self.paper_broker = self.paper_brokers["normal"]
         self.pm_executor = PolymarketExecutor()
         self.trad_executor = TraditionalExecutor()
         self.journal = TradeJournal()
@@ -113,14 +123,13 @@ class MarketAIOrchestrator:
 
     def _snapshot_portfolio(self):
         try:
-            s = self.paper_broker.get_summary()
-            self.risk_engine.update_balance(s["balance"])
-            self.db.insert_portfolio_snapshot(
-                balance=s["balance"],
-                open_positions=s["open_positions"],
-                daily_pnl=s["daily_pnl"],
-                total_pnl=s["total_pnl"],
-            )
+            for name, pb in self.paper_brokers.items():
+                s = pb.get_summary()
+                self.risk_engine.update_balance(s["balance"])
+                self.db.insert_portfolio_snapshot(
+                    balance=s["balance"], open_positions=s["open_positions"],
+                    daily_pnl=s["daily_pnl"], total_pnl=s["total_pnl"],
+                )
         except Exception:
             pass
 
@@ -178,38 +187,33 @@ class MarketAIOrchestrator:
                             )
                     else:
                         entry_price = decision.get("entry_price") or market_data.get(ticker, {}).get("price", 0) or market_data.get("price", 0)
-                        stop_pct = decision.get("stop_loss_pct") or 5
-                        sl_cfg = self.config["risk"]
-                        stop_pct = max(sl_cfg.get("sl_min_pct", 1), min(sl_cfg.get("sl_max_pct", 8), stop_pct))
-                        tp_pct = decision.get("take_profit_pct") or 10
-                        tp_pct = max(sl_cfg.get("tp_min_pct", 2), min(sl_cfg.get("tp_max_pct", 15), tp_pct))
-                        stop_price = entry_price * (1 - stop_pct / 100)
+                        base_stop = decision.get("stop_loss_pct") or 5
+                        base_tp = decision.get("take_profit_pct") or 10
+                        stop_price = entry_price * (1 - base_stop / 100)
                         risk_size = self.risk_engine.position_size(entry_price, stop_price)
                         size_usd = min(decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50), risk_size)
-                        trade = self.paper_broker.open_position(
-                            market=market,
-                            ticker=ticker,
-                            signal=decision["signal"],
-                            entry_price=entry_price,
-                            size_usd=size_usd,
-                            stop_loss_pct=stop_pct,
-                            take_profit_pct=tp_pct,
-                            confidence=decision.get("confidence", fused.get("confidence", 0)),
-                            strategy_used=f"{market}_{fused['signal']}",
-                        )
-                    if trade and "error" not in trade:
-                        self.risk_engine.record_trade(trade)
-                        self.journal.record_trade(trade)
-                        self.notifier.send_trade_entry(trade)
-                        self.db.insert_trade({
-                            "market": market, "ticker": ticker,
-                            "signal": decision["signal"], "entry_price": trade.get("entry_price", 0),
-                            "position_size_usd": trade.get("size_usd", trade.get("size", 0)),
-                            "stop_loss": trade.get("stop_loss_pct", 5),
-                            "take_profit": trade.get("take_profit_pct", 10),
-                            "confidence": decision.get("confidence", 0),
-                            "strategy_used": trade.get("strategy_used", ""),
-                        })
+                        for prof_name, prof_cfg in self.profiles_config.items():
+                            pb = self.paper_brokers[prof_name]
+                            sp = max(prof_cfg.get("sl_min_pct", 0.5), min(prof_cfg.get("sl_max_pct", 5), base_stop))
+                            tp = max(prof_cfg.get("tp_min_pct", 1), min(prof_cfg.get("tp_max_pct", 10), base_tp))
+                            trade = pb.open_position(
+                                market=market, ticker=ticker, signal=decision["signal"],
+                                entry_price=entry_price, size_usd=size_usd,
+                                stop_loss_pct=sp, take_profit_pct=tp,
+                                confidence=decision.get("confidence", fused.get("confidence", 0)),
+                                strategy_used=f"{prof_name}_{market}_{fused['signal']}",
+                            )
+                            if trade and "error" not in trade:
+                                self.risk_engine.record_trade(trade)
+                                self.journal.record_trade(trade)
+                                self.db.insert_trade({
+                                    "market": f"{prof_name}_{market}", "ticker": ticker,
+                                    "signal": decision["signal"], "entry_price": trade.get("entry_price", 0),
+                                    "position_size_usd": trade.get("size_usd", trade.get("size", 0)),
+                                    "stop_loss": sp, "take_profit": tp,
+                                    "confidence": decision.get("confidence", 0),
+                                    "strategy_used": f"{prof_name}_{market}_{fused['signal']}",
+                                })
 
     def _analyze_polymarket(self, market_cfg: dict) -> tuple:
         layer_results = {}
@@ -396,14 +400,15 @@ class MarketAIOrchestrator:
                         current_prices[tk] = price
                 except Exception:
                     pass
-        closed = self.paper_broker.check_stops(current_prices)
-        for c in closed:
-            self.risk_engine.record_trade(c)
-            self.journal.record_trade(c)
-            self.notifier.send_trade_exit(c)
-            self.db.close_trade(0, c["exit_price"], c["reason"], c["pnl_usd"], c["pnl_pct"])
-        if len(self.paper_broker.trade_log) > 0 and len(self.paper_broker.trade_log) % 10 == 0:
-            self.evolver.evolve(self.paper_broker.trade_log, self.paper_broker.get_summary())
+        for name, pb in self.paper_brokers.items():
+            closed = pb.check_stops(current_prices)
+            for c in closed:
+                self.risk_engine.record_trade(c)
+                self.journal.record_trade(c)
+                self.notifier.send_trade_exit(c)
+                self.db.close_trade(0, c["exit_price"], c["reason"], c["pnl_usd"], c["pnl_pct"])
+            if len(pb.trade_log) > 0 and len(pb.trade_log) % 10 == 0:
+                self.evolver.evolve(pb.trade_log, pb.get_summary())
 
     def run_loop(self):
         self.log.info("MarketAI starting in loop mode")

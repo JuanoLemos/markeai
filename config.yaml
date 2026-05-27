@@ -96,10 +96,25 @@ risk:
   take_profit_atr_multiplier: 3.0
   take_profit2_atr_multiplier: 5.0
   correlation_threshold: 0.85
-  sl_min_pct: 1.0
-  sl_max_pct: 5.0
-  tp_min_pct: 2.0
-  tp_max_pct: 10.0
+
+profiles:
+  normal:
+    label: "Normal"
+    sl_min_pct: 1.0
+    sl_max_pct: 5.0
+    tp_min_pct: 2.0
+    tp_max_pct: 10.0
+    sl_default: 2.0
+    tp_default: 5.0
+  fast:
+    label: "Fast"
+    sl_min_pct: 0.3
+    sl_max_pct: 1.0
+    tp_min_pct: 0.5
+    tp_max_pct: 3.0
+    sl_default: 0.5
+    tp_default: 1.5
+
   time_exit:
     forex:
       base_hours: 96
