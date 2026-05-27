@@ -204,7 +204,24 @@ class MarketAIOrchestrator:
                         stop_price = entry_price * (1 - base_stop / 100)
                         risk_size = self.risk_engine.position_size(entry_price, stop_price)
                         size_usd = min(decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50), risk_size)
+                        conj_scores = [l.get("score", 50) for _, l in fused.get("layer_scores", {}).items()]
+                        active_layer_count = sum(1 for s in conj_scores if s < 45 or s > 55)
+                        kelly = self.risk_engine.kelly_fraction()
+                        adx_regime = layer_results.get("adx_regime", {}).get("details", {}).get("regime", "")
                         for prof_name, prof_cfg in self.profiles_config.items():
+                            if prof_cfg.get("min_confluence", 1) > 1 and active_layer_count < prof_cfg["min_confluence"]:
+                                self.log.info(f"  {prof_name} blocked: only {active_layer_count}/{prof_cfg['min_confluence']} layers active")
+                                continue
+                            if prof_cfg.get("adx_alignment") == "required" and adx_regime == "ranging":
+                                self.log.info(f"  {prof_name} blocked: ADX ranging")
+                                continue
+                            if prof_cfg.get("correlation_filter") and pb and pb.get_positions():
+                                if not correlation_check(pb.get_positions(), market, ticker, decision.get("signal", "LONG")):
+                                    self.log.info(f"  {prof_name} correlation blocked")
+                                    continue
+                            if kelly <= 0 and self.risk_engine.trade_history:
+                                self.log.info(f"  {prof_name} blocked: Kelly={kelly:.2f}")
+                                continue
                             pb = self.paper_brokers[prof_name]
                             sp = max(prof_cfg.get("sl_min_pct", 0.5), min(prof_cfg.get("sl_max_pct", 5), base_stop))
                             tp = max(prof_cfg.get("tp_min_pct", 1), min(prof_cfg.get("tp_max_pct", 10), base_tp))

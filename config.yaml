@@ -112,6 +112,12 @@ profiles:
     tp_max_pct: 10.0
     sl_default: 2.0
     tp_default: 5.0
+    min_confidence: 45
+    min_confluence: 2
+    adx_alignment: required
+    volatility_filter: true
+    session_filter: true
+    correlation_filter: true
   fast:
     label: "Fast"
     sl_min_pct: 0.3
@@ -120,6 +126,12 @@ profiles:
     tp_max_pct: 3.0
     sl_default: 0.5
     tp_default: 1.5
+    min_confidence: 30
+    min_confluence: 1
+    adx_alignment: optional
+    volatility_filter: false
+    session_filter: true
+    correlation_filter: false
 
   time_exit:
     forex:
