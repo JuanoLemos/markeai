@@ -102,6 +102,9 @@ class TestStopLossTakeProfit:
         from execution.paper_broker import PaperBroker
         pb = PaperBroker(1000, state_path=str(tmp_path / "pb.json"))
         pb.open_position("forex", "EURUSD=X", "LONG", 1.10, 50, 5, 10)
+        # First check_stops hits TP1 (partial close at 50% of TP = 5%)
+        pb.check_stops({"EURUSD=X": 1.16})
+        # Second call closes remaining at full TP (10%)
         closed = pb.check_stops({"EURUSD=X": 1.22})
         assert len(closed) == 1
         assert closed[0]["reason"] == "take_profit"
@@ -110,6 +113,7 @@ class TestStopLossTakeProfit:
         from execution.paper_broker import PaperBroker
         pb = PaperBroker(1000, state_path=str(tmp_path / "pb.json"))
         pb.open_position("forex", "EURUSD=X", "SHORT", 1.10, 50, 5, 10)
+        pb.check_stops({"EURUSD=X": 1.04})
         closed = pb.check_stops({"EURUSD=X": 0.98})
         assert len(closed) == 1
         assert closed[0]["reason"] == "take_profit"

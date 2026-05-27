@@ -180,10 +180,21 @@ class PaperBroker:
             if pos["signal"] == "LONG":
                 stop_price = pos["entry_price"] * (1 - pos["stop_loss_pct"] / 100)
                 tp_price = pos["entry_price"] * (1 + pos["take_profit_pct"] / 100)
+                tp1_price = pos["entry_price"] * (1 + pos["take_profit_pct"] * 0.5 / 100)
                 if price <= stop_price:
                     result = self.close_position(pid, price, "stop_loss")
                     if result:
                         closed.append(result)
+                elif not pos.get("_tp1_hit") and pos["take_profit_pct"] >= 2 and price >= tp1_price:
+                    partial = pos["size_usd"] * 0.5
+                    pnl = (price - pos["entry_price"]) * (pos["quantity"] * 0.5)
+                    self.balance += partial + pnl
+                    pos["size_usd"] = round(pos["size_usd"] - partial, 2)
+                    pos["quantity"] = round(pos["quantity"] / 2, 6)
+                    pos["stop_loss_pct"] = 0.1
+                    pos["_tp1_hit"] = True
+                    self.trade_log.append({"type":"close","position_id":pid,"pnl":round(pnl,2),"reason":"partial_tp1","time":datetime.now(timezone.utc).isoformat()})
+                    self._save_state()
                 elif price >= tp_price:
                     result = self.close_position(pid, price, "take_profit")
                     if result:
@@ -191,10 +202,21 @@ class PaperBroker:
             else:
                 stop_price = pos["entry_price"] * (1 + pos["stop_loss_pct"] / 100)
                 tp_price = pos["entry_price"] * (1 - pos["take_profit_pct"] / 100)
+                tp1_price = pos["entry_price"] * (1 - pos["take_profit_pct"] * 0.5 / 100)
                 if price >= stop_price:
                     result = self.close_position(pid, price, "stop_loss")
                     if result:
                         closed.append(result)
+                elif not pos.get("_tp1_hit") and pos["take_profit_pct"] >= 2 and price <= tp1_price:
+                    partial = pos["size_usd"] * 0.5
+                    pnl = (pos["entry_price"] - price) * (pos["quantity"] * 0.5)
+                    self.balance += partial + pnl
+                    pos["size_usd"] = round(pos["size_usd"] - partial, 2)
+                    pos["quantity"] = round(pos["quantity"] / 2, 6)
+                    pos["stop_loss_pct"] = 0.1
+                    pos["_tp1_hit"] = True
+                    self.trade_log.append({"type":"close","position_id":pid,"pnl":round(pnl,2),"reason":"partial_tp1","time":datetime.now(timezone.utc).isoformat()})
+                    self._save_state()
                 elif price <= tp_price:
                     result = self.close_position(pid, price, "take_profit")
                     if result:
