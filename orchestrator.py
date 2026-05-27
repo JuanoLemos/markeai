@@ -87,6 +87,7 @@ class MarketAIOrchestrator:
             max_tokens=self.config.get("deepseek", {}).get("max_tokens", 500),
         )
         self.paper_broker = PaperBroker()
+        self.paper_broker.set_time_exit_config(self.config.get("risk", {}).get("time_exit", {}))
         self.pm_executor = PolymarketExecutor()
         self.trad_executor = TraditionalExecutor()
         self.journal = TradeJournal()

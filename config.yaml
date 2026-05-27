@@ -100,7 +100,27 @@ risk:
   sl_max_pct: 5.0
   tp_min_pct: 2.0
   tp_max_pct: 10.0
-  max_position_age_hours: 72
+  time_exit:
+    forex:
+      base_hours: 96
+      profit_hours: 168
+      loss_hours: 48
+      stagnant_hours: 36
+    stocks:
+      base_hours: 72
+      profit_hours: 120
+      loss_hours: 36
+      stagnant_hours: 24
+    polymarket:
+      base_hours: 336
+      profit_hours: 504
+      loss_hours: 168
+      stagnant_hours: 72
+    default:
+      base_hours: 72
+      profit_hours: 120
+      loss_hours: 48
+      stagnant_hours: 36
 
 deepseek:
   model: deepseek-v4-pro

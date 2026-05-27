@@ -13,7 +13,7 @@ class PaperBroker:
         self.slippage_pct = slippage_pct
         self.commission_pct = commission_pct
         self.max_total_exposure_pct = 0.40
-        self.max_position_age_hours = 72
+        self.time_exit_config = None
         self.positions = {}
         self.trade_log = []
         self.daily_pnl = 0.0
@@ -150,6 +150,26 @@ class PaperBroker:
         self._save_state()
         return result
 
+    def set_time_exit_config(self, config: dict):
+        self.time_exit_config = config or {}
+
+    def _get_time_exit_hours(self, pos: dict, current_prices: dict) -> float:
+        cfg = self.time_exit_config or {}
+        market = pos.get("market", "default")
+        mcfg = cfg.get(market, cfg.get("default", {"base_hours": 72, "profit_hours": 120, "loss_hours": 48, "stagnant_hours": 36}))
+        entry = pos["entry_price"]
+        ticker = pos["ticker"]
+        price = current_prices.get(ticker)
+        if price and entry > 0:
+            movement_pct = abs(price - entry) / entry * 100
+            if movement_pct < 0.5:
+                return mcfg.get("stagnant_hours", mcfg["base_hours"])
+            is_profit = (price > entry and pos["signal"] == "LONG") or (price < entry and pos["signal"] == "SHORT")
+            if is_profit:
+                return mcfg.get("profit_hours", mcfg["base_hours"])
+            return mcfg.get("loss_hours", mcfg["base_hours"])
+        return mcfg.get("base_hours", 72)
+
     def check_stops(self, current_prices: dict) -> list:
         closed = []
         for pid, pos in list(self.positions.items()):
@@ -182,7 +202,8 @@ class PaperBroker:
         for pid, pos in list(self.positions.items()):
             entry_dt = datetime.fromisoformat(pos["entry_time"])
             age_hours = (datetime.now(timezone.utc) - entry_dt).total_seconds() / 3600
-            if age_hours > self.max_position_age_hours:
+            max_hours = self._get_time_exit_hours(pos, current_prices)
+            if age_hours > max_hours:
                 ticker = pos["ticker"]
                 price = current_prices.get(ticker)
                 if not price:
