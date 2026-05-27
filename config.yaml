@@ -82,6 +82,12 @@ layers:
     weight_forex: 0.15
     weight_stocks: 0.10
 
+  adx_regime:
+    enabled: true
+    weight_polymarket: 0.00
+    weight_forex: 0.10
+    weight_stocks: 0.10
+
   macro:
     enabled: true
     weight_polymarket: 0.00

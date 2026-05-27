@@ -25,6 +25,7 @@ from analyzers.fundamental import FundamentalAnalyzer
 from analyzers.macro import MacroAnalyzer
 from analyzers.cross_asset import CrossAssetAnalyzer
 from analyzers.ict_smc import ICTAnalyzer
+from analyzers.adx_regime import ADXRegimeAnalyzer
 from engine.fusion import FusionEngine
 from engine.decider import DeepSeekDecider
 from execution.paper_broker import PaperBroker
@@ -35,7 +36,7 @@ from learning.strategy_evolver import StrategyEvolver
 from learning.backtest import Backtester
 from alerts.notifier import Notifier
 from execution.risk_engine import RiskEngine
-from execution.entry_filters import session_hours
+from execution.entry_filters import session_hours, correlation_check
 
 CONFIG_PATH = Path(__file__).parent / "config.yaml"
 
@@ -107,6 +108,7 @@ class MarketAIOrchestrator:
         self.notifier = Notifier()
         self.risk_engine = RiskEngine(initial_balance=1000)
         self.ict_analyzer = ICTAnalyzer()
+        self.adx_analyzer = ADXRegimeAnalyzer()
 
     def run_iteration(self):
         self.log.info("=== Starting iteration ===")
@@ -174,6 +176,11 @@ class MarketAIOrchestrator:
                     if not session_hours(market, hour):
                         self.log.info(f"  Session filter blocked {market} at hour {hour}")
                         return
+                    pb = self.paper_brokers.get("normal")
+                    if pb and pb.get_positions():
+                        if not correlation_check(pb.get_positions(), market, ticker, decision.get("signal", "LONG")):
+                            self.log.info(f"  Correlation blocked {ticker} (same dir)")
+                            return
                     trade = None
                     exec_mode = market_cfg.get("mode", "paper")
                     if exec_mode == "real":
@@ -292,6 +299,13 @@ class MarketAIOrchestrator:
                             layer_results["ict_smc"] = ict_r
                 except Exception as e:
                     self.log.error(f"Forex ict_smc error: {e}")
+                try:
+                    if self.config["layers"]["adx_regime"]["enabled"]:
+                        adx_r = self.adx_analyzer.analyze(data)
+                        if adx_r and adx_r.get("score", 50) != 50:
+                            layer_results["adx_regime"] = adx_r
+                except Exception as e:
+                    self.log.error(f"Forex adx error: {e}")
                 break
             try:
                 if self.config["layers"]["sentiment"]["enabled"]:
@@ -345,6 +359,14 @@ class MarketAIOrchestrator:
                         layer_results["ict_smc"] = ict_r
             except Exception as e:
                 self.log.error(f"Stocks ict_smc error: {e}")
+
+            try:
+                if self.config["layers"]["adx_regime"]["enabled"]:
+                    adx_r = self.adx_analyzer.analyze(data)
+                    if adx_r and adx_r.get("score", 50) != 50:
+                        layer_results["adx_regime"] = adx_r
+            except Exception as e:
+                self.log.error(f"Stocks adx error: {e}")
 
             try:
                 if self.config["layers"]["fundamental"]["enabled"]:
