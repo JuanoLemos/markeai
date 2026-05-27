@@ -29,12 +29,13 @@ STOCK_CORRELATION = {
 }
 
 
-def session_hours(market: str, utc_hour: int = None) -> bool:
+def session_hours(market: str, utc_hour: int = None, profile: str = "normal") -> bool:
     """Valida si el horario actual es apto para operar en el mercado indicado.
     
     Args:
         market: 'forex', 'stocks', 'polymarket'
         utc_hour: hora UTC (0-23). Si None, usa hora actual.
+        profile: 'normal' o 'fast'. Fast tiene más horas operativas.
     
     Returns:
         True si se puede operar, False si está fuera de horario.
@@ -47,7 +48,9 @@ def session_hours(market: str, utc_hour: int = None) -> bool:
         return True
 
     if market == "forex":
-        return (7 <= utc_hour < 16) or (13 <= utc_hour < 22)
+        if profile == "fast":
+            return 0 <= utc_hour < 22  # Tokyo + London + NY (22h/día)
+        return (7 <= utc_hour < 16) or (13 <= utc_hour < 22)  # London + NY (18h/día)
 
     if market == "stocks":
         return 14 <= utc_hour < 21  # 09:30-16:00 ET ≈ 14:30-21:00 UTC

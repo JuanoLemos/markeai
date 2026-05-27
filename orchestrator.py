@@ -191,7 +191,7 @@ class MarketAIOrchestrator:
                         self.log.warning(f"  Risk block ({prof_name}): {reason}")
                         continue
                     hour = datetime.now(timezone.utc).hour
-                    if not session_hours(market, hour):
+                    if not session_hours(market, hour, profile=prof_name):
                         self.log.info(f"  {prof_name} session blocked at hour {hour}")
                         continue
                     pb = self.paper_brokers[prof_name]
