@@ -154,12 +154,13 @@ class MarketAIOrchestrator:
         for ticker in target_tickers:
             self.log.info(f"  Analyzing {ticker}...")
             fused = self.fusion_engine.fuse(layer_results, market)
+            layers_with_score = {**fused.get("layer_scores", {}), "_fused_score": fused.get("score", 50)}
             self.db.insert_signal({
                 "market": market,
                 "ticker": ticker,
                 "decision": fused["signal"],
                 "confidence": fused.get("confidence", 0),
-                "layer_scores": fused.get("layer_scores", {}),
+                "layer_scores": layers_with_score,
                 "reasoning": fused.get("reasoning", ""),
             })
             self.log.info(f"  Fused: {fused['signal']} (score:{fused['score']} conf:{fused['confidence']})")
