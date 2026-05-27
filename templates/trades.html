@@ -12,6 +12,10 @@
   <button class="chip active" data-filter="result" data-val="ALL">Todos</button>
   <button class="chip" data-filter="result" data-val="win">Wins</button>
   <button class="chip" data-filter="result" data-val="loss">Losses</button>
+  <span class="text-muted" style="font-size:12px;align-self:center;margin-left:16px">Perfil:</span>
+  <button class="chip active" data-filter="profile" data-val="ALL">Todos</button>
+  <button class="chip" data-filter="profile" data-val="normal" style="border-color:var(--accent-green)">🟢 Normal</button>
+  <button class="chip" data-filter="profile" data-val="fast" style="border-color:var(--accent-blue)">🔵 Fast</button>
 </div>
 
 <div class="text-muted mb-2" style="font-size:12px"><span id="result-count">—</span> trades</div>
@@ -24,13 +28,21 @@
 {% block scripts %}
 <script>
 let allTrades = [];
-const filters = { status: 'ALL', result: 'ALL' };
+const filters = { status: 'ALL', result: 'ALL', profile: 'ALL' };
+
+function getProfile(t) {
+  const s = t.strategy_used || '';
+  if (s.startsWith('normal_')) return 'normal';
+  if (s.startsWith('fast_')) return 'fast';
+  return '—';
+}
 
 function render() {
   const filtered = allTrades.filter(t => {
     if (filters.status !== 'ALL' && t.status !== filters.status) return false;
     if (filters.result === 'win' && !(t.pnl_usd > 0)) return false;
     if (filters.result === 'loss' && !(t.pnl_usd < 0)) return false;
+    if (filters.profile !== 'ALL' && getProfile(t) !== filters.profile) return false;
     return true;
   });
   document.getElementById('result-count').textContent = filtered.length;
@@ -49,19 +61,22 @@ function render() {
 
   const tbl = document.getElementById('trades-table');
   if (!filtered.length) {
-    tbl.innerHTML = '<tr><td colspan="8"><div class="empty-state">Sin trades que coincidan con los filtros</div></td></tr>';
+    tbl.innerHTML = '<tr><td colspan="9"><div class="empty-state">Sin trades que coincidan con los filtros</div></td></tr>';
     return;
   }
-  tbl.innerHTML = `<tr><th>Fecha</th><th>Mercado</th><th>Ticker</th><th>Señal</th><th>Entrada</th><th>Salida</th><th>PnL</th><th>Estado</th></tr>` +
+  tbl.innerHTML = `<tr><th>Fecha</th><th>Perfil</th><th>Mercado</th><th>Ticker</th><th>Señal</th><th>Entrada</th><th>Salida</th><th>PnL</th><th>Estado</th></tr>` +
     filtered.map(r => {
       const isOpen = r.status === 'open';
       const win = r.pnl_usd > 0;
       const loss = r.pnl_usd < 0;
       const badgeClass = isOpen ? 'open' : (win ? 'win' : loss ? 'loss' : 'open');
       const pnlClass = win ? 'green' : loss ? 'red' : 'text-muted';
+      const profile = getProfile(r);
+      const profileColor = profile === 'normal' ? 'var(--accent-green)' : profile === 'fast' ? 'var(--accent-blue)' : 'var(--text-muted)';
       return `<tr>
         <td>${(r.exit_time||r.entry_time||'').slice(0,10)}</td>
-        <td>${r.market}</td>
+        <td><span style="color:${profileColor};font-weight:600;font-size:11px">${profile.toUpperCase()}</span></td>
+        <td>${r.market.replace(/^(normal|fast)_/,'')}</td>
         <td>${r.ticker}</td>
         <td class="signal-${r.signal}">${r.signal}</td>
         <td>$${r.entry_price}</td>
