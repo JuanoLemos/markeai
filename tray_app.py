@@ -100,15 +100,21 @@ def on_show():
 
 def restart_dashboard():
     try:
-        subprocess.run(["taskkill", "/f", "/im", "python.exe", "/fi", "WINDOWTITLE eq *dashboard*"], capture_output=True)
+        subprocess.run([
+            "powershell", "-Command",
+            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'dashboard' } | Stop-Process -Force"
+        ], capture_output=True, timeout=10)
     except Exception:
         pass
-    subprocess.Popen(
-        [sys.executable, str(BASE_DIR / "dashboard.py")],
-        cwd=str(BASE_DIR),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    try:
+        subprocess.Popen(
+            [sys.executable, str(BASE_DIR / "dashboard.py")],
+            cwd=str(BASE_DIR),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        pass
 
 
 def webbrowser_open(url):
