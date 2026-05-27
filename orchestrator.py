@@ -164,25 +164,40 @@ class MarketAIOrchestrator:
             })
             self.log.info(f"  Fused: {fused['signal']} (score:{fused['score']} conf:{fused['confidence']})")
             if fused["signal"] != "WAIT" and fused.get("confidence", 0) >= market_cfg.get("min_confidence", 50):
-                decision = self.decider.decide(market, ticker, fused, market_data, fused.get("layer_scores", {}))
-                self.log.info(f"  DeepSeek: {decision.get('signal')} (conf:{decision.get('confidence')})")
-                if decision["signal"] != "WAIT":
+                conj_scores = [l.get("score", 50) for _, l in fused.get("layer_scores", {}).items()]
+                active_layer_count = sum(1 for s in conj_scores if s < 45 or s > 55)
+                kelly = self.risk_engine.kelly_fraction()
+                adx_regime = layer_results.get("adx_regime", {}).get("details", {}).get("regime", "")
+                trade = None
+                exec_mode = market_cfg.get("mode", "paper")
+                for prof_name, prof_cfg in self.profiles_config.items():
+                    if prof_cfg.get("min_confluence", 1) > 1 and active_layer_count < prof_cfg["min_confluence"]:
+                        self.log.info(f"  {prof_name} blocked: only {active_layer_count}/{prof_cfg['min_confluence']} layers")
+                        continue
+                    if prof_cfg.get("adx_alignment") == "required" and adx_regime == "ranging":
+                        self.log.info(f"  {prof_name} blocked: ADX ranging")
+                        continue
+                    decision = self.decider.decide(market, ticker, fused, market_data, fused.get("layer_scores", {}), profile=prof_name)
+                    self.log.info(f"  {prof_name} DeepSeek: {decision.get('signal')} (conf:{decision.get('confidence')})")
+                    if decision["signal"] == "WAIT":
+                        continue
                     self.risk_engine.update_balance(self.paper_broker.balance)
                     can_trade, reason = self.risk_engine.circuit_breakers()
                     if not can_trade:
-                        self.log.warning(f"  Risk block: {reason}")
-                        return
+                        self.log.warning(f"  Risk block ({prof_name}): {reason}")
+                        continue
                     hour = datetime.now(timezone.utc).hour
                     if not session_hours(market, hour):
-                        self.log.info(f"  Session filter blocked {market} at hour {hour}")
-                        return
-                    pb = self.paper_brokers.get("normal")
-                    if pb and pb.get_positions():
+                        self.log.info(f"  {prof_name} session blocked at hour {hour}")
+                        continue
+                    pb = self.paper_brokers[prof_name]
+                    if prof_cfg.get("correlation_filter") and pb and pb.get_positions():
                         if not correlation_check(pb.get_positions(), market, ticker, decision.get("signal", "LONG")):
-                            self.log.info(f"  Correlation blocked {ticker} (same dir)")
-                            return
-                    trade = None
-                    exec_mode = market_cfg.get("mode", "paper")
+                            self.log.info(f"  {prof_name} correlation blocked")
+                            continue
+                    if kelly <= 0 and self.risk_engine.trade_history:
+                        self.log.info(f"  {prof_name} blocked: Kelly={kelly:.2f}")
+                        continue
                     if exec_mode == "real":
                         if market == "polymarket":
                             trade = self.pm_executor.place_order(
@@ -204,45 +219,27 @@ class MarketAIOrchestrator:
                         stop_price = entry_price * (1 - base_stop / 100)
                         risk_size = self.risk_engine.position_size(entry_price, stop_price)
                         size_usd = min(decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50), risk_size)
-                        conj_scores = [l.get("score", 50) for _, l in fused.get("layer_scores", {}).items()]
-                        active_layer_count = sum(1 for s in conj_scores if s < 45 or s > 55)
-                        kelly = self.risk_engine.kelly_fraction()
-                        adx_regime = layer_results.get("adx_regime", {}).get("details", {}).get("regime", "")
-                        for prof_name, prof_cfg in self.profiles_config.items():
-                            if prof_cfg.get("min_confluence", 1) > 1 and active_layer_count < prof_cfg["min_confluence"]:
-                                self.log.info(f"  {prof_name} blocked: only {active_layer_count}/{prof_cfg['min_confluence']} layers active")
-                                continue
-                            if prof_cfg.get("adx_alignment") == "required" and adx_regime == "ranging":
-                                self.log.info(f"  {prof_name} blocked: ADX ranging")
-                                continue
-                            if prof_cfg.get("correlation_filter") and pb and pb.get_positions():
-                                if not correlation_check(pb.get_positions(), market, ticker, decision.get("signal", "LONG")):
-                                    self.log.info(f"  {prof_name} correlation blocked")
-                                    continue
-                            if kelly <= 0 and self.risk_engine.trade_history:
-                                self.log.info(f"  {prof_name} blocked: Kelly={kelly:.2f}")
-                                continue
-                            pb = self.paper_brokers[prof_name]
-                            sp = max(prof_cfg.get("sl_min_pct", 0.5), min(prof_cfg.get("sl_max_pct", 5), base_stop))
-                            tp = max(prof_cfg.get("tp_min_pct", 1), min(prof_cfg.get("tp_max_pct", 10), base_tp))
-                            trade = pb.open_position(
-                                market=market, ticker=ticker, signal=decision["signal"],
-                                entry_price=entry_price, size_usd=size_usd,
-                                stop_loss_pct=sp, take_profit_pct=tp,
-                                confidence=decision.get("confidence", fused.get("confidence", 0)),
-                                strategy_used=f"{prof_name}_{market}_{fused['signal']}",
-                            )
-                            if trade and "error" not in trade:
-                                self.risk_engine.record_trade(trade)
-                                self.journal.record_trade(trade)
-                                self.db.insert_trade({
-                                    "market": f"{prof_name}_{market}", "ticker": ticker,
-                                    "signal": decision["signal"], "entry_price": trade.get("entry_price", 0),
-                                    "position_size_usd": trade.get("size_usd", trade.get("size", 0)),
-                                    "stop_loss": sp, "take_profit": tp,
-                                    "confidence": decision.get("confidence", 0),
-                                    "strategy_used": f"{prof_name}_{market}_{fused['signal']}",
-                                })
+                        sp = max(prof_cfg.get("sl_min_pct", 0.5), min(prof_cfg.get("sl_max_pct", 5), base_stop))
+                        tp = max(prof_cfg.get("tp_min_pct", 1), min(prof_cfg.get("tp_max_pct", 10), base_tp))
+                        trade = pb.open_position(
+                            market=market, ticker=ticker, signal=decision["signal"],
+                            entry_price=entry_price, size_usd=size_usd,
+                            stop_loss_pct=sp, take_profit_pct=tp,
+                            confidence=decision.get("confidence", fused.get("confidence", 0)),
+                            strategy_used=f"{prof_name}_{market}_{fused['signal']}",
+                        )
+                    if trade and "error" not in trade:
+                        self.risk_engine.record_trade(trade)
+                        self.journal.record_trade(trade)
+                        self.notifier.send_trade_entry(trade)
+                        self.db.insert_trade({
+                            "market": f"{prof_name}_{market}", "ticker": ticker,
+                            "signal": decision["signal"], "entry_price": trade.get("entry_price", 0),
+                            "position_size_usd": trade.get("size_usd", trade.get("size", 0)),
+                            "stop_loss": sp, "take_profit": tp,
+                            "confidence": decision.get("confidence", 0),
+                            "strategy_used": f"{prof_name}_{market}_{fused['signal']}",
+                        })
 
     def _analyze_polymarket(self, market_cfg: dict) -> tuple:
         layer_results = {}

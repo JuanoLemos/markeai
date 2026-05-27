@@ -2,7 +2,7 @@ import json
 import os
 import requests
 
-SYSTEM_PROMPT = """Eres un trader cuantitativo profesional multi-mercado.
+SYSTEM_PROMPT_NORMAL = """Eres un trader cuantitativo profesional multi-mercado.
 
 REGLAS DE RIESGO (obligatorias):
 - Riesgo máximo por operación: 2% del capital
@@ -30,6 +30,28 @@ Input: técnico=WAIT(52), fundamental=SHORT(48), macro=WAIT(50)
 Output: {"signal":"WAIT","confidence":0,"entry_price":null,"position_size_usd":0,"stop_loss_pct":0,"take_profit_pct":0,"reasoning":"Capas contradictorias: tecnico neutral, fundamental ligeramente bajista. Sin convergencia clara."}
 """
 
+SYSTEM_PROMPT_FAST = """Eres un trader de micro-transacciones multi-mercado. Entras y sales rapido, operas con senales tempranas.
+
+REGLAS DE RIESGO (obligatorias):
+- Riesgo maximo por operacion: 1% del capital
+- Cash buffer minimo: 30%
+- Toda posicion DEBE tener SL y TP concretos
+- Si ningun SL/TP se activa, cerrar dentro de 24h
+- No martingala
+
+MARCO DE DECISION:
+1. Analiza cada capa disponible
+2. ≥1 capa con score >45 → LONG/SHORT (no esperes convergencia de 2 capas)
+3. Si capas se contradicen (una LONG, otra SHORT) → elegir la de mayor score
+4. Solo WAIT si TODAS las capas son WAIT
+5. Preferir senales con score cerca de 55+ (mas confianza)
+
+SL/TP RECOMENDADOS:
+- SL: 0.5-1%
+- TP: 1-3%
+- No mantener posiciones mas de 24h
+"""
+
 
 class DeepSeekDecider:
     def __init__(self, api_key: str = None, model: str = "deepseek-v4-pro", temperature: float = 0.3, max_tokens: int = 500):
@@ -38,8 +60,11 @@ class DeepSeekDecider:
         self.temperature = temperature
         self.max_tokens = max_tokens
 
-    def decide(self, market: str, ticker: str, fused_signal: dict, market_data: dict, layer_details: dict) -> dict:
-        system_prompt = SYSTEM_PROMPT
+    def decide(self, market: str, ticker: str, fused_signal: dict, market_data: dict, layer_details: dict, profile: str = "normal") -> dict:
+        if profile == "fast":
+            system_prompt = SYSTEM_PROMPT_FAST
+        else:
+            system_prompt = SYSTEM_PROMPT_NORMAL
         user_prompt = self._build_prompt(market, ticker, fused_signal, market_data, layer_details)
         response = self._call_deepseek(system_prompt, user_prompt)
         decision = self._parse_response(response)
