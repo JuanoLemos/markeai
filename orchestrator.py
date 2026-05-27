@@ -164,14 +164,17 @@ class MarketAIOrchestrator:
                 "reasoning": fused.get("reasoning", ""),
             })
             self.log.info(f"  Fused: {fused['signal']} (score:{fused['score']} conf:{fused['confidence']})")
-            if fused["signal"] != "WAIT" and fused.get("confidence", 0) >= market_cfg.get("min_confidence", 50):
+            if fused["signal"] != "WAIT":
                 conj_scores = [l.get("score", 50) for _, l in fused.get("layer_scores", {}).items()]
                 active_layer_count = sum(1 for s in conj_scores if s < 45 or s > 55)
                 kelly = self.risk_engine.kelly_fraction()
                 adx_regime = layer_results.get("adx_regime", {}).get("details", {}).get("regime", "")
-                trade = None
                 exec_mode = market_cfg.get("mode", "paper")
                 for prof_name, prof_cfg in self.profiles_config.items():
+                    mc = prof_cfg.get("per_market", {}).get(market, {}).get("min_confidence", 40)
+                    if fused.get("confidence", 0) < mc:
+                        self.log.info(f"  {prof_name} low conf ({fused.get('confidence')}/{mc})")
+                        continue
                     if prof_cfg.get("min_confluence", 1) > 1 and active_layer_count < prof_cfg["min_confluence"]:
                         self.log.info(f"  {prof_name} blocked: only {active_layer_count}/{prof_cfg['min_confluence']} layers")
                         continue
@@ -573,7 +576,7 @@ class MarketAIOrchestrator:
                         layer_results["fundamental"] = fr
 
                 fused = self.fusion_engine.fuse(layer_results, market)
-                if fused["signal"] != "WAIT" and fused.get("confidence", 0) >= market_cfg.get("min_confidence", 40):
+                if fused["signal"] != "WAIT" and fused.get("confidence", 0) >= self.profiles_config.get("normal", {}).get("per_market", {}).get(market, {}).get("min_confidence", 40):
                     decision = fused
                     if use_deepseek:
                         decision = self.decider.decide(market, ticker, fused, {}, fused.get("layer_scores", {}))
