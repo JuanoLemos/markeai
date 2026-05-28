@@ -11,7 +11,7 @@
 ```ini
 # ── DeepSeek (motor de decisión) ──
 DEEPSEEK_API_KEY=sk-tu-api-key-aqui
-DEEPSEEK_MODEL=deepseek-v4-pro
+DEEPSEEK_MODEL=deepseek-v4-flash
 ```
 
 ### API Keys Opcionales
@@ -54,7 +54,6 @@ markets:
     mode: paper                          # paper | real
     check_interval_min: 15
     max_position_usd: 50
-    min_confidence: 40
     max_positions_concurrent: 2
 
   forex:
@@ -63,7 +62,6 @@ markets:
     mode: paper
     check_interval_min: 60
     max_position_usd: 30
-    min_confidence: 35
 
   stocks:
     enabled: true
@@ -71,68 +69,92 @@ markets:
     mode: paper
     check_interval_min: 60
     max_position_usd: 30
-    min_confidence: 40
 ```
 
-### Capas de Análisis - Pesos
+### Capas de Análisis — 9 Analizadores
 
 ```yaml
 layers:
-  technical:    { enabled: true, weight_polymarket: 0.25, weight_forex: 0.35, weight_stocks: 0.30 }
-  onchain:      { enabled: true, weight_polymarket: 0.25, weight_forex: 0.10, weight_stocks: 0.10 }
-  sentiment:    { enabled: true, weight_polymarket: 0.20, weight_forex: 0.20, weight_stocks: 0.25 }
-  orderbook:    { enabled: true, weight_polymarket: 0.30, weight_forex: 0.00, weight_stocks: 0.00 }
-  fundamental:  { enabled: true, weight_polymarket: 0.00, weight_forex: 0.10, weight_stocks: 0.20 }
-  cross_asset:  { enabled: true, weight_polymarket: 0.00, weight_forex: 0.10, weight_stocks: 0.10 }
-  macro:        { enabled: true, weight_polymarket: 0.00, weight_forex: 0.25, weight_stocks: 0.15 }
+  technical:    { enabled: true, weight_forex: 0.35, weight_polymarket: 0.25, weight_stocks: 0.30 }
+  onchain:      { enabled: true, weight_forex: 0.10, weight_polymarket: 0.25, weight_stocks: 0.10 }
+  sentiment:    { enabled: true, weight_forex: 0.20, weight_polymarket: 0.20, weight_stocks: 0.25 }
+  orderbook:    { enabled: true, weight_forex: 0.00, weight_polymarket: 0.30, weight_stocks: 0.00 }
+  fundamental:  { enabled: true, weight_forex: 0.10, weight_polymarket: 0.00, weight_stocks: 0.20 }
+  macro:        { enabled: true, weight_forex: 0.25, weight_polymarket: 0.00, weight_stocks: 0.15 }
+  cross_asset:  { enabled: true, weight_forex: 0.10, weight_polymarket: 0.00, weight_stocks: 0.10 }
+  adx_regime:   { enabled: true, weight_forex: 0.10, weight_polymarket: 0.00, weight_stocks: 0.10 }
+  ict_smc:      { enabled: true, weight_forex: 0.15, weight_polymarket: 0.00, weight_stocks: 0.10 }
+```
+
+### Perfiles (Normal + Fast)
+
+Dos perfiles ejecutándose simultáneamente con parámetros independientes:
+
+```yaml
+profiles:
+  normal:
+    label: Normal
+    sl_default: 2.0                      # Stop-loss 2%
+    tp_default: 5.0                      # Take-profit 5%
+    per_market:
+      forex:  { min_confidence: 45 }
+      polymarket: { min_confidence: 50 }
+      stocks: { min_confidence: 45 }
+    filters:
+      correlation: true                  # Filtro de correlación
+      session: true                      # Solo horas de mercado
+      volatility: true                   # Filtro de volatilidad
+      adx_alignment: required            # ADX obligatorio
+      kelly_positive: true               # Solo si Kelly > 0
+      min_confluence: 2                  # Mínimo 2 capas coincidentes
+
+  fast:
+    label: Fast
+    sl_default: 0.5                      # Stop-loss 0.5%
+    tp_default: 1.5                      # Take-profit 1.5%
+    per_market:
+      forex:  { min_confidence: 30 }
+      polymarket: { min_confidence: 35 }
+      stocks: { min_confidence: 30 }
+    filters:
+      correlation: false
+      session: true                      # 22h/día en vez de 18h
+      volatility: false
+      adx_alignment: optional
+      kelly_positive: true
+      min_confluence: 1                  # Mínimo 1 capa
+```
+
+### Time-Exit (Cierre por tiempo)
+
+```yaml
+time_exit:
+  default:
+    base_hours: 72    loss_hours: 48    profit_hours: 120    stagnant_hours: 36
+  forex:
+    base_hours: 96    loss_hours: 48    profit_hours: 168    stagnant_hours: 36
+  polymarket:
+    base_hours: 336   loss_hours: 168   profit_hours: 504    stagnant_hours: 72
+  stocks:
+    base_hours: 72    loss_hours: 36    profit_hours: 120    stagnant_hours: 24
 ```
 
 ### Riesgo
 
 ```yaml
 risk:
-  max_position_pct: 0.05                 # 5% del capital por trade
-  max_daily_loss_pct: 0.10              # 10% pérdida diaria máxima, se detiene
-  stop_loss_atr_multiplier: 1.5
-  take_profit_atr_multiplier: 3.0
-  take_profit2_atr_multiplier: 5.0
-  correlation_threshold: 0.85
+  max_daily_loss_pct: 0.10              # 10% pérdida diaria → se detiene
+  correlation_threshold: 0.85            # Máxima correlación permitida
 ```
 
 ### DeepSeek
 
 ```yaml
 deepseek:
-  model: deepseek-v4-pro
+  model: deepseek-v4-flash
   temperature: 0.3
-  max_tokens: 4000                       # Necesario para modelos de razonamiento
+  max_tokens: 4000
   timeout_seconds: 30
-```
-
-### Alertas
-
-```yaml
-alerts:
-  telegram:
-    enabled: false
-    notify_on_entry: true
-    notify_on_exit: true
-    notify_on_error: true
-    daily_summary: true
-    daily_summary_time: "21:00"
-  discord:
-    enabled: false                       # Requiere DISCORD_WEBHOOK_URL en .env
-```
-
-### Orchestrador
-
-```yaml
-orchestrator:
-  log_level: INFO
-  log_file: orchestrator.log
-  data_cache_ttl_minutes: 5
-  max_retries: 3
-  retry_delay_seconds: 10
 ```
 
 ---
@@ -141,12 +163,14 @@ orchestrator:
 
 | Situación | Qué ajustar |
 |---|---|
-| Demasiados WAIT | Bajar `min_confidence` (35-40) |
-| Demasiados trades | Subir `min_confidence` (60-70) |
+| Demasiados WAIT | Bajar `min_confidence` en el perfil (30-40) |
+| Demasiados trades | Subir `min_confidence` (60-70) o subir `min_confluence` |
+| Perfil Normal muy lento | Revisar `adx_alignment: required` (cambiarlo a optional) |
+| Perfil Fast muy agresivo | Subir `sl_default` o bajar `max_position_pct` |
 | Sin señales fundamental | Verificar `fundamental.enabled: true` |
 | Sin señales on-chain | Verificar `POLYSCAN_API_KEY` en `.env` |
 | API rate limits | Subir `check_interval_min` |
-| Portfolio muy volátil | Bajar `max_position_pct` |
+| Portfolio muy volátil | Bajar `max_position_pct` en el perfil |
 
 ---
 
@@ -160,6 +184,9 @@ with open('config.yaml', encoding='utf-8') as f:
 assert 'markets' in c
 assert 'deepseek' in c
 assert 'risk' in c
+assert 'profiles' in c
+assert 'normal' in c['profiles']
+assert 'fast' in c['profiles']
 print('Configuración válida ✅')
 "
 ```

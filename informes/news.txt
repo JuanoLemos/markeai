@@ -1,496 +1,59 @@
 ═══════════════════════════════════════════════════════════════════
-MarketAI — Informe de Auditoría (Claude Sonnet 4.6)
-Scope: templates/, static/style.css, dashboard.py
+MarketAI — Informe de cambios — Sesión 2026-05-28
 ═══════════════════════════════════════════════════════════════════
 
-NOTA: Los archivos VITALES no se tocan. Los bugs de backend se
-documentan aquí para quien corresponda (DeepSeek).
-
-───────────────────────────────────────────────────────────────────
-BACKEND (fuera de mi scope — para DeepSeek)
-───────────────────────────────────────────────────────────────────
-
-## 2026-05-05 - Bug Crítico: NoneType en paper_broker
-Estado: propuesto
-Descripción:
-  DeepSeek devuelve null para position_size_usd, stop_loss_pct o
-  take_profit_pct. dict.get("key", default) en Python NO usa el
-  default si la clave existe con null → pasa None al paper_broker
-  → crash en "size_usd > self.balance".
-  Log: "Iteration error: '>' not supported between NoneType and float"
-  Bloquea toda apertura de posiciones cuando DeepSeek da LONG/SHORT.
-Archivos afectados: [orchestrator.py] (VITAL)
-
-## 2026-05-05 - Forex señal SHORT descartada por zona neutra
-Estado: propuesto
-Descripción:
-  Score 47.3, confianza 100% SHORT — correcto, pero el FusionEngine
-  descarta señales con score 45-55 (zona WAIT). La dirección está
-  bien detectada, no se ejecuta por umbral conservador.
-Archivos afectados: [engine/fusion.py, config.yaml] (VITALES)
-
-## 2026-05-05 - Verificar ID del modelo DeepSeek
-Estado: propuesto
-Descripción:
-  config.yaml usa "deepseek-v4-pro". Confirmar contra la API actual.
-Archivos afectados: [config.yaml] (VITAL)
-
-## 2026-05-05 - SPY/QQQ sin fundamentals en YFinance (ruido)
-Estado: propuesto
-Descripción:
-  HTTP 404 al pedir fundamentals de ETFs. Correcto técnicamente
-  (los ETFs no tienen fundamentals), pero genera ruido en el log.
-Archivos afectados: [data/collector_yfinance.py] (VITAL)
-
-───────────────────────────────────────────────────────────────────
-DISEÑO (dentro de mi scope)
-───────────────────────────────────────────────────────────────────
-
-───────────────────────────────────────────────────────────────────
-CAMBIOS IMPLEMENTADOS - 2026-05-05
-───────────────────────────────────────────────────────────────────
-
-## 2026-05-05 - Rename tray a "BotEscucha"
+## 2026-05-28 - Auto-restart loop en tray_app.py
 Estado: implementado
 Descripción:
-  Cambiados los textos visibles en tray_app.py:
-  - "MarketAI — Detenido / En pausa / Corriendo" → "BotEscucha — ..."
-  - Tooltip inicial del icono: "BotEscucha — Detenido"
-  Conservado:
-  - El identificador interno pystray.Icon("marketai", ...) — usado
-    internamente, cambiarlo podría romper persistencia de OS
-  - Filename tray_app.py — referenciado en .bat y docs, no se toca
-  - El glyph "$" del icono
+  tick() ahora detecta loop muerto >30s y llama start_loop()
+  automáticamente. Variable global _dead_since rastrea tiempo
+  desde que el proceso murió. Si loop_process.poll() != None
+  por más de 30s, se relanza.
 Archivos afectados: [tray_app.py]
 
-## 2026-05-05 - Análisis: gap de 12h en orchestrator.log
-Estado: revisado (sin acción)
-Descripción:
-  Detectado salto 02:53:37 → 15:20:01 (~12h 26min) el 2026-05-05.
-  Causa: navegador cerrado + posible suspensión del PC. Los gaps
-  de 10-15 min son normales (check_interval_min en config).
-  El orchestrator debería seguir corriendo independiente del
-  navegador (subprocess hijo del tray), por lo que el gap real
-  fue por suspensión del SO o porque se cerró también el tray.
-  Sin acción correctiva — comportamiento esperado.
-Archivos afectados: [orchestrator.log] (solo lectura)
-
-## 2026-05-05 - BACKLOG de mejoras del dashboard (brainstorm)
-Estado: propuesto (esperando confirmación del usuario)
-Descripción:
-  Lista de ideas propuestas, agrupadas. Ninguna implementada aún.
-
-  GRÁFICOS:
-  - Equity curve interactivo (hover tooltip, click → snapshot)
-  - Selector de período (1d/7d/30d/all)
-  - Toggle balance vs PnL acumulado vs daily
-  - Eventos sobre el chart (▲ entrada LONG, ▼ SHORT, ✕ cierre)
-  - Comparativa con benchmark (SPY/BTC)
-  - Heatmap calendario tipo GitHub (PnL por día)
-
-  POSICIONES ABIERTAS:
-  - Botón "Cerrar ahora" → POST a un endpoint nuevo
-  - Editar SL/TP en vivo
-  - PnL flotante en tiempo real (precio actual vs entrada)
-  - Tiempo en posición ("hace 2h 14min")
-  - Distancia a SL/TP en barra horizontal
-  - Trailing stop
-  - Link al signal_id de origen
-
-  TEMAS Y MODO CLARO:
-  - Toggle dark/light persistente en localStorage
-  - 4 temas extra (5 colores max c/u):
-    Bloomberg, Mint, Cyberpunk, Solarized Light
-
-  EMOJIS:
-  - Mercados (📈 Forex 💹 Stocks 🎲 Polymarket)
-  - Estados (🟢 🟠 🔴 ⚠️)
-  - Resultados (🏆 💔 ⏳)
-  - 7 capas con su emoji propio
-
-  WATCHLIST / HISTORIAL POR TICKER:
-  - Página /watchlist con sparkline + métricas por ticker
-  - Página /ticker/<symbol> con drill-down completo
-
-  NEWS:
-  - Página /news con feed por mercado y sentiment
-  - Heatmap sentiment por ticker
-  - Correlación noticias-precio en el chart
-
-  EXTRAS:
-  - Risk panel (exposición, correlaciones)
-  - Live mode con SSE en lugar de polling
-  - Web Push notifications
-  - Export CSV/PDF
-  - "What if" simulator
-  - Diary de notas manuales por trade
-  - Alertas configurables (badge rojo si WR < X)
-  - Modo presentación fullscreen
-
-  Recomendación de orden: temas/light → posiciones abiertas →
-  watchlist → equity interactivo → news → emojis (transversal).
-Archivos afectados: [pendiente — nada modificado todavía]
-
-## 2026-05-05 - OBSERVADO: backtest output ahora estructurado
-Estado: implementado (por otro agente / linter)
-Descripción:
-  api_backtest_run en dashboard.py fue reescrita: ya no devuelve
-  el stdout crudo, sino que parsea las líneas "BT <ticker>: <json>"
-  del orchestrator y devuelve {results: [...], aggregate: {...},
-  error}. backtest.html fue actualizada en paralelo para mostrar:
-  - 3 cards de agregado (Total Trades, Win Rate Promedio, PnL Total)
-  - Tabla por ticker con W/L, win rate coloreado, PnL, Sharpe,
-    Profit Factor (∞ si no hay losses)
-  - Estado de loading/error/results bien separado
-  Esto resuelve el issue que yo había marcado como "backtest:
-  output crudo sin parsear" — ya está hecho.
-
-  ⚠️ POSIBLE ISSUE: el orchestrator usa logging.StreamHandler() que
-  por defecto va a stderr, no stdout. Si las líneas "BT " no
-  aparecen en proc.stdout, results quedará vacío. Verificar en
-  ejecución real si el parseo realmente captura las líneas BT,
-  o si habría que leer también proc.stderr.
-Archivos afectados: [dashboard.py, templates/backtest.html]
-
-## 2026-05-05 - WORKFLOW: bitácora obligatoria en news.txt
+## 2026-05-28 - Timeout backtest 120s → 900s
 Estado: implementado
 Descripción:
-  El usuario fija como regla permanente que cada cambio de este
-  agente (Claude Sonnet/Opus, scope diseño) debe registrarse aquí
-  con el formato de reglas.md (Fecha, Tema, Estado, Descripción,
-  Archivos afectados). Aplica también a hallazgos en archivos
-  VITALES aunque no se toquen (se anotan como "propuesto" para
-  que DeepSeek los recoja).
-  Regla guardada en la memoria persistente del agente para que
-  sobreviva entre sesiones.
-Archivos afectados: [informes/news.txt] (este archivo)
+  El pipeline completo de backtest (run_replay con 5 pares forex)
+  tarda 5-15 min. timeout=120 mataba el subproceso antes de
+  terminar → stdout vacío → "sin datos" en el dashboard.
+Archivos afectados: [dashboard.py]
 
-
-## 2026-05-05 - FIX: CSS responsive para mobile
+## 2026-05-28 - sessionStorage persistencia en backtest
 Estado: implementado
 Descripción:
-  Añadido @media (max-width: 768px) en style.css.
-  - Sidebar se transforma en drawer deslizable (transform: translateX)
-  - Botón hamburguesa fijo arriba-izquierda en mobile
-  - Cards se reorganizan a 1-2 columnas (minmax 150px)
-  - Funnel pasa de horizontal a vertical
-  - hour-grid pasa de 24 a 12 columnas
-  - Form-row colapsa a 1 columna
-  - Auto-cierre del sidebar al navegar
-Archivos afectados: [static/style.css, templates/base.html]
+  Al cambiar de pestaña durante un backtest, el estado de carga
+  se perdía. Ahora se guarda en sessionStorage: {running, market}.
+  Al volver, DOMContentLoaded restaura el spinner. Al terminar,
+  se guardan los resultados en sessionStorage.
+Archivos afectados: [templates/backtest.html]
 
-## 2026-05-05 - FIX: Badge en trades.html para abiertos
+## 2026-05-28 - Limpieza de estructura
 Estado: implementado
 Descripción:
-  Añadida variante .badge-win.open (gris). Lógica corregida:
-  abiertos → badge gris "open", cerrados ganadores → verde,
-  cerrados perdedores → rojo. Antes los abiertos se mostraban
-  todos en rojo (porque pnl_usd null > 0 es false).
-Archivos afectados: [templates/trades.html, static/style.css]
+  - Eliminado templates/Claude/v1/ (12 archivos redundantes)
+  - Eliminado backup_dashboard/ (conservado v2 como único backup)
+  - Eliminado nppBackup/ (2 backups de Notepad++)
+  - Eliminado documentos/guia.md (solapaba con guias/)
+  - Eliminado strategies/master_strategy.md (0 bytes desde May 4)
+  - Eliminado informes/ideas/ (vacío)
+  - Movido guia_trading.md → guias/
+  - Movido position-sizing-reference.md → guias/
+Archivos afectados: [múltiples — ver bitacora.md]
 
-## 2026-05-05 - FIX: Estados vacíos en tablas
+## 2026-05-28 - Actualización documental completa
 Estado: implementado
 Descripción:
-  Añadida clase .empty-state (caja con borde discontinuo) en
-  signals.html, trades.html, overview.html (positions table,
-  signals table, by-market table).
-Archivos afectados: [templates/signals.html, templates/trades.html, templates/overview.html, static/style.css]
-
-## 2026-05-05 - FIX: config.html soporta arrays
-Estado: implementado
-Descripción:
-  Tickers y pairs ahora se editan como input separado por comas.
-  El JS hace data-array="true" para split y enviar como list al
-  POST /api/config. _deep_merge en dashboard.py acepta listas
-  (caen al fallback final que las asigna tal cual).
-  Añadidos también: campo Mode (paper/real), max_positions_concurrent,
-  timeout_seconds para deepseek.
-Archivos afectados: [templates/config.html]
-
-## 2026-05-05 - NEW: Métricas avanzadas en Overview
-Estado: implementado
-Descripción:
-  Nuevo endpoint /api/metrics/extended que computa desde la DB:
-  Sharpe ratio (anualizado * sqrt(252)), Profit Factor (sum_wins /
-  abs(sum_losses)), Max Drawdown (peak-to-trough acumulado), Avg
-  Win, Avg Loss. Coloreado: verde si Sharpe > 1 / PF > 1.5,
-  rojo si Sharpe < 0 / PF < 1.
-Archivos afectados: [dashboard.py, templates/overview.html]
-
-## 2026-05-05 - NEW: Breakdown por mercado en Overview
-Estado: implementado
-Descripción:
-  Tabla en Overview con trades por mercado (polymarket/forex/stocks):
-  número de trades, abiertos, win rate, PnL coloreado.
-  Endpoint: /api/metrics/by-market.
-Archivos afectados: [dashboard.py, templates/overview.html]
-
-## 2026-05-05 - NEW: Decision Funnel widget
-Estado: implementado
-Descripción:
-  Visualización de embudo de decisión (últimos 7 días):
-  Señales generadas → Fused ≠ WAIT → Ejecutadas.
-  Muestra el % de drop-off entre cada etapa, lo que permite
-  diagnosticar si el problema es Fusion (zona neutra demasiado
-  amplia) o DeepSeek (rechazando demasiadas señales válidas).
-  Endpoint: /api/metrics/funnel.
-Archivos afectados: [dashboard.py, templates/overview.html, static/style.css]
-
-## 2026-05-05 - NEW: Página /analytics
-Estado: implementado
-Descripción:
-  Nueva página con 4 visualizaciones:
-
-  1. Distribución de Confianza: histograma horizontal con buckets
-     0-20, 20-40, 40-60, 60-80, 80-100 + cards LONG/SHORT/WAIT.
-     Detecta si la calibración del confidence está sesgada.
-
-  2. Actividad por Capa: barra de uso por cada uno de los 7
-     analizadores, con desglose direccional (% LONG / SHORT / WAIT).
-     Permite ver cuál capa contribuye más y si está sesgada.
-
-  3. Win Rate por Hora (UTC): heatmap de 24 celdas. Verde > 50% WR,
-     rojo < 50%, opacidad = volumen de trades. Identifica las
-     mejores horas para operar.
-
-  4. Rendimiento por Ticker: tabla ordenada por PnL con wins,
-     win rate, trades por ticker.
-
-  Endpoints nuevos:
-  /api/analytics/confidence-distribution
-  /api/analytics/layer-activity
-  /api/analytics/by-hour
-  /api/analytics/by-ticker
-Archivos afectados: [dashboard.py, templates/analytics.html, templates/base.html, static/style.css]
-
-## 2026-05-05 - NEW: Filtros + expansión de capas en Signals
-Estado: implementado
-Descripción:
-  - Chips de filtro por decisión (LONG/SHORT/WAIT) y por mercado
-  - Click en una fila expande un panel con:
-    * Cada capa: nombre, señal, score, peso, barra de score coloreada
-      (verde > 55, rojo < 45, ámbar zona neutra)
-    * Razonamiento completo
-  - Endpoint: /api/signals/<id> que parsea layer_scores JSON
-Archivos afectados: [dashboard.py, templates/signals.html, static/style.css]
-
-## 2026-05-05 - NEW: Resumen y filtros en Trades
-Estado: implementado
-Descripción:
-  - 4 cards arriba: total trades, cerrados (W/L), PnL acumulado, WR
-  - Chips: filtro por status (abiertos/cerrados) y por resultado
-    (wins/losses)
-  - Status visual: badge gris para abiertos
-Archivos afectados: [templates/trades.html]
-
-## 2026-05-05 - DESIGN: Reordenamiento del menú
-Estado: implementado
-Descripción:
-  Sidebar reordenado en orden de uso lógico:
-  Overview → Señales → Trades → Analytics → Backtest → Config → Logs
-  Antes Backtest estaba al final, ahora va junto a Analytics.
-Archivos afectados: [templates/base.html]
-
-───────────────────────────────────────────────────────────────────
-CAMBIOS IMPLEMENTADOS - 2026-05-05 (sesión 2)
-───────────────────────────────────────────────────────────────────
-
-## 2026-05-05 - NEW: 6 temas visuales (Dark, Light, Bloomberg, Mint, Cyberpunk, Solarized)
-Estado: implementado
-Descripción:
-  Añadidas 5 variantes nuevas sobre el dark existente. Cada tema redefine
-  las variables CSS (bg-primary, bg-card, bg-hover, border, text, text-muted,
-  accent-green, accent-red, accent-blue, accent-wait, win-bg, loss-bg) usando
-  selectores [data-theme="x"] en :root.
-  - Light: blanco/gris GitHub claro
-  - Bloomberg: fondo negro, texto naranja terminal
-  - Mint: verde oscuro tropical, acento #00e5a0
-  - Cyberpunk: púrpura oscuro, acentos neón cyan/magenta
-  - Solarized: crema cálido, paleta Ethan Schoonover
-  El switcher aparece al pie del sidebar como 6 círculos de color.
-  Persiste en localStorage, aplica sin flash via data-theme en <html>.
-Archivos afectados: [static/style.css, templates/base.html]
-
-## 2026-05-05 - NEW: Emojis en navegación y tablas
-Estado: implementado
-Descripción:
-  Emojis añadidos al sidebar (📊🏠⚡💼📈👁🔬⚙️📋).
-  Helper MARKET_EMOJI en overview.html (forex📈 stocks💹 polymarket🎲).
-  Columna Ticker en posiciones muestra emoji de mercado.
-Archivos afectados: [templates/base.html, templates/overview.html]
-
-## 2026-05-05 - NEW: Funciones en posiciones abiertas
-Estado: implementado
-Descripción:
-  Tabla de posiciones renovada con: SL%/TP% en columnas separadas,
-  tiempo abierto (desde opened_at/entry_time), botón "✕ Cerrar".
-  Nuevo endpoint POST /api/positions/<id>/close: elimina la posición
-  del paper_broker_state.json directamente.
-  ⚠️ LIMITACIÓN: no registra el cierre en DB ni notifica orchestrator.
-  Para paper trading es funcional; producción requeriría cambios en broker (VITAL).
-Archivos afectados: [templates/overview.html, dashboard.py]
-
-## 2026-05-05 - NEW: Selector de tema en página Config
-Estado: implementado
-Descripción:
-  Añadida sección "Apariencia" en config.html con los 6 temas como
-  radio buttons visuales (círculo de color + nombre). El tema activo
-  aparece en negrita. Al seleccionar aplica instantáneamente via
-  data-theme en <html> y persiste en localStorage. Sincronizado con
-  los dots del sidebar.
-Archivos afectados: [templates/config.html]
-
-## 2026-05-05 - NEW: Página /watchlist
-Estado: implementado
-Descripción:
-  Nueva página cruzando signals + trades por ticker. Columnas: ticker,
-  mercado (emoji), señales, ratio L/S, conf%, trades, abiertas, win rate,
-  PnL, última señal. Chips de filtro por mercado. Ticker linkea a /ticker/<symbol>.
-  Endpoint: GET /api/watchlist. Link en sidebar (👁 Watchlist).
-Archivos afectados: [templates/watchlist.html (nuevo), dashboard.py, templates/base.html]
-
-## 2026-05-05 - NEW: Resumen Diario (Daily Brief) con tooltips educativos
-Estado: implementado
-Descripción:
-  Nuevo endpoint GET /api/daily-brief que genera un resumen narrativo en
-  español de la actividad del día: número de señales (breakdown L/S),
-  trades cerrados con PnL, posiciones abiertas, estado general.
-  Ejemplo: "Hoy: 2 señal(es) (1L/1S). Cerré 1 trade(s): +$12.40.
-  1 posición(es) abierta(s) aún. Estado: todo OK ✓"
-
-  El card del Daily Brief aparece al tope del Overview (📝) con fondo
-  destacado (var(--bg-hover)) y borde izquierdo azul.
-
-  Se añadieron tooltips educativos (title="") a las métricas avanzadas:
-  - Sharpe Ratio: "Retorno ajustado por riesgo. >1 es bueno, >2 excelente"
-  - Profit Factor: "Ganancias totales / Pérdidas totales. >1.5 sólido, >2 muy bueno"
-  - Max Drawdown: "Peor caída del capital. Indica el peor escenario histórico"
-  - Avg Win: "Ganancia promedio por trade ganador. Muestra potencial de upside"
-  - Avg Loss: "Pérdida promedio por trade perdedor. Indica control de riesgo"
-
-  Los tooltips aparecen al pasar el mouse sobre el nombre de la métrica.
-  Pensados para usuarios sin conocimiento previo de trading.
-Archivos afectados: [dashboard.py, templates/overview.html]
-
-## 2026-05-06 - NEW: Página /ticker/<symbol>
-Estado: implementado
-Descripción:
-  Nueva página de detalle por instrumento. Accesible desde /watchlist
-  (links en columna Ticker) y directamente vía URL.
-  Contenido:
-  - 4 cards resumen: señales totales, trades (abiertos/cerrados), win rate, PnL total.
-  - Chart de precio interactivo con hover tooltip (precio + change_24h_pct +
-    timestamp) y markers ▲/▼/⏸ de señales sobre la curva.
-  - Tabla de señales recientes: decisión, confianza, top layer, razonamiento truncado.
-  - Tabla de trades: entrada/salida, dirección, precios, PnL, status (WIN/LOSS/OPEN).
-  Endpoint: GET /api/ticker/<symbol> → {signals, trades, price_history}
-  Fuente de precio: tabla market_data de la DB (recoge yfinance/polymarket).
-Archivos afectados: [dashboard.py, templates/ticker.html (nuevo), templates/base.html]
-
-## 2026-05-06 - NEW: Página /news (Noticias & Sentiment)
-Estado: implementado
-Descripción:
-  Nueva página de feed de noticias con análisis de sentimiento.
-  Contenido:
-  - 3 cards: mood del mercado (😀/😟/😐), total noticias 24h, barra bullish/bearish/neutral.
-  - Chips de filtro por mercado (Todos/Forex/Stocks/Crypto) y por sentiment
-    (Todos/Bullish/Bearish/Neutral), combinables.
-  - Lista de artículos con borde de color por sentiment (verde/rojo/gris),
-    título clickeable (abre URL), descripción truncada, fuente, timestamp relativo.
-  Endpoint: GET /api/news?market=&sentiment= → lee cache JSON del NewsCollector
-  (news_all_24h.json, news_forex_24h.json, etc.). Si los archivos están vacíos
-  (no hay API key configurada) muestra mensaje de ayuda.
-  ⚠️ NOTA: Las noticias solo se cargan cuando el orchestrator corre. Si el loop
-  no ha corrido o las keys no están en .env, los caches estarán vacíos.
-Archivos afectados: [dashboard.py, templates/news.html (nuevo), templates/base.html]
-
-## 2026-05-06 - NEW: Equity Curve interactivo con selector de período y tooltips
-Estado: implementado
-Descripción:
-  Reescrita la sección Equity Curve del Overview con interactividad completa:
-
-  - Selector de período: chips 1d / 7d / 30d / Todo. El endpoint
-    /api/portfolio/history ahora acepta ?period= y filtra por cutoff UTC.
-  - Tooltip en hover: crosshair vertical + caja flotante con balance exacto,
-    variación % desde inicio del período y timestamp.
-  - Marcadores de trades cerrados: triángulos ▲ (win, verde) / ▼ (loss, rojo)
-    sobre la curva en el timestamp de cierre.
-  - Área sombreada bajo la curva con gradiente (verde/rojo según dirección).
-  - Badge de variación % junto al título del widget.
-  - Grid con etiquetas $X.XK en eje Y y fechas en eje X.
-
-  ⚠️ BREAKING: /api/portfolio/history ya no devuelve array plano sino
-  {history: [...], trades: [...]}. JS maneja ambos con `resp.history || resp`.
-
-Archivos afectados: [dashboard.py, templates/overview.html, static/style.css]
-
-## 2026-05-06 - NEW: Risk Snapshot + Proyección & Racha
-Estado: implementado
-Descripción:
-  Dos nuevas secciones en Overview pensadas para usuarios no-traders:
-
-  RISK SNAPSHOT (⚠️):
-  - Muestra el peor caso si todos los stops se ejecutan simultáneamente.
-  - Cards: balance actual, balance peor caso, % capital en riesgo (color
-    según nivel: verde <5%, ámbar 5-10%, rojo >10%), exposición total.
-  - Tabla con pérdida máxima por posición (size_usd × stop_loss_pct/100).
-  - Endpoint: GET /api/risk-snapshot
-
-  PROYECCIÓN & RACHA (📈):
-  - Ritmo diario promedio (últimos 30d), estimación de días/meses para
-    doblar el capital al ritmo actual.
-  - Win Rate y Avg Win / Avg Loss en cards con tooltips educativos.
-  - Sistema de badges por mejor racha de wins seguidos:
-    🥉 ≥3, 🥈 ≥5, 🏆 ≥10 wins consecutivos.
-  - Mini bar chart de PnL diario (últimos 14 días): barras verdes/rojas
-    con tooltip al hover mostrando día y PnL exacto.
-  - Endpoint: GET /api/projection
-
-Archivos afectados: [dashboard.py, templates/overview.html]
-
-## 2026-05-06 - NEW: Emojis en capas de análisis (transversal)
-Estado: implementado
-Descripción:
-  Función global layerLabel(name) en base.html. Mapea los 8 analizadores:
-  📊 Technical, ⛓️ OnChain, 💬 Sentiment, 📋 OrderBook, 🏢 Fundamental,
-  🌍 Macro, 🔗 CrossAsset, 📐 ICT/SMC. Soporta variantes de nombre.
-  Aplicado en signals.html (panel expandible), analytics.html (barras
-  de actividad) y ticker.html (columna Top Layer).
-Archivos afectados: [templates/base.html, templates/signals.html, templates/analytics.html, templates/ticker.html]
-
-## 2026-05-06 - NEW: Comparativas benchmark en Analytics
-Estado: implementado
-Descripción:
-  Sección "🏆 Comparativas" en /analytics. Compara el bot contra:
-  SPY ~10%/yr, BTC ~60%/yr (estimado), Banco ~4%/yr. Mismo capital
-  inicial ($1000), misma fecha de inicio. Cards con % retorno (la mejor
-  estrategia con borde azul) + chart multi-línea con hover tooltip
-  mostrando los 4 valores simultáneamente.
-  Endpoint: GET /api/benchmark (tasas diarias compuestas sintéticas).
-  ⚠️ SPY/BTC son promedios históricos, no datos en tiempo real.
-Archivos afectados: [dashboard.py, templates/analytics.html]
-
-## 2026-05-06 - NEW: Precio actual y Δ% en posiciones abiertas
-Estado: implementado
-Descripción:
-  /api/positions ahora enriquece cada posición con el último precio
-  disponible en market_data (MAX(timestamp) por ticker). Calcula:
-  - current_price: último precio registrado por el colector
-  - delta_pct: variación % ajustada por dirección (LONG: (curr-entry)/entry,
-    SHORT: -(curr-entry)/entry). Si no hay precio en market_data → null.
-  Tabla de posiciones en Overview añade columnas:
-  - "Precio actual" en negrita (decimales adaptativos: 6 si <$1, 4 si <$100, 2 si >$100)
-  - "Δ%" verde con signo + si ganando, rojo si perdiendo
-  - El ticker es ahora un link clickeable a /ticker/<symbol>
-  ⚠️ El precio actual proviene de market_data, que se actualiza solo
-  cuando el loop corre. No es tiempo real puro, pero refleja la última
-  lectura del colector.
-Archivos afectados: [dashboard.py, templates/overview.html]
-
-## 2026-05-06 - NEW: Páginas /ticker/<symbol> y /news
-Estado: implementado
-Descripción:
-  Ver entradas anteriores de esta sesión (2026-05-06).
-Archivos afectados: [dashboard.py, templates/ticker.html, templates/news.html, templates/base.html]
-
-═══════════════════════════════════════════════════════════════════
+  - checklist.md: Fase 9 agregada (trailing, partial TP, dual profile,
+    auto-restart, sessionStorage, etc.), 95 tests, 9 páginas dashboard
+  - roadmap.md: 9 analizadores, Fase 9 con métricas, tray auto-restart
+  - metodologia.md: 9 analizadores, guías actualizadas (6 en vez de 4)
+  - guia_configuracion.md: perfiles Normal/Fast, time-exit, modelo flash
+  - guia_instalacion.md: pyarrow, RSS fallback, 95 tests
+  - guia_uso.md: 9 páginas, tray simplificado, dual profile, no start/stop UI
+  - bitacora.md: todas las instancias (1-6) documentadas
+  - reglas.md: 9 analizadores, 6 temas, archivos vitales actualizados
+  - actualizar-docs.md: checklist concreto por tipo de cambio
+  - AGENTS.md: regla 6 post-edit para sincronización de docs
+  - README.md: 9 analizadores, 95 tests
+Archivos afectados: [12 archivos de documentación]

@@ -134,3 +134,18 @@ Después de CADA edición de >5 líneas:
 3. Si la edición reemplazó un bloque con declaraciones (`const`, `let`, `function`), confirmar que cada identificador nuevo sea único en ese scope.
 4. Ejecutar `rg "const NOMBRE" archivo` sobre el símbolo modificado para confirmar unicidad.
 5. Si se extrajo o movió código a otro archivo, verificar que no quede un identificador duplicado en el origen.
+
+### Regla 6 — Sincronización de documentación
+
+Si la edición modificó comportamiento visible para el usuario (config flags, endpoints, parámetros de estrategia, SL/TP, perfiles, columnas de DB, analizadores), actualizar la guía correspondiente en el mismo commit:
+
+| Cambio | Docs a actualizar |
+|---|---|
+| `config.yaml` (flags, perfiles, time-exit) | `guias/guia_configuracion.md` |
+| `dashboard.py` (endpoints, páginas) | `guias/guia_uso.md` (tabla de rutas) |
+| `execution/paper_broker.py`, `risk_engine.py`, `entry_filters.py` | `guias/guia_trading.md`, `guias/guia_configuracion.md` |
+| `analyzers/` (nuevo analyzer, cambios de peso) | `guias/guia_configuracion.md` (tabla de capas) |
+| `tray_app.py` | `guias/guia_uso.md` (sección tray) |
+| Cambio en número de tests | `README.md`, `documentos/checklist.md`, `documentos/roadmap.md` |
+
+Cargar `skill("actualizar-docs")` para el checklist completo.

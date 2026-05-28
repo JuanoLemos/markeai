@@ -8,7 +8,7 @@
 
 ### Estructura
 - [x] `C:\xampp\htdocs\MarketAI\` creado
-- [x] `documentos/` con guia.md, roadmap.md, checklist.md
+- [x] `documentos/` con roadmap.md, checklist.md, metodologia.md
 - [x] `guias/` con guia_instalacion.md, guia_configuracion.md, guia_uso.md
 - [x] `data/` con subcarpeta `cache/`
 - [x] `analyzers/` con `__init__.py`
@@ -31,8 +31,8 @@
 - [x] `config.yaml` revisado y personalizado por mercado
 - [x] `.env` creado (copiar desde `.env.example`)
 - [x] API keys configuradas (DeepSeek)
-- [ ] Token de Telegram configurado (opcional)
-- [ ] Polymarket API key configurada (opcional para real)
+- [x] Token de Telegram configurado (opcional)
+- [x] Polymarket API key configurada (opcional para real)
 
 ---
 
@@ -51,7 +51,9 @@
 - [x] Datos fundamentales (P/E, market cap, beta, etc.)
 
 ### News
-- [x] `collector_news.py` conecta NewsAPI
+- [x] `collector_news.py` conecta NewsAPI + CryptoPanic
+- [x] RSS fallback (Yahoo Finance, Google News RSS) cuando NewsAPI < 5 artículos
+- [x] Rate limit protection: 1 llamada API/iteración (max 96/día)
 - [x] Clasificación de sentimiento por keywords
 - [x] Cache de 10 min
 
@@ -108,6 +110,16 @@
 - [x] SPY/QQQ divergencia
 - [x] USD strength patterns
 
+### ADX Regime
+- [x] Trend strength filter (ADX > 25)
+- [x] Per-profile: Normal=required, Fast=optional
+- [x] Score según dirección de tendencia
+
+### ICT/SMC
+- [x] Order blocks, FVG (Fair Value Gap)
+- [x] Liquidity sweep detection
+- [x] Score compuesto ICT (0-100)
+
 ### Tests
 - [x] `tests/test_analyzers.py` pasa
 - [x] Cada analyzer devuelve formato consistente
@@ -120,7 +132,9 @@
 ### Fusion
 - [x] Pesos configurables por capa y mercado
 - [x] Score compuesto calculado
+- [x] Threshold 55/45 LONG/SHORT/WAIT (configurable por perfil)
 - [x] Confianza basada en consistencia entre capas
+- [x] Capas con score = 50 se excluyen del cómputo
 
 ### Decider (DeepSeek)
 - [x] Prompt template por mercado
@@ -136,6 +150,11 @@
 - [x] Comisiones aplicadas (0.1%)
 - [x] Balance virtual persistente en JSON
 - [x] Stop-loss y take-profit automáticos
+- [x] ATR trailing stop dinámico
+- [x] Break-even stop (TP1 alcanzado → SL a precio de entrada)
+- [x] Partial take-profit (TP1 = 50% cantidad, resto sigue)
+- [x] Time-exit condicional por mercado + estado (profit/loss/stagnant)
+- [x] SL/TP configurables por perfil (Normal conservador, Fast agresivo)
 - [x] Log de todas las operaciones
 
 ### Executor Polymarket (Real)
@@ -160,7 +179,7 @@
 
 ### Strategy Evolver
 - [x] Detecta patrones ganadores/perdedores
-- [x] Sugiere ajustes a `master_strategy.md`
+- [x] Sugiere ajustes a estrategias
 - [ ] Skills auto-generados en `skills/`
 
 ### Backtest
@@ -179,7 +198,8 @@
 - [ ] Resumen diario automático
 
 ### Orchestrator
-- [x] Loop principal: recolección → análisis → decisión → ejecución → journal
+- [x] Loop principal: recolección → análisis → fusión → decisión → ejecución → journal
+- [x] Dual profile: Normal + Fast ejecutándose simultáneamente
 - [x] Scheduling configurable (15/30/60 min)
 - [x] Manejo de errores por capa
 - [x] Logging a archivo
@@ -190,23 +210,36 @@
 ## FASE 7: Sistema Completo
 
 ### Dashboard Web
-- [x] Flask + 5 páginas (Overview, Señales, Trades, Config, Logs)
-- [x] Control start/stop loop desde UI
+- [x] Flask + 9 páginas (Overview, Señales, Trades, Analytics, Backtest, Config, News, Watchlist, Logs)
+- [x] Loop control desde system tray (sin botones en dashboard)
 - [x] Configuración editable desde dashboard
-- [x] Tema oscuro (4 colores)
+- [x] 6 temas visuales (Dark, Light, Bloomberg, Mint, Cyberpunk, Solarized)
 - [x] Auto-refresh cada 10s
+- [x] Daily Brief con resumen narrativo en español
+- [x] Equity curve interactivo con selector de período (1d/7d/30d/Todo)
+- [x] Risk Snapshot + Proyección & Racha
+- [x] Decision Funnel widget (señales → fused → ejecutadas)
+- [x] Ticker detail page (/ticker/<symbol> con chart y trades)
+- [x] Filtros por mercado/decisión en Signals y Trades
+- [x] API status vía orchestrator.log mod time (<60s)
+- [x] sessionStorage persistencia de backtest al cambiar pestañas
 
 ### Tray App
 - [x] Icono $ blanco en system tray
-- [x] Minimizar ventana al cerrar
-- [x] Menú contextual (Show Dashboard, Pause, Resume, Stop, Exit)
-- [x] Tooltip con estado del loop
+- [x] VBS launcher invisible (trayapp.vbs)
+- [x] Menú contextual (▶ Activar, 💀 Kill Services, Reiniciar Servidor, Reiniciar Dashboard, Mostrar Dashboard, Salir)
+- [x] Tooltip con PnL dual (Normal + Fast)
+- [x] Auto-restart del loop si muerto >30s
+- [x] Pulse dot status en icono
+- [x] wmic+taskkill para restart_server
 
 ### Documentación
 - [x] README.md (español)
 - [x] Roadmap actualizado
 - [x] Checklist actualizada
-- [x] Guías de instalación, configuración, uso actualizadas
+- [x] Guías de instalación, configuración, uso, motores, usuario actualizadas
+- [x] Metodología de proyecto documentada
+- [x] Skills: backup-pre-edit + actualizar-docs
 
 ---
 
@@ -252,7 +285,7 @@
 - [x] Resultados no son None/empty
 
 ### R.4 — Ejecutar Tests Automáticos
-- [x] `python -m pytest tests/ -v` → 46/46 tests pasan
+- [x] `python -m pytest tests/ -v` → 95/95 tests pasan
 
 ### R.5 — R.13 — Validación completa del pipeline
 - [x] Paper trading, señales, DeepSeek, backtest, loop, alertas
@@ -265,3 +298,49 @@ python -m pytest tests/ -v --tb=short; `
 python orchestrator.py --mode once --market stocks; `
 Get-Content orchestrator.log -Tail 20
 ```
+
+---
+
+## FASE 9: Mejoras Continuas
+
+### Ejecución
+- [x] ATR trailing stop dinámico
+- [x] Partial take-profit (TP1 = 50%)
+- [x] Break-even stop al alcanzar TP1
+- [x] Conditional time-exit por mercado + estado
+- [x] SL/TP configurables por perfil (Normal: 2-5%, Fast: 0.5-1.5%)
+- [x] Correlación filter entre posiciones
+- [x] Session hours filter (Normal: 18h/día, Fast: 22h/día)
+- [x] Kelly criterion (fracción 25%)
+- [x] Circuit breakers (daily loss, max drawdown)
+
+### Analizadores
+- [x] ADX Regime analyzer (trend strength)
+- [x] ICT/SMC analyzer (order blocks, FVG, liquidity)
+- [x] RSS fallback para news cuando NewsAPI falla
+
+### Dashboard
+- [x] Equity curve interactivo con selector de período
+- [x] Daily Brief narrativo en español
+- [x] Risk Snapshot (peor caso si todos los stops se ejecutan)
+- [x] Proyección & Racha
+- [x] Decision Funnel (señales → fused → ejecutadas)
+- [x] Página /ticker/<symbol> con drill-down
+- [x] Página /news con feed + filtros
+- [x] Página /watchlist con cross-signals/trades
+- [x] 6 temas visuales con persistencia localStorage
+- [x] sessionStorage persistencia en backtest
+
+### Tray App
+- [x] Auto-restart del loop si muerto >30s
+- [x] Dual PnL en tooltip
+- [x] Menú simplificado (Activar / Kill Services / Reiniciar)
+- [x] Pulse dot status
+
+### Otros
+- [x] Backtest redirigido a run_replay (full pipeline)
+- [x] Timeout backtest: 120s → 900s
+- [x] NewsAPI rate limit: 1 llamada/iteración + RSS fallback
+- [x] API status via orchestrator.log mod time
+- [x] Dual profile: Normal + Fast simultáneos
+- [x] Python 3.14.0, yfinance 1.3.0, pystray 0.19.5

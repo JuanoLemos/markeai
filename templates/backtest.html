@@ -60,11 +60,25 @@
 {% endblock %}
 {% block scripts %}
 <script>
+const BT_KEY='bt_state';
+
+function saveBT(s){sessionStorage.setItem(BT_KEY,JSON.stringify(s))}
+function loadBT(){try{return JSON.parse(sessionStorage.getItem(BT_KEY))}catch{return null}}
+
+document.addEventListener('DOMContentLoaded',function(){
+  const st=loadBT();
+  if(st&&st.running){
+    document.getElementById('bt-load').style.display='block';
+    document.querySelector('#bt-load .spinner').after(document.createTextNode(' (reanudando…)'));
+  }
+});
+
 async function runBT(market){
   const load=document.getElementById('bt-load'), err=document.getElementById('bt-err'), res=document.getElementById('bt-res');
   document.getElementById('btn-fx').disabled=true;
   document.getElementById('btn-st').disabled=true;
   load.style.display='block'; err.style.display='none'; res.style.display='none';
+  saveBT({running:true,market:market});
 
   const r=await api('/api/backtest/run?market='+market);
   load.style.display='none';
@@ -72,6 +86,7 @@ async function runBT(market){
   document.getElementById('btn-st').disabled=false;
 
   if (r.error&&!(r.results||[]).length) {
+    saveBT({running:false});
     err.style.display='block';
     err.innerHTML=`<div class="panel" style="border-color:var(--rose);padding:20px">
       <div class="flex gap-2"><span style="font-size:20px">❌</span><div>
@@ -111,6 +126,7 @@ async function runBT(market){
       </tr>`;
     }).join('');
   res.style.display='block';
+  saveBT({running:false,results:r});
 }
 </script>
 {% endblock %}

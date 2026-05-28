@@ -5,10 +5,10 @@ Sistema de trading automatizado multi-capa impulsado por DeepSeek AI.
 ## Arquitectura
 
 ```
-Datos → 7 Analizadores → Fusión → DeepSeek → Ejecución → Journal
+Datos → 9 Analizadores → Fusión → DeepSeek → Ejecución → Journal
 ```
 
-3 mercados: Polymarket, Forex, Acciones. 5 capas: Recolección, Análisis (7 analizadores), Decisión (DeepSeek), Ejecución (paper/real), Auto-aprendizaje.
+3 mercados: Polymarket, Forex, Acciones. Perfiles duales: Normal + Fast.
 
 ## Inicio rápido
 
@@ -17,7 +17,7 @@ venv\Scripts\activate
 python orchestrator.py --mode once          # Una iteración
 python orchestrator.py --mode loop          # 24/7
 .\dashboard.bat                             # Dashboard web :8050
-.\loop.bat                                  # Loop en consola
+.\tray_app.bat                              # System tray (recomendado)
 ```
 
 Ver `guias/` para instalación, configuración y uso detallado.
@@ -25,7 +25,7 @@ Ver `guias/` para instalación, configuración y uso detallado.
 ## Tests
 
 ```powershell
-python -m pytest tests/ -v
+python -m pytest tests/ -v                 # 95 tests
 ```
 
 ## Licencia

@@ -10,7 +10,7 @@
 Definen el estado ACTUAL del proyecto. **Inmutables excepto decisiones explícitas del Usuario.**
 
 | Archivo | Propósito | Se actualiza cuando... | Frecuencia |
-|---|---|---|---|
+|---|---|---|---|---|
 | `documentos/roadmap.md` | Tareas, fases, backlog, priorización | Se completa tarea, se descubre bug | Fin de cada instancia |
 | `documentos/checklist.md` | Checklist detallado por fase | Se completa ítem del checklist | Fin de cada instancia |
 | `config.yaml` | Configuración central del sistema | Cambian parámetros de trading/riesgo | Por decisión |
@@ -24,7 +24,7 @@ Especifican **cómo** funciona el sistema.
 | `orchestrator.py` | Loop principal, scheduling, errores | Entry point del sistema |
 | `engine/fusion.py` | Fusión de señales con pesos | No editar sin ADR |
 | `engine/decider.py` | Decisor DeepSeek | No editar sin ADR |
-| `analyzers/*.py` | 7 analizadores de mercado | Cada uno con interfaz analyze() estándar |
+| `analyzers/*.py` | 9 analizadores de mercado | Cada uno con interfaz analyze() estándar |
 | `data/database.py` | Schema SQLite y CRUD | Migraciones vía ALTER TABLE |
 | `execution/paper_broker.py` | Simulación de broker | Activo actualmente |
 
@@ -32,11 +32,13 @@ Especifican **cómo** funciona el sistema.
 Ayudan a entender "cómo usar" algo. **Actualizables frecuentemente.**
 
 | Archivo | Propósito | Audiencia |
-|---|---|---|
+|---|---|---|---|
 | `guias/guia_instalacion.md` | Cómo instalar desde cero | Nuevo usuario |
-| `guias/guia_configuracion.md` | Cómo configurar .env y config.yaml | Usuario |
+| `guias/guia_configuracion.md` | Cómo configurar .env, config.yaml y perfiles | Usuario |
 | `guias/guia_uso.md` | Cómo operar el sistema | Usuario |
-| `guias/guia.md` | Documentación completa del sistema | Usuario avanzado |
+| `guias/guia_usuario.md` | Manual completo del sistema | Usuario avanzado |
+| `guias/guia_trading.md` | Referencia de trading (Kelly, trailing, sesiones) | Trader |
+| `guias/guia_motores.md` | Explicación de motores internos | Desarrollador |
 
 ### Archivos de Contexto (Memoria del Proyecto)
 Describen "qué es esto" para onboarding y coherencia a largo plazo.

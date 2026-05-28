@@ -274,7 +274,7 @@ def create_app():
         market = request.args.get("market", "forex")
         proc = subprocess.run(
             [sys.executable, str(BASE_DIR / "orchestrator.py"), "--mode", "backtest", "--market", market],
-            cwd=str(BASE_DIR), capture_output=True, text=True, timeout=120,
+            cwd=str(BASE_DIR), capture_output=True, text=True, timeout=900,
         )
         results = []
         for line in proc.stdout.splitlines():

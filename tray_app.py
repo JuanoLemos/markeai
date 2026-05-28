@@ -18,6 +18,7 @@ STOP_FILE = BASE_DIR / "STOP"
 
 loop_process = None
 icon_instance = None
+_dead_since = None
 
 
 def create_icon():
@@ -204,11 +205,20 @@ def main():
     icon_instance = icon
 
     def tick():
+        global _dead_since
         time.sleep(1)
         while getattr(icon, '_running', True):
             try:
                 icon.title = get_status_text()
                 icon.menu = build_menu()
+                if loop_process is None or loop_process.poll() is not None:
+                    if _dead_since is None:
+                        _dead_since = time.time()
+                    elif time.time() - _dead_since > 30:
+                        _dead_since = None
+                        start_loop()
+                else:
+                    _dead_since = None
             except Exception:
                 pass
             time.sleep(3)

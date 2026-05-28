@@ -10,11 +10,12 @@
 
 | Archivo | Qué hace |
 |---|---|
-| `loop.bat` | Inicia el loop de trading 24/7 |
-| `dashboard.bat` | Inicia el dashboard web en `http://localhost:8050` |
-| `tray_app.bat` | Inicia el loop minimizado a system tray (icono $) |
-| `cron_daily.bat` | Reporte diario manual (ejecutar 1 vez al día) |
-| `cron_hourly.bat` | Health check manual (cada hora) |
+| `tray_app.bat` | Inicia el loop 24/7 + dashboard web minimizado a system tray (recomendado) |
+| `dashboard.bat` | Inicia solo el dashboard web en `http://localhost:8050` |
+| `loop.bat` | Inicia solo el loop de trading en consola |
+| `cron_daily.bat` | Reporte diario manual |
+| `cron_hourly.bat` | Health check manual |
+| `cron_weekly.bat` | Backtest semanal |
 
 ### Modo Manual (una iteración)
 ```bash
@@ -33,12 +34,11 @@ python dashboard.py
 # Abrir http://localhost:8050
 ```
 
-### System Tray
+### System Tray (todo en uno)
 ```bash
 python tray_app.py
 # Icono $ en la bandeja del sistema
-# Click derecho: Show Dashboard, Pause, Resume, Stop, Exit
-# Cerrar ventana → minimiza a tray
+# Click derecho: ▶ Activar, 💀 Kill Services, Reiniciar Servidor, etc.
 ```
 
 ---
@@ -47,59 +47,64 @@ python tray_app.py
 
 | Comando | Descripción |
 |---|---|
-| `python orchestrator.py --mode once` | Una iteración |
+| `python orchestrator.py --mode once` | Una iteración (todos los mercados) |
 | `python orchestrator.py --mode loop` | Loop 24/7 |
 | `python orchestrator.py --mode once --market polymarket` | Solo Polymarket |
-| `python orchestrator.py --mode backtest` | Backtest sobre datos históricos |
 | `python orchestrator.py --mode report` | Resumen de portfolio |
 | `python dashboard.py` | Dashboard web :8050 |
-| `python tray_app.py` | Loop en system tray |
+| `python tray_app.py` | Loop + dashboard en system tray |
 
 ---
 
-## 3. Dashboard Web
+## 3. Dashboard Web (9 páginas)
 
-### Páginas
-| Ruta | Qué muestra |
-|---|---|
-| `/` | Balance, P&L, posiciones abiertas, últimas señales, botones Start/Stop |
-| `/signals` | Últimas 50 señales generadas |
-| `/trades` | Historial de trades cerrados con P&L |
-| `/config` | Formulario editable de `config.yaml` |
-| `/logs` | Tail de `orchestrator.log` |
+| Ruta | Página | Qué muestra |
+|---|---|---|
+| `/` | Overview | Balance, P&L dual (Normal/Fast), posiciones abiertas con Δ%, equity curve, Daily Brief, Risk Snapshot, Proyección |
+| `/signals` | Señales | Últimas 50 señales, filtros por decisión/mercado, expansión por capas |
+| `/trades` | Trades | Historial completo, filtros por estado/resultado, resumen W/L |
+| `/analytics` | Analytics | Confianza, actividad por capa, win rate por hora, benchmark vs SPY/BTC/Banco |
+| `/backtest` | Simulación | Backtest por mercado (Forex/Acciones), resultados agregados + por ticker |
+| `/config` | Config | Editor de config.yaml en vivo, selector de tema visual |
+| `/news` | Noticias | Feed de noticias con análisis de sentimiento, filtros por mercado |
+| `/watchlist` | Watchlist | Cruzar señales + trades por ticker con sparkline |
+| `/logs` | Logs | Tail de orchestrator.log |
+| `/ticker/<symbol>` | Detalle | Drill-down por activo: chart, señales, trades |
 
-### Iniciar/Detener Loop desde la UI
-- Botón **▶ Iniciar Loop** → lanza `orchestrator.py --mode loop` como subproceso
-- Botón **■ Detener** → crea archivo `STOP`, el loop se detiene
-- Dashboard actualiza métricas automáticamente cada 10s
+### Temas visuales
+6 temas disponibles: Dark, Light, Bloomberg, Mint, Cyberpunk, Solarized. Se cambian desde Config o desde el sidebar. Persisten en localStorage.
 
 ---
 
-## 4. System Tray (tray_app.py)
+## 4. System Tray (control principal)
 
-| Acción | Comportamiento |
+El tray app es el método recomendado para operar el sistema. No hay botones de start/stop en el dashboard.
+
+| Menú | Acción |
 |---|---|
-| Iniciar | `python tray_app.py` — aparece icono $ blanco en la bandeja |
-| Cerrar ventana de loop | La consola se oculta, el proceso sigue corriendo en tray |
-| Menú contextual | Show Dashboard, Pause Loop, Resume, Stop, Exit |
-| Tooltip | Muestra balance actual y estado del loop |
-| Detener desde tray | Exit → espera 5s y cierra todo |
+| **▶ Activar** | Inicia el loop + dashboard (mata procesos previos primero) |
+| **💀 Kill Services** | Detiene loop y dashboard por completo |
+| **Reiniciar Servidor** | Mata y relanza el loop |
+| **Reiniciar Dashboard** | Mata y relanza solo el dashboard Flask |
+| **Mostrar Dashboard** | Abre http://localhost:8050 en el navegador |
+| **Salir** | Cierra todo |
+
+El tooltip del icono muestra: "BotEscucha — N: +$X.xx (+Y.YY%) F: +$Z.zz (+W.WW%)" (Normal + Fast).
+
+El loop se reinicia automáticamente si muere por más de 30 segundos.
 
 ---
 
 ## 5. Detener el Sistema
 
 ```bash
-# Opción 1: Archivo STOP (funciona siempre)
+# Opción 1: System tray
+# Click derecho → 💀 Kill Services
+
+# Opción 2: Archivo STOP
 echo "stop" > STOP
 
-# Opción 2: Dashboard (si está corriendo)
-# Click en "■ Detener"
-
-# Opción 3: System tray
-# Click derecho → Stop Loop
-
-# Opción 4: Consola directa
+# Opción 3: Consola directa
 # Ctrl+C
 ```
 
@@ -130,97 +135,53 @@ Si configuraste Telegram o Discord webhook, recibirás:
 
 ---
 
-## 7. Gestión de Posiciones
+## 7. Backtesting
 
-### Ver posiciones abiertas
 ```bash
-python -c "from data.database import Database; db=Database(); print(db.get_open_trades())"
+# Desde el dashboard:
+# Ir a /backtest, click en "Simular Forex" o "Simular Acciones"
+# Toma ~5-15 min (usa el pipeline completo, no RSI/EMA legacy)
 ```
 
-### Stop-loss automático
-El paper broker revisa stops cada iteración. Configurable en `config.yaml`:
-```yaml
-risk:
-  stop_loss_atr_multiplier: 1.5
-  take_profit_atr_multiplier: 3.0
-```
+El backtest ejecuta el pipeline completo de MarketAI (run_replay): recolecta datos históricos, ejecuta los 9 analizadores, fusiona señales, consulta DeepSeek y simula trades. Los resultados persisten en sessionStorage al cambiar de pestaña.
 
 ---
 
-## 8. Backtesting
+## 8. Perfiles de Trading (Normal + Fast)
 
-```bash
-# Backtest por mercado
-python orchestrator.py --mode backtest --market forex
-python orchestrator.py --mode backtest --market stocks
-```
+El sistema opera **dos perfiles simultáneamente**:
 
-Resultados: win rate, Sharpe ratio, profit factor, max drawdown.
+| Perfil | SL | TP | Confianza | Filtros |
+|---|---|---|---|---|
+| **Normal** | 2% | 5% | Alta (45-50%) | Sesión 18h, correlación, ADX, volatilidad |
+| **Fast** | 0.5% | 1.5% | Baja (30-35%) | Sesión 22h, sin correlación ni volatilidad |
+
+Cada perfil tiene su propio SL/TP, min_confidence y filtros configurados en `config.yaml` bajo `profiles`.
 
 ---
 
 ## 9. Configuración Rápida desde Dashboard
 
 El dashboard permite editar en vivo desde `http://localhost:8050/config`:
-
 - Activar/desactivar mercados
-- Ajustar `min_confidence` (más bajo → más señales)
 - Cambiar pesos de capas
 - Configurar riesgo
 
-> Los cambios se guardan a `config.yaml`. Requieren reinicio del loop para aplicarse.
+> Los cambios se guardan a `config.yaml`. Requieren reinicio del loop para aplicarse (💀 Kill Services → ▶ Activar).
 
 ---
 
 ## 10. Cron — Tareas Automáticas
 
-El orquestador soporta 3 tareas programables que se pueden ejecutar manualmente o via Windows Task Scheduler.
-
-### Tareas disponibles
-
-| Tarea | Archivo | Frecuencia recomendada | Qué hace |
+| Tarea | Archivo | Frecuencia | Qué hace |
 |---|---|---|---|
-| `daily` | `cron_daily.bat` | 1 vez al día (21:00) | Ejecuta una iteración + envía resumen a Telegram/Discord |
-| `weekly` | `cron_weekly.bat` | 1 vez por semana (lunes) | Ejecuta backtest en todos los mercados |
-| `hourly` | `cron_hourly.bat` | Cada hora | Snapshot de portfolio + health check (cuenta errores en log) |
+| `daily` | `cron_daily.bat` | 1 vez/día | Una iteración + resumen |
+| `weekly` | `cron_weekly.bat` | 1 vez/semana | Backtest completo |
+| `hourly` | `cron_hourly.bat` | Cada hora | Health check del log |
 
-### Ejecutar manualmente
-
-```bash
-.\cron_daily.bat
-.\cron_weekly.bat
-.\cron_hourly.bat
-```
-
-### Programar en Windows Task Scheduler (automático)
-
-Ejecutar PowerShell como Administrador:
-
+### Programar en Windows Task Scheduler
 ```powershell
-# Diario 21:00
 schtasks /create /tn "MarketAI-Daily" /tr "C:\xampp\htdocs\MarketAI\cron_daily.bat" /sc daily /st 21:00
-
-# Semanal lunes 08:00
-schtasks /create /tn "MarketAI-Weekly" /tr "C:\xampp\htdocs\MarketAI\cron_weekly.bat" /sc weekly /d MON /st 08:00
-
-# Cada hora
-schtasks /create /tn "MarketAI-Hourly" /tr "C:\xampp\htdocs\MarketAI\cron_hourly.bat" /sc hourly
-```
-
-### Verificar tareas instaladas
-
-```powershell
-schtasks /query /tn "MarketAI-Daily"
-schtasks /query /tn "MarketAI-Weekly"
-schtasks /query /tn "MarketAI-Hourly"
-```
-
-### Eliminar tareas si ya no se necesitan
-
-```powershell
-schtasks /delete /tn "MarketAI-Daily" /f
-schtasks /delete /tn "MarketAI-Weekly" /f
-schtasks /delete /tn "MarketAI-Hourly" /f
 ```
 
 ---

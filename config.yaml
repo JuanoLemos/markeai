@@ -1,133 +1,180 @@
-# ═══════════════════════════════════════════
-# MarketAI - Configuración Central
-# ═══════════════════════════════════════════
-
-global:
-  log_level: INFO
-  log_file: orchestrator.log
-  data_cache_ttl_minutes: 5
-  max_retries: 3
-  retry_delay_seconds: 10
-
-markets:
-  polymarket:
-    enabled: true
-    mode: paper
-    check_interval_min: 15
-    max_position_usd: 50
-    max_positions_concurrent: 2
-
-  forex:
-    enabled: true
-    pairs:
-      - "EURUSD=X"
-      - "GBPUSD=X"
-      - "USDJPY=X"
-      - "USDCAD=X"
-      - "AUDUSD=X"
-    mode: paper
-    check_interval_min: 60
-    max_position_usd: 30
-
-  stocks:
-    enabled: true
-    tickers:
-      - "SPY"
-      - "QQQ"
-      - "AAPL"
-      - "MSFT"
-      - "GOOGL"
-      - "AMZN"
-      - "TSLA"
-    mode: paper
-    check_interval_min: 60
-    max_position_usd: 30
-
-layers:
-  technical:    { enabled: true, weight_polymarket: 0.25, weight_forex: 0.35, weight_stocks: 0.30 }
-  onchain:      { enabled: true, weight_polymarket: 0.25, weight_forex: 0.10, weight_stocks: 0.10 }
-  sentiment:    { enabled: true, weight_polymarket: 0.20, weight_forex: 0.20, weight_stocks: 0.25 }
-  orderbook:    { enabled: true, weight_polymarket: 0.30, weight_forex: 0.00, weight_stocks: 0.00 }
-  fundamental:  { enabled: true, weight_polymarket: 0.00, weight_forex: 0.10, weight_stocks: 0.20 }
-  cross_asset:  { enabled: true, weight_polymarket: 0.00, weight_forex: 0.10, weight_stocks: 0.10 }
-  ict_smc:      { enabled: true, weight_polymarket: 0.00, weight_forex: 0.15, weight_stocks: 0.10 }
-  adx_regime:   { enabled: true, weight_polymarket: 0.00, weight_forex: 0.10, weight_stocks: 0.10 }
-  macro:        { enabled: true, weight_polymarket: 0.00, weight_forex: 0.25, weight_stocks: 0.15 }
-
-risk:
-  max_daily_loss_pct: 0.10
-  correlation_threshold: 0.85
-
-profiles:
-  normal:
-    label: "Normal"
-    max_position_pct: 0.05
-    max_total_exposure_pct: 0.40
-    sl_min_pct: 1.0
-    sl_max_pct: 5.0
-    tp_min_pct: 2.0
-    tp_max_pct: 10.0
-    sl_default: 2.0
-    tp_default: 5.0
-    per_market:
-      polymarket: { min_confidence: 50 }
-      forex:      { min_confidence: 45 }
-      stocks:     { min_confidence: 45 }
-    filters:
-      min_confluence: 2
-      adx_alignment: required
-      session: true
-      correlation: true
-      volatility: true
-      kelly_positive: true
-  fast:
-    label: "Fast"
-    max_position_pct: 0.05
-    max_total_exposure_pct: 0.40
-    sl_min_pct: 0.3
-    sl_max_pct: 1.5
-    tp_min_pct: 0.5
-    tp_max_pct: 3.0
-    sl_default: 0.5
-    tp_default: 1.5
-    per_market:
-      polymarket: { min_confidence: 35 }
-      forex:      { min_confidence: 30 }
-      stocks:     { min_confidence: 30 }
-    filters:
-      min_confluence: 1
-      adx_alignment: optional
-      session: true
-      correlation: false
-      volatility: false
-      kelly_positive: true
-
-time_exit:
-  forex:      { base_hours: 96, profit_hours: 168, loss_hours: 48, stagnant_hours: 36 }
-  stocks:     { base_hours: 72, profit_hours: 120, loss_hours: 36, stagnant_hours: 24 }
-  polymarket: { base_hours: 336, profit_hours: 504, loss_hours: 168, stagnant_hours: 72 }
-  default:    { base_hours: 72, profit_hours: 120, loss_hours: 48, stagnant_hours: 36 }
-
-deepseek:
-  model: deepseek-v4-pro
-  temperature: 0.3
-  max_tokens: 4000
-  timeout_seconds: 30
-
 alerts:
-  telegram:
-    enabled: false
-    notify_on_entry: true
-    notify_on_exit: true
-    notify_on_error: true
-    daily_summary: true
-    daily_summary_time: "21:00"
   discord:
     enabled: false
-
-orchestrator:
-  log_level: INFO
-  log_file: orchestrator.log
+  telegram:
+    daily_summary: true
+    daily_summary_time: '21:00'
+    enabled: false
+    notify_on_entry: true
+    notify_on_error: true
+    notify_on_exit: true
+deepseek:
+  max_tokens: 4000
+  model: deepseek-v4-flash
+  temperature: 0.3
+  timeout_seconds: 30
+global:
   data_cache_ttl_minutes: 5
+  log_file: orchestrator.log
+  log_level: INFO
   max_retries: 3
   retry_delay_seconds: 10
+layers:
+  adx_regime:
+    enabled: 1
+    weight_forex: 0.1
+    weight_polymarket: 0
+    weight_stocks: 0.1
+  cross_asset:
+    enabled: 1
+    weight_forex: 0.1
+    weight_polymarket: 0
+    weight_stocks: 0.1
+  fundamental:
+    enabled: 1
+    weight_forex: 0.1
+    weight_polymarket: 0
+    weight_stocks: 0.2
+  ict_smc:
+    enabled: 1
+    weight_forex: 0.15
+    weight_polymarket: 0
+    weight_stocks: 0.1
+  macro:
+    enabled: 1
+    weight_forex: 0.25
+    weight_polymarket: 0
+    weight_stocks: 0.15
+  onchain:
+    enabled: 1
+    weight_forex: 0.1
+    weight_polymarket: 0.25
+    weight_stocks: 0.1
+  orderbook:
+    enabled: 1
+    weight_forex: 0
+    weight_polymarket: 0.3
+    weight_stocks: 0
+  sentiment:
+    enabled: 1
+    weight_forex: 0.2
+    weight_polymarket: 0.2
+    weight_stocks: 0.25
+  technical:
+    enabled: 1
+    weight_forex: 0.35
+    weight_polymarket: 0.25
+    weight_stocks: 0.3
+markets:
+  forex:
+    check_interval_min: 60
+    enabled: true
+    max_position_usd: 30
+    min_confidence: ''
+    mode: paper
+    pairs:
+    - EURUSD=X
+    - GBPUSD=X
+    - USDJPY=X
+    - USDCAD=X
+    - AUDUSD=X
+  polymarket:
+    check_interval_min: 15
+    enabled: true
+    max_position_usd: 50
+    max_positions_concurrent: 2
+    min_confidence: ''
+    mode: paper
+  stocks:
+    check_interval_min: 60
+    enabled: true
+    max_position_usd: 30
+    min_confidence: ''
+    mode: paper
+    tickers:
+    - SPY
+    - QQQ
+    - AAPL
+    - MSFT
+    - GOOGL
+    - AMZN
+    - TSLA
+orchestrator:
+  data_cache_ttl_minutes: 5
+  log_file: orchestrator.log
+  log_level: INFO
+  max_retries: 3
+  retry_delay_seconds: 10
+profiles:
+  fast:
+    filters:
+      adx_alignment: optional
+      correlation: false
+      kelly_positive: true
+      min_confluence: 1
+      session: true
+      volatility: false
+    label: Fast
+    max_position_pct: 0.05
+    max_total_exposure_pct: 0.4
+    per_market:
+      forex:
+        min_confidence: 30
+      polymarket:
+        min_confidence: 35
+      stocks:
+        min_confidence: 30
+    sl_default: 0.5
+    sl_max_pct: 1.5
+    sl_min_pct: 0.3
+    tp_default: 1.5
+    tp_max_pct: 3.0
+    tp_min_pct: 0.5
+  normal:
+    filters:
+      adx_alignment: required
+      correlation: true
+      kelly_positive: true
+      min_confluence: 2
+      session: true
+      volatility: true
+    label: Normal
+    max_position_pct: 0.05
+    max_total_exposure_pct: 0.4
+    per_market:
+      forex:
+        min_confidence: 45
+      polymarket:
+        min_confidence: 50
+      stocks:
+        min_confidence: 45
+    sl_default: 2.0
+    sl_max_pct: 5.0
+    sl_min_pct: 1.0
+    tp_default: 5.0
+    tp_max_pct: 10.0
+    tp_min_pct: 2.0
+risk:
+  correlation_threshold: 0.85
+  max_daily_loss_pct: 0.1
+time_exit:
+  default:
+    base_hours: 72
+    loss_hours: 48
+    profit_hours: 120
+    stagnant_hours: 36
+  forex:
+    base_hours: 96
+    loss_hours: 48
+    profit_hours: 168
+    stagnant_hours: 36
+  polymarket:
+    base_hours: 336
+    loss_hours: 168
+    profit_hours: 504
+    stagnant_hours: 72
+  stocks:
+    base_hours: 72
+    loss_hours: 36
+    profit_hours: 120
+    stagnant_hours: 24
