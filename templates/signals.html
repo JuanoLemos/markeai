@@ -1,122 +1,105 @@
 {% extends "base.html" %}
+{% block title %}Señales{% endblock %}
 {% block content %}
-<h1>Señales</h1>
 
-<div class="filter-bar">
-  <span class="text-muted" style="font-size:12px;align-self:center">Decisión:</span>
-  <button class="chip active" data-filter="decision" data-val="ALL">Todas</button>
-  <button class="chip" data-filter="decision" data-val="LONG">LONG</button>
-  <button class="chip" data-filter="decision" data-val="SHORT">SHORT</button>
-  <button class="chip" data-filter="decision" data-val="WAIT">WAIT</button>
-  <span class="text-muted" style="font-size:12px;align-self:center;margin-left:16px">Mercado:</span>
-  <button class="chip active" data-filter="market" data-val="ALL">Todos</button>
-  <button class="chip" data-filter="market" data-val="polymarket">Polymarket</button>
-  <button class="chip" data-filter="market" data-val="forex">Forex</button>
-  <button class="chip" data-filter="market" data-val="stocks">Stocks</button>
+<div class="ph">
+  <div class="ph-left">
+    <div class="ph-title">⚡ Señales del bot</div>
+    <div class="ph-sub">Cada señal es una decisión que tomó la IA: comprar, vender o esperar</div>
+  </div>
+  <span id="sig-count" style="font-size:13px;color:var(--ink-2)"></span>
 </div>
 
-<div class="text-muted mb-2" style="font-size:12px">
-  <span id="result-count">—</span> señales · click en una fila para ver el desglose por capa
+<div class="explain">
+  <strong>¿Qué es una señal?</strong> El bot analiza el mercado constantemente y genera recomendaciones.
+  <strong>LARGO (▲)</strong> = recomienda que el precio subirá · <strong>CORTO (▼)</strong> = recomienda que bajará · <strong>ESPERAR (—)</strong> = no hay oportunidad clara.
+  La <strong>confianza</strong> indica qué tan seguro está el bot.
 </div>
 
-<div class="section">
-  <table id="signals-table"><tr><td colspan="6"><div class="empty-state">Cargando…</div></td></tr></table>
+<div class="filters">
+  <span class="filter-lbl">Señal</span>
+  <button class="chip on"  data-f="decision" data-v="ALL">Todas</button>
+  <button class="chip"     data-f="decision" data-v="LONG">▲ Largo</button>
+  <button class="chip"     data-f="decision" data-v="SHORT">▼ Corto</button>
+  <button class="chip"     data-f="decision" data-v="WAIT">— Esperar</button>
+  <div class="filter-sep"></div>
+  <span class="filter-lbl">Mercado</span>
+  <button class="chip on"  data-f="market" data-v="ALL">Todos</button>
+  <button class="chip"     data-f="market" data-v="forex">📈 Forex</button>
+  <button class="chip"     data-f="market" data-v="stocks">💹 Acciones</button>
+  <button class="chip"     data-f="market" data-v="polymarket">🎲 Polymarket</button>
 </div>
+
+<div class="panel">
+  <table id="sig-tbl"><tr><td><div class="load-center"><div class="spinner"></div></div></td></tr></table>
+</div>
+
 {% endblock %}
-
 {% block scripts %}
 <script>
-let allSignals = [];
-const filters = { decision: 'ALL', market: 'ALL' };
+let allSig=[], filters={decision:'ALL',market:'ALL'};
+const SLBL={LONG:'▲ Largo',SHORT:'▼ Corto',WAIT:'— Esperar'};
 
 function render() {
-  const filtered = allSignals.filter(s =>
-    (filters.decision === 'ALL' || s.decision === filters.decision) &&
-    (filters.market === 'ALL' || s.market === filters.market)
-  );
-  document.getElementById('result-count').textContent = filtered.length;
-  const t = document.getElementById('signals-table');
-  if (!filtered.length) {
-    t.innerHTML = '<tr><td colspan="6"><div class="empty-state">Sin señales que coincidan con los filtros</div></td></tr>';
+  const f=allSig.filter(s=>(filters.decision==='ALL'||s.decision===filters.decision)&&(filters.market==='ALL'||s.market===filters.market));
+  document.getElementById('sig-count').textContent=f.length+' señal'+(f.length!==1?'es':'');
+  const t=document.getElementById('sig-tbl');
+  if (!f.length) {
+    t.innerHTML='<tr><td><div class="empty"><div class="empty-icon">🔍</div><div class="empty-title">Sin señales con esos filtros</div><div class="empty-desc">Probá cambiando las opciones de arriba</div></div></td></tr>';
     return;
   }
-  t.innerHTML = `<tr><th>Hora</th><th>Mercado</th><th>Ticker</th><th>Decisión</th><th>Confianza</th><th>Razonamiento</th></tr>` +
-    filtered.map(s => `
-      <tr class="expandable" data-id="${s.id}">
-        <td>${(s.timestamp||'').slice(11,19)}</td>
-        <td>${s.market}</td>
-        <td>${s.ticker}</td>
-        <td class="signal-${s.decision}">${s.decision}</td>
-        <td>${s.confidence}</td>
-        <td class="text-muted">${(s.reasoning||'').slice(0,60)}</td>
+  t.innerHTML=`<tr><th>Hora</th><th>Mercado</th><th>Activo</th><th>Señal del bot</th><th>Confianza</th><th>Resumen</th></tr>`+
+    f.map(s=>`
+      <tr class="clickable" data-id="${s.id}">
+        <td class="mono text-faint" style="font-size:12px">${(s.timestamp||'').slice(11,19)}</td>
+        <td>${MKT_ICON[s.market]||''} ${s.market}</td>
+        <td><strong>${s.ticker}</strong></td>
+        <td><span class="tag tag-${s.decision.toLowerCase()}">${SLBL[s.decision]||s.decision}</span></td>
+        <td>${confPill(s.confidence)}</td>
+        <td class="text-faint" style="font-size:12px;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${(s.reasoning||'').slice(0,65)}</td>
       </tr>
-      <tr class="expand-row" id="exp-${s.id}" style="display:none"><td colspan="6"></td></tr>
+      <tr id="exp-${s.id}" style="display:none"><td colspan="6" style="padding:0"></td></tr>
     `).join('');
-  document.querySelectorAll('tr.expandable').forEach(row => {
-    row.addEventListener('click', () => toggleExpand(row.dataset.id));
-  });
+  document.querySelectorAll('tr.clickable').forEach(r=>r.addEventListener('click',()=>toggle(r.dataset.id)));
 }
 
-async function toggleExpand(id) {
-  const exp = document.getElementById('exp-' + id);
-  const row = document.querySelector(`tr.expandable[data-id="${id}"]`);
-  if (exp.style.display === 'table-row') {
-    exp.style.display = 'none';
-    row.classList.remove('expanded');
-    return;
-  }
-  exp.style.display = 'table-row';
-  row.classList.add('expanded');
-  const cell = exp.querySelector('td');
-  cell.innerHTML = '<div class="expand-content">Cargando desglose…</div>';
-  const detail = await api('/api/signals/' + id);
-  const layers = detail.layer_scores || {};
-  const keys = Object.keys(layers);
-  if (!keys.length) {
-    cell.innerHTML = '<div class="expand-content">Sin desglose por capa para esta señal.</div>';
-    return;
-  }
-  const rows = keys.map(name => {
-    const l = layers[name];
-    const score = l.score ?? 50;
-    const pct = Math.max(0, Math.min(100, score));
-    const sig = l.signal || 'WAIT';
-    const w = l.weight ? (l.weight * 100).toFixed(0) + '%' : '—';
+async function toggle(id) {
+  const exp=document.getElementById('exp-'+id);
+  const row=document.querySelector(`tr.clickable[data-id="${id}"]`);
+  if (exp.style.display==='table-row') { exp.style.display='none'; return; }
+  exp.style.display='table-row'; row.style.background='var(--bg-3)';
+  exp.querySelector('td').innerHTML='<div class="load-center"><div class="spinner"></div> Cargando desglose…</div>';
+  const d=await api('/api/signals/'+id);
+  const layers=d.layer_scores||{}, keys=Object.keys(layers);
+  if (!keys.length) { exp.querySelector('td').innerHTML='<div class="layer-breakdown text-faint">Sin desglose disponible.</div>'; return; }
+  const rows=keys.map(name=>{
+    const l=layers[name], sc=l.score??50, sig=l.signal||'WAIT', w=l.weight?(l.weight*100).toFixed(0)+'%':'—';
+    const bCol=sc>=55?'bar-teal':sc<=45?'bar-rose':'bar-amber';
     return `<div class="layer-row">
       <span class="layer-name">${layerLabel(name)}</span>
-      <span class="signal-${sig}">${sig}</span>
-      <span>${score}</span>
-      <span class="text-muted">w: ${w}</span>
-      <div class="score-bar"><div class="fill" style="width:${pct}%;background:${score>=55?'var(--accent-green)':score<=45?'var(--accent-red)':'var(--accent-wait)'}"></div></div>
+      <span class="tag tag-${sig.toLowerCase()}">${sig}</span>
+      <span class="bold mono" style="font-size:12px" title="Puntaje del analizador">${sc}</span>
+      <span class="text-faint" style="font-size:11px" title="Peso en la decisión final">w ${w}</span>
+      <div class="bar-track"><div class="bar-fill ${bCol}" style="width:${Math.max(0,Math.min(100,sc))}%"></div></div>
     </div>`;
   }).join('');
-  cell.innerHTML = `<div class="expand-content">
-    <div style="margin-bottom:8px;color:var(--text)"><strong>Capas que contribuyeron (${keys.length}):</strong></div>
+  exp.querySelector('td').innerHTML=`<div class="layer-breakdown">
+    <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:12px">🔍 Desglose por analizador (${keys.length} capas)</div>
     ${rows}
-    ${detail.reasoning ? `<div style="margin-top:12px;padding-top:8px;border-top:1px solid var(--border)"><strong>Razonamiento:</strong> ${detail.reasoning}</div>` : ''}
+    ${d.reasoning?`<div class="explain" style="margin-top:14px;margin-bottom:0"><strong>💬 Razonamiento:</strong> ${d.reasoning}</div>`:''}
   </div>`;
 }
 
-document.querySelectorAll('.chip').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const f = btn.dataset.filter;
-    document.querySelectorAll(`.chip[data-filter="${f}"]`).forEach(b => {
-      b.classList.remove('active', 'short', 'wait');
-    });
-    btn.classList.add('active');
-    if (f === 'decision') {
-      if (btn.dataset.val === 'SHORT') btn.classList.add('short');
-      if (btn.dataset.val === 'WAIT') btn.classList.add('wait');
-    }
-    filters[f] = btn.dataset.val;
-    render();
+document.querySelectorAll('.chip[data-f]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const f=btn.dataset.f;
+    document.querySelectorAll(`.chip[data-f="${f}"]`).forEach(b=>b.classList.remove('on','on-neg','on-warn'));
+    btn.classList.add(btn.dataset.v==='SHORT'?'on-neg':btn.dataset.v==='WAIT'?'on-warn':'on');
+    filters[f]=btn.dataset.v; render();
   });
 });
 
-async function load() {
-  allSignals = await api('/api/signals');
-  render();
-}
-load(); setInterval(load, 10000);
+async function load() { allSig=await api('/api/signals')||[]; render(); }
+load(); setInterval(load,10000);
 </script>
 {% endblock %}

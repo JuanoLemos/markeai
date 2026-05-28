@@ -1,0 +1,84 @@
+<!DOCTYPE html><html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MarketAI</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script>document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'dark');</script>
+</head>
+<body>
+  <button class="menu-toggle" onclick="document.querySelector('.sidebar').classList.toggle('open')">☰</button>
+  <nav class="sidebar">
+    <h2>📊 MarketAI</h2>
+    <a href="/" class="{% if page == 'overview' %}active{% endif %}">🏠 Overview</a>
+    <a href="/signals" class="{% if page == 'signals' %}active{% endif %}">⚡ Señales</a>
+    <a href="/trades" class="{% if page == 'trades' %}active{% endif %}">💼 Trades</a>
+    <a href="/analytics" class="{% if page == 'analytics' %}active{% endif %}">📈 Analytics</a>
+    <a href="/watchlist" class="{% if page == 'watchlist' or page == 'ticker' %}active{% endif %}">👁 Watchlist</a>
+    <a href="/news" class="{% if page == 'news' %}active{% endif %}">📰 Noticias</a>
+    <a href="/backtest" class="{% if page == 'backtest' %}active{% endif %}">🔬 Backtest</a>
+    <a href="/config" class="{% if page == 'config' %}active{% endif %}">⚙️ Config</a>
+    <a href="/logs" class="{% if page == 'logs' %}active{% endif %}">📋 Logs</a>
+    <div style="padding:16px 20px;border-top:1px solid var(--border);margin-top:16px">
+      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">Tema</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <div class="theme-dot" data-theme="dark"      style="width:18px;height:18px;border-radius:50%;cursor:pointer;background:#161b22;border:2px solid #30363d;flex-shrink:0" title="Dark"></div>
+        <div class="theme-dot" data-theme="light"     style="width:18px;height:18px;border-radius:50%;cursor:pointer;background:#ffffff;border:2px solid #aaaaaa;flex-shrink:0" title="Light"></div>
+        <div class="theme-dot" data-theme="bloomberg" style="width:18px;height:18px;border-radius:50%;cursor:pointer;background:#000000;border:2px solid #ff8c00;flex-shrink:0" title="Bloomberg"></div>
+        <div class="theme-dot" data-theme="mint"      style="width:18px;height:18px;border-radius:50%;cursor:pointer;background:#122b24;border:2px solid #00e5a0;flex-shrink:0" title="Mint"></div>
+        <div class="theme-dot" data-theme="cyberpunk" style="width:18px;height:18px;border-radius:50%;cursor:pointer;background:#110020;border:2px solid #00ffcc;flex-shrink:0" title="Cyberpunk"></div>
+        <div class="theme-dot" data-theme="solarized" style="width:18px;height:18px;border-radius:50%;cursor:pointer;background:#fdf6e3;border:2px solid #2aa198;flex-shrink:0" title="Solarized"></div>
+      </div>
+    </div>
+  </nav>
+  <div class="main" id="app">
+    {% block content %}{% endblock %}
+  </div>
+  <script>
+    async function api(url, opts) {
+      const r = await fetch(url, opts);
+      return r.json();
+    }
+    const LAYER_EMOJI = {
+      technical:   '📊',
+      onchain:     '⛓️',
+      on_chain:    '⛓️',
+      sentiment:   '💬',
+      orderbook:   '📋',
+      order_book:  '📋',
+      fundamental: '🏢',
+      macro:       '🌍',
+      cross_asset: '🔗',
+      crossasset:  '🔗',
+      ict:         '📐',
+      ict_smc:     '📐',
+    };
+    function layerLabel(name) {
+      const key = (name || '').toLowerCase().replace(/[^a-z_]/g, '');
+      const emoji = LAYER_EMOJI[key] || '🔹';
+      return emoji + ' ' + name;
+    }
+    // tema persistente
+    (function() {
+      const t = localStorage.getItem('theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+      document.querySelectorAll('.theme-dot').forEach(d => {
+        d.classList.toggle('active', d.dataset.theme === t);
+      });
+    })();
+    document.querySelectorAll('.theme-dot').forEach(d => {
+      d.addEventListener('click', () => {
+        const t = d.dataset.theme;
+        document.documentElement.setAttribute('data-theme', t);
+        localStorage.setItem('theme', t);
+        document.querySelectorAll('.theme-dot').forEach(x => x.classList.toggle('active', x.dataset.theme === t));
+      });
+    });
+    // cerrar sidebar mobile al navegar
+    document.querySelectorAll('.sidebar a').forEach(a => {
+      a.addEventListener('click', () => document.querySelector('.sidebar').classList.remove('open'));
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

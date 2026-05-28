@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Backtest</h1>
+<div class="btn-group">
+  <button class="btn btn-primary" onclick="runBT('forex')">▶ Backtest Forex</button>
+  <button class="btn btn-primary" onclick="runBT('stocks')">▶ Backtest Stocks</button>
+</div>
+
+<div id="bt-loading" style="display:none;text-align:center;padding:40px;color:var(--text-muted)">
+  <div style="font-size:24px;margin-bottom:8px">⏳</div>
+  Ejecutando backtest... toma ~30-60s
+</div>
+
+<div id="bt-error" style="display:none"></div>
+
+<div id="bt-results" style="display:none">
+  <div class="cards" id="bt-cards"></div>
+  <div class="section">
+    <h2>Resultados por Ticker</h2>
+    <table id="bt-table"><tr><th>Ticker</th><th>Trades</th><th>W/L</th><th>Win Rate</th><th>PnL</th><th>Sharpe</th><th>Profit Factor</th></tr></table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function runBT(market) {
+  const ld = document.getElementById('bt-loading');
+  const err = document.getElementById('bt-error');
+  const res = document.getElementById('bt-results');
+  ld.style.display = 'block'; err.style.display = 'none'; res.style.display = 'none';
+
+  const r = await api('/api/backtest/run?market=' + market);
+  ld.style.display = 'none';
+
+  if (r.error && !r.results.length) {
+    err.style.display = 'block'; err.innerHTML = '<div class="card" style="border-color:var(--accent-red)"><div class="label">Error</div><div class="value">' + r.error + '</div></div>';
+    return;
+  }
+
+  const agg = r.aggregate || {};
+  const cards = document.getElementById('bt-cards');
+  cards.innerHTML =
+    '<div class="card"><div class="label">Total Trades</div><div class="value">' + agg.total_trades + '</div></div>' +
+    '<div class="card"><div class="label">Win Rate Promedio</div><div class="value ' + (agg.avg_win_rate >= 50 ? 'green' : 'red') + '">' + agg.avg_win_rate + '%</div></div>' +
+    '<div class="card"><div class="label">PnL Total</div><div class="value ' + (agg.total_pnl_usd >= 0 ? 'green' : 'red') + '">' + (agg.total_pnl_usd >= 0 ? '+' : '') + '$' + agg.total_pnl_usd.toFixed(2) + '</div></div>';
+
+  const tbl = document.getElementById('bt-table');
+  tbl.innerHTML = '<tr><th>Ticker</th><th>Trades</th><th>W/L</th><th>Win Rate</th><th>PnL</th><th>Sharpe</th><th>Profit Factor</th></tr>' +
+    r.results.map(t => {
+      const wrClass = t.win_rate >= 55 ? 'green' : t.win_rate >= 45 ? 'signal-WAIT' : 'red';
+      const pnlClass = (t.total_pnl_usd || 0) >= 0 ? 'green' : 'red';
+      const pnlStr = (t.total_pnl_usd || 0) >= 0 ? '+' : '';
+      const pf = t.profit_factor === 'inf' ? '∞' : (t.profit_factor || '-');
+      return '<tr><td>' + t.ticker + '</td><td>' + t.trades + '</td><td>' + (t.wins||0) + '/' + (t.losses||0) + '</td><td class="' + wrClass + '">' + (t.win_rate || 0) + '%</td><td class="' + pnlClass + '">' + pnlStr + '$' + (t.total_pnl_usd || 0).toFixed(2) + '</td><td>' + (t.sharpe || 0) + '</td><td>' + pf + '</td></tr>';
+    }).join('');
+
+  if (r.error) {
+    cards.innerHTML += '<div class="card" style="border-color:var(--accent-wait)"><div class="label">Stderr</div><div class="sub">' + r.error.slice(0,100) + '</div></div>';
+  }
+
+  res.style.display = 'block';
+}
+</script>
+{% endblock %}

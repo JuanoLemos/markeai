@@ -1,65 +1,116 @@
 {% extends "base.html" %}
+{% block title %}Simulación{% endblock %}
 {% block content %}
-<h1>Backtest</h1>
-<div class="btn-group">
-  <button class="btn btn-primary" onclick="runBT('forex')">▶ Backtest Forex</button>
-  <button class="btn btn-primary" onclick="runBT('stocks')">▶ Backtest Stocks</button>
-</div>
 
-<div id="bt-loading" style="display:none;text-align:center;padding:40px;color:var(--text-muted)">
-  <div style="font-size:24px;margin-bottom:8px">⏳</div>
-  Ejecutando backtest... toma ~30-60s
-</div>
-
-<div id="bt-error" style="display:none"></div>
-
-<div id="bt-results" style="display:none">
-  <div class="cards" id="bt-cards"></div>
-  <div class="section">
-    <h2>Resultados por Ticker</h2>
-    <table id="bt-table"><tr><th>Ticker</th><th>Trades</th><th>W/L</th><th>Win Rate</th><th>PnL</th><th>Sharpe</th><th>Profit Factor</th></tr></table>
+<div class="ph">
+  <div class="ph-left">
+    <div class="ph-title">🔬 Simulación histórica</div>
+    <div class="ph-sub">Probá la estrategia del bot con datos del pasado, sin arriesgar dinero real</div>
   </div>
 </div>
-{% endblock %}
 
+<div class="explain">
+  <strong>¿Qué es un backtest?</strong> Es como preguntarle al bot "¿qué hubieras hecho si existías hace 6 meses?".
+  Si los resultados históricos son buenos, es una señal positiva — aunque no garantiza el futuro.
+  Tarda entre 30 y 60 segundos.
+</div>
+
+<div class="grid-2" style="margin-bottom:24px">
+  <div class="panel" style="padding:20px;text-align:center;cursor:pointer;transition:all .2s;border-color:var(--line)" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--line)'" onclick="runBT('forex')">
+    <div style="font-size:36px;margin-bottom:8px">📈</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">Backtest Forex</div>
+    <div style="font-size:12px;color:var(--ink-2)">Divisas: EUR/USD, GBP/USD, etc.</div>
+    <button class="btn btn-primary" style="margin-top:14px;width:100%" id="btn-fx">▶ Simular Forex</button>
+  </div>
+  <div class="panel" style="padding:20px;text-align:center;cursor:pointer;transition:all .2s;border-color:var(--line)" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--line)'" onclick="runBT('stocks')">
+    <div style="font-size:36px;margin-bottom:8px">💹</div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:4px">Backtest Acciones</div>
+    <div style="font-size:12px;color:var(--ink-2)">Acciones configuradas en tu watchlist</div>
+    <button class="btn btn-primary" style="margin-top:14px;width:100%" id="btn-st">▶ Simular Acciones</button>
+  </div>
+</div>
+
+<!-- Loading state -->
+<div id="bt-load" style="display:none">
+  <div class="panel" style="padding:48px;text-align:center">
+    <div class="spinner" style="width:36px;height:36px;border-width:3px;margin:0 auto 18px"></div>
+    <div style="font-size:16px;font-weight:700;margin-bottom:6px">Ejecutando simulación…</div>
+    <div style="font-size:13px;color:var(--ink-2)">Analizando datos históricos, esto puede tardar hasta 60 segundos</div>
+    <div style="margin-top:16px;font-size:12px;color:var(--ink-3)">☕ Buen momento para tomar un café</div>
+  </div>
+</div>
+
+<!-- Error -->
+<div id="bt-err" style="display:none"></div>
+
+<!-- Results -->
+<div id="bt-res" style="display:none">
+  <div class="section">
+    <div class="section-h"><h2>📊 Resultados de la simulación</h2></div>
+    <div class="kpi-grid" id="bt-kpis" style="margin-bottom:18px"></div>
+  </div>
+  <div class="section">
+    <div class="section-h"><h2>Detalle por activo</h2></div>
+    <div class="panel">
+      <table id="bt-tbl"></table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
 {% block scripts %}
 <script>
-async function runBT(market) {
-  const ld = document.getElementById('bt-loading');
-  const err = document.getElementById('bt-error');
-  const res = document.getElementById('bt-results');
-  ld.style.display = 'block'; err.style.display = 'none'; res.style.display = 'none';
+async function runBT(market){
+  const load=document.getElementById('bt-load'), err=document.getElementById('bt-err'), res=document.getElementById('bt-res');
+  document.getElementById('btn-fx').disabled=true;
+  document.getElementById('btn-st').disabled=true;
+  load.style.display='block'; err.style.display='none'; res.style.display='none';
 
-  const r = await api('/api/backtest/run?market=' + market);
-  ld.style.display = 'none';
+  const r=await api('/api/backtest/run?market='+market);
+  load.style.display='none';
+  document.getElementById('btn-fx').disabled=false;
+  document.getElementById('btn-st').disabled=false;
 
-  if (r.error && !r.results.length) {
-    err.style.display = 'block'; err.innerHTML = '<div class="card" style="border-color:var(--accent-red)"><div class="label">Error</div><div class="value">' + r.error + '</div></div>';
-    return;
+  if (r.error&&!(r.results||[]).length) {
+    err.style.display='block';
+    err.innerHTML=`<div class="panel" style="border-color:var(--rose);padding:20px">
+      <div class="flex gap-2"><span style="font-size:20px">❌</span><div>
+        <div style="font-weight:700;color:var(--rose);margin-bottom:4px">Error en la simulación</div>
+        <div style="font-size:13px;color:var(--ink-2)">${r.error}</div>
+      </div></div>
+    </div>`; return;
   }
 
-  const agg = r.aggregate || {};
-  const cards = document.getElementById('bt-cards');
-  cards.innerHTML =
-    '<div class="card"><div class="label">Total Trades</div><div class="value">' + agg.total_trades + '</div></div>' +
-    '<div class="card"><div class="label">Win Rate Promedio</div><div class="value ' + (agg.avg_win_rate >= 50 ? 'green' : 'red') + '">' + agg.avg_win_rate + '%</div></div>' +
-    '<div class="card"><div class="label">PnL Total</div><div class="value ' + (agg.total_pnl_usd >= 0 ? 'green' : 'red') + '">' + (agg.total_pnl_usd >= 0 ? '+' : '') + '$' + agg.total_pnl_usd.toFixed(2) + '</div></div>';
+  const agg=r.aggregate||{}, pnl=agg.total_pnl_usd||0, wr=agg.avg_win_rate||0;
+  document.getElementById('bt-kpis').innerHTML=`
+    <div class="kpi kpi-info"><div class="kpi-label">Total operaciones simuladas</div><div class="kpi-value">${agg.total_trades||0}</div></div>
+    <div class="kpi kpi-${wr>=50?'pos':'neg'}">
+      <div class="kpi-label">Tasa de aciertos promedio</div>
+      <div class="kpi-value ${wr>=50?'pos':'neg'}">${wr}%</div>
+      <div class="kpi-sub">${wr>=55?'✅ Muy buena':wr>=50?'👍 Aceptable':'⚠️ Mejorable'}</div>
+    </div>
+    <div class="kpi kpi-${pnl>=0?'pos':'neg'}">
+      <div class="kpi-label">Ganancia/Pérdida simulada</div>
+      <div class="kpi-value ${pnl>=0?'pos':'neg'}">${pnl>=0?'+':''}$${pnl.toFixed(2)}</div>
+      <div class="kpi-sub">${pnl>=0?'El bot hubiera ganado 🎉':'El bot hubiera perdido 😟'}</div>
+    </div>
+    ${r.error?`<div class="kpi kpi-warn"><div class="kpi-label">⚠️ Aviso</div><div style="font-size:12px;color:var(--ink-2);margin-top:6px">${r.error.slice(0,100)}</div></div>`:''}`;
 
-  const tbl = document.getElementById('bt-table');
-  tbl.innerHTML = '<tr><th>Ticker</th><th>Trades</th><th>W/L</th><th>Win Rate</th><th>PnL</th><th>Sharpe</th><th>Profit Factor</th></tr>' +
-    r.results.map(t => {
-      const wrClass = t.win_rate >= 55 ? 'green' : t.win_rate >= 45 ? 'signal-WAIT' : 'red';
-      const pnlClass = (t.total_pnl_usd || 0) >= 0 ? 'green' : 'red';
-      const pnlStr = (t.total_pnl_usd || 0) >= 0 ? '+' : '';
-      const pf = t.profit_factor === 'inf' ? '∞' : (t.profit_factor || '-');
-      return '<tr><td>' + t.ticker + '</td><td>' + t.trades + '</td><td>' + (t.wins||0) + '/' + (t.losses||0) + '</td><td class="' + wrClass + '">' + (t.win_rate || 0) + '%</td><td class="' + pnlClass + '">' + pnlStr + '$' + (t.total_pnl_usd || 0).toFixed(2) + '</td><td>' + (t.sharpe || 0) + '</td><td>' + pf + '</td></tr>';
+  document.getElementById('bt-tbl').innerHTML=`
+    <tr><th>Activo</th><th>Ops.</th><th>Éxitos / Fallos</th><th>Aciertos</th><th>Ganancia simulada</th><th>Sharpe</th><th>Factor ganancia</th></tr>`+
+    (r.results||[]).map(t=>{
+      const tw=t.win_rate||0, tp=t.total_pnl_usd||0, pf=t.profit_factor==='inf'?'∞':(t.profit_factor||'—');
+      return `<tr>
+        <td><strong>${t.ticker}</strong></td>
+        <td>${t.trades}</td>
+        <td><span class="c-pos">${t.wins||0}✅</span> / <span class="c-neg">${t.losses||0}❌</span></td>
+        <td class="${tw>=55?'c-pos':tw>=45?'c-wait':'c-neg'}" style="font-weight:700">${tw}%</td>
+        <td class="${tp>=0?'c-pos':'c-neg'}" style="font-weight:700">${tp>=0?'+':''}$${tp.toFixed(2)}</td>
+        <td>${t.sharpe||0}</td>
+        <td>${pf}</td>
+      </tr>`;
     }).join('');
-
-  if (r.error) {
-    cards.innerHTML += '<div class="card" style="border-color:var(--accent-wait)"><div class="label">Stderr</div><div class="sub">' + r.error.slice(0,100) + '</div></div>';
-  }
-
-  res.style.display = 'block';
+  res.style.display='block';
 }
 </script>
 {% endblock %}
