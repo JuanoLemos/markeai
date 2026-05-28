@@ -64,6 +64,14 @@ class NewsCollector:
             articles.extend(self._fetch_newsapi(market_type, hours_back))
         if self.cryptopanic_key and market_type in ("crypto", "all"):
             articles.extend(self._fetch_cryptopanic(hours_back))
+        if len(articles) < 5:
+            rss_articles = self._fetch_rss(market_type)
+            seen = {a.get("url", a.get("title")) for a in articles}
+            for a in rss_articles:
+                key = a.get("url", a.get("title"))
+                if key and key not in seen:
+                    seen.add(key)
+                    articles.append(a)
         with open(cache_file, "w") as f:
             json.dump(articles, f)
         return articles
@@ -131,6 +139,42 @@ class NewsCollector:
                 if p.get("title")
             ]
         except requests.RequestException:
+            return []
+
+    RSS_FEEDS = {
+        "forex": "https://finance.yahoo.com/news/rssindex",
+        "stocks": "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+        "crypto": "https://news.google.com/rss/search?q=cryptocurrency+bitcoin+market&hl=en-US&gl=US&ceid=US:en",
+        "all": "https://news.google.com/rss/search?q=stock+market+forex+crypto+finance&hl=en-US&gl=US&ceid=US:en",
+    }
+
+    def _fetch_rss(self, market_type: str) -> list:
+        url = self.RSS_FEEDS.get(market_type, self.RSS_FEEDS["all"])
+        try:
+            from bs4 import BeautifulSoup
+            resp = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+            resp.raise_for_status()
+            soup = BeautifulSoup(resp.content, "xml")
+            items = soup.find_all("item") or soup.find_all("entry")
+            articles = []
+            for item in items[:20]:
+                title = item.find("title")
+                desc = item.find("description") or item.find("summary")
+                link = item.find("link")
+                pub_date = item.find("pubDate") or item.find("published")
+                if not title:
+                    continue
+                href = link.text if link and not link.get("href") else (link.get("href") if link else "")
+                articles.append({
+                    "source": "RSS",
+                    "title": title.text.strip(),
+                    "description": desc.text.strip()[:200] if desc else "",
+                    "url": href,
+                    "published_at": pub_date.text.strip() if pub_date else datetime.now().isoformat(),
+                    "sentiment": _classify_text(title.text),
+                })
+            return articles
+        except Exception:
             return []
 
     def get_sentiment_summary(self, market_type: str = "all", hours_back: int = 24) -> dict:
