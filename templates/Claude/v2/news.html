@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Noticias{% endblock %}
+{% block content %}
+
+<div class="ph">
+  <div class="ph-left">
+    <div class="ph-title">📰 Noticias & Sentimiento</div>
+    <div class="ph-sub">El bot analiza noticias para entender el humor del mercado</div>
+  </div>
+</div>
+
+<div class="explain">
+  El <strong>sentimiento</strong> indica si las noticias son optimistas (el mercado podría subir) o pesimistas (podría bajar).
+  El bot lo usa como una de sus capas de análisis.
+</div>
+
+<div class="kpi-grid" id="news-kpis" style="margin-bottom:18px"></div>
+
+<div class="filters">
+  <span class="filter-lbl">Mercado</span>
+  <button class="chip on" onclick="setF('market','all',this)">Todos</button>
+  <button class="chip" onclick="setF('market','forex',this)">📈 Forex</button>
+  <button class="chip" onclick="setF('market','stocks',this)">💹 Acciones</button>
+  <button class="chip" onclick="setF('market','crypto',this)">₿ Cripto</button>
+  <div class="filter-sep"></div>
+  <span class="filter-lbl">Sentimiento</span>
+  <button class="chip on" onclick="setF('sentiment','all',this)">Todos</button>
+  <button class="chip" onclick="setF('sentiment','bullish',this)">🟢 Optimista</button>
+  <button class="chip" onclick="setF('sentiment','bearish',this)">🔴 Pesimista</button>
+  <button class="chip" onclick="setF('sentiment','neutral',this)">⚪ Neutral</button>
+</div>
+
+<div id="news-list" style="display:flex;flex-direction:column;gap:10px">
+  <div class="load-center"><div class="spinner"></div> Cargando noticias…</div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+let _f={market:'all',sentiment:'all'};
+const SICON={bullish:'🟢',bearish:'🔴',neutral:'⚪'};
+const SCOL={bullish:'var(--teal)',bearish:'var(--rose)',neutral:'var(--ink-3)'};
+const SLBL={bullish:'Optimista',bearish:'Pesimista',neutral:'Neutral'};
+
+function setF(g,v,btn){
+  _f[g]=v;
+  document.querySelectorAll(`.filters .chip`).forEach(c=>{if(c.getAttribute('onclick')?.includes(`'${g}'`))c.classList.remove('on');});
+  btn.classList.add('on'); loadNews();
+}
+
+async function loadNews(){
+  const params=new URLSearchParams({market:_f.market,sentiment:_f.sentiment});
+  const d=await api('/api/news?'+params);
+  const total=d.total||0;
+  const pctB=total?Math.round((d.bullish||0)/total*100):0;
+  const pctR=total?Math.round((d.bearish||0)/total*100):0;
+  const mood=pctB>55?'😀 El mercado está optimista':pctR>55?'😟 El mercado está pesimista':'😐 Sentimiento mixto';
+  const moodColor=pctB>55?'var(--teal)':pctR>55?'var(--rose)':'var(--ink-2)';
+  document.getElementById('news-kpis').innerHTML=`
+    <div class="kpi kpi-info">
+      <div class="kpi-label">Humor del mercado</div>
+      <div style="font-size:20px;font-weight:700;color:${moodColor};margin-top:6px">${mood}</div>
+    </div>
+    <div class="kpi kpi-info">
+      <div class="kpi-label">Noticias (últimas 24h)</div>
+      <div class="kpi-value">${total}</div>
+    </div>
+    <div class="kpi kpi-pos" style="grid-column:span 2">
+      <div class="kpi-label">Distribución de sentimiento</div>
+      <div style="margin-top:10px;height:10px;border-radius:5px;overflow:hidden;display:flex;background:var(--bg-4)">
+        <div style="width:${pctB}%;background:var(--teal);transition:width .4s"></div>
+        <div style="width:${pctR}%;background:var(--rose);transition:width .4s"></div>
+      </div>
+      <div style="display:flex;gap:16px;margin-top:8px;font-size:12px">
+        <span class="c-pos">🟢 Optimista: ${d.bullish||0}</span>
+        <span class="c-neg">🔴 Pesimista: ${d.bearish||0}</span>
+        <span class="text-faint">⚪ Neutral: ${d.neutral||0}</span>
+      </div>
+    </div>`;
+
+  const list=document.getElementById('news-list');
+  const articles=d.articles||[];
+  if (!articles.length) {
+    list.innerHTML=`<div class="panel"><div class="empty">
+      <div class="empty-icon">📰</div>
+      <div class="empty-title">Sin noticias disponibles</div>
+      <div class="empty-desc">Las noticias se cargan cuando el bot ejecuta su análisis. Verificá que NewsAPI o CryptoPanic estén configurados en el archivo .env</div>
+    </div></div>`; return;
+  }
+
+  list.innerHTML=articles.map(a=>{
+    const sent=a.sentiment||'neutral';
+    const bColor=SCOL[sent]||'var(--line)';
+    const desc=(a.description||'').slice(0,160)+((a.description||'').length>160?'…':'');
+    const ago=timeAgo(a.published_at);
+    return `<div class="panel" style="border-left:3px solid ${bColor};transition:box-shadow .2s;cursor:pointer" onmouseover="this.style.boxShadow='var(--s-md)'" onmouseout="this.style.boxShadow=''">
+      <div class="panel-body" style="padding:14px 18px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">
+          <div style="flex:1">
+            <a href="${a.url||'#'}" target="_blank" rel="noopener" style="color:var(--ink);font-weight:700;font-size:14px;line-height:1.4;display:block;transition:color .15s" onmouseover="this.style.color='var(--teal)'" onmouseout="this.style.color='var(--ink)'">${a.title||'Sin título'}</a>
+            ${desc?`<div style="color:var(--ink-2);font-size:12px;margin-top:7px;line-height:1.6">${desc}</div>`:''}
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:22px" title="Sentimiento: ${SLBL[sent]||sent}">${SICON[sent]||'⚪'}</div>
+            <div style="font-size:11px;color:var(--ink-3);margin-top:4px">${ago}</div>
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:14px;font-size:11px;color:var(--ink-3);flex-wrap:wrap">
+          <span>📰 ${a.source||'Desconocido'}</span>
+          ${a.published_at?`<span>${a.published_at.slice(0,10)}</span>`:''}
+          <span style="color:${bColor};font-weight:700;text-transform:uppercase">${SLBL[sent]||sent}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+loadNews();
+</script>
+{% endblock %}
