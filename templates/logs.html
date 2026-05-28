@@ -1,39 +1,20 @@
 {% extends "base.html" %}
-{% block title %}Registros{% endblock %}
 {% block content %}
-
-<div class="ph">
-  <div class="ph-left">
-    <div class="ph-title">📋 Registros del sistema</div>
-    <div class="ph-sub">Lo que el bot está haciendo en tiempo real, paso a paso</div>
-  </div>
-  <div class="ph-actions">
-    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('log-out').scrollTop=0">↑ Inicio</button>
-    <button class="btn btn-ghost btn-sm" onclick="document.getElementById('log-out').scrollTop=1e9">↓ Final</button>
-    <button class="btn btn-sm" onclick="loadLog()">⟳ Actualizar</button>
-    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2);cursor:pointer;padding:6px 0">
-      <input type="checkbox" id="auto-scroll" checked> Seguir automático
-    </label>
-  </div>
+<h1>Logs</h1>
+<div class="btn-group">
+  <button class="btn" onclick="document.getElementById('log-output').scrollTop = 0">Ir arriba</button>
+  <button class="btn" onclick="document.getElementById('log-output').scrollTop = document.getElementById('log-output').scrollHeight">Ir abajo</button>
 </div>
-
-<div class="explain">
-  Los registros muestran cada paso que da el bot: qué analiza, qué decide, qué errores encuentra.
-  Son útiles para diagnosticar problemas o entender por qué tomó una decisión.
-</div>
-
-<pre class="log" id="log-out">Cargando registros…</pre>
-
+<pre class="log" id="log-output">Cargando...</pre>
 {% endblock %}
+
 {% block scripts %}
 <script>
-async function loadLog(){
-  const l=await api('/api/logs');
-  const el=document.getElementById('log-out');
-  const atBottom=el.scrollHeight-el.scrollTop<=el.clientHeight+30;
-  el.textContent=l.lines||'Sin registros disponibles.';
-  if(document.getElementById('auto-scroll').checked&&atBottom) el.scrollTop=el.scrollHeight;
+async function load() {
+  const l = await api('/api/logs');
+  document.getElementById('log-output').textContent = l.lines || 'Sin logs';
 }
-loadLog(); setInterval(loadLog,5000);
+load();
+setInterval(load, 5000);
 </script>
 {% endblock %}

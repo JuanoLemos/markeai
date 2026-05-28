@@ -1,186 +1,514 @@
 {% extends "base.html" %}
-{% block title %}Inicio{% endblock %}
 {% block content %}
-
-<div class="status-strip mb-3">
-  <div class="flex gap-2">
-    <span class="sb-pulse" id="page-pulse"></span>
-    <span class="faint" id="page-status-txt">Verificando&hellip;</span>
-  </div>
-  <div class="sep"></div>
-  <button class="btn btn-lime btn-sm" onclick="doLoop(true)"  id="btn-start">&#9654; Activar bot</button>
-  <button class="btn btn-rose  btn-sm" onclick="doLoop(false)" id="btn-stop" >&#9632; Pausar bot</button>
+<h1>Overview</h1>
+<div class="btn-group">
+  <button class="btn btn-primary" onclick="toggleLoop(true)" id="btn-start">▶ Iniciar Loop</button>
+  <button class="btn btn-danger" onclick="toggleLoop(false)" id="btn-stop">■ Detener</button>
+  <span class="flex" id="status-badge"><span class="status-dot stopped"></span><span id="status-text">Verificando...</span></span>
 </div>
 
-<div id="brief-box" class="mb-2"></div>
+<div id="daily-brief" style="margin-bottom:20px"></div>
 
-<div class="grid-overview">
-  <div class="area-chart cell">
-    <div class="cell-header">
-      <div class="cell-title">&#x1F4C9; Curva de capital</div>
-      <div class="btn-group">
-        <span class="chip" onclick="setP('1d',this)">1d</span>
-        <span class="chip" onclick="setP('7d',this)">7d</span>
-        <span class="chip" onclick="setP('30d',this)">30d</span>
-        <span class="chip on" onclick="setP('all',this)">Todo</span>
-        <span class="mono" id="eq-chg" style="font-size:14px;font-weight:700;margin-left:4px"></span>
-      </div>
-    </div>
-    <div class="cell-body" style="min-height:240px;position:relative" id="eq-ctnr">
-      <div class="ctip" id="eq-tip"></div>
-      <div id="eq-inner" class="loading"><div class="spin"></div></div>
-    </div>
-  </div>
+<div class="cards" id="metrics"></div>
 
-  <div class="area-metrics cell">
-    <div class="cell-header">
-      <div class="cell-title">&#x1F4CA; Resumen</div>
-    </div>
-    <div class="cell-body-0">
-      <div class="kpi-row" id="hero-kpis"></div>
-    </div>
-  </div>
+<div class="section">
+  <h2>Métricas Avanzadas</h2>
+  <div class="cards" id="metrics-extended"></div>
+</div>
 
-  <div class="area-signals cell">
-    <div class="cell-header">
-      <div class="cell-title">&#x26A1; &Uacute;ltimas se&ntilde;ales</div>
-    </div>
-    <div class="cell-body-0">
-      <table id="sig-table"><tr><td class="loading"><div class="spin"></div></td></tr></table>
-    </div>
-  </div>
+<div class="section">
+  <h2>Funnel de Decisión <span class="text-muted" style="font-size:12px;font-weight:400">— últimos 7 días</span></h2>
+  <div class="funnel" id="funnel"></div>
+</div>
 
-  <div class="area-pos cell">
-    <div class="cell-header">
-      <div class="cell-title">&#x1F4BC; Posiciones abiertas</div>
-    </div>
-    <div class="cell-body-0">
-      <table id="pos-table"><tr><td class="loading"><div class="spin"></div></td></tr></table>
-    </div>
-  </div>
-
-  <div class="area-market cell">
-    <div class="cell-header">
-      <div class="cell-title">&#x1F4CA; Normal vs Fast</div>
-    </div>
-    <div class="cell-body" id="profiles-grid"></div>
-  </div>
-
-  <div class="area-health cell">
-    <div class="cell-header">
-      <div class="cell-title">&#x1F4BC; M&eacute;tricas</div>
-    </div>
-    <div class="cell-body-0 kpi-row" id="ext-kpis"></div>
+<div class="section">
+  <h2>Equity Curve
+    <span style="margin-left:12px">
+      <span id="equity-period-btns" style="display:inline-flex;gap:4px">
+        <button class="chip" data-p="1d" onclick="setEquityPeriod('1d',this)">1d</button>
+        <button class="chip" data-p="7d" onclick="setEquityPeriod('7d',this)">7d</button>
+        <button class="chip" data-p="30d" onclick="setEquityPeriod('30d',this)">30d</button>
+        <button class="chip chip-active" data-p="all" onclick="setEquityPeriod('all',this)">Todo</button>
+      </span>
+    </span>
+    <span id="equity-change" style="font-size:13px;font-weight:400;margin-left:12px"></span>
+  </h2>
+  <div id="equity-chart" style="background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px;min-height:260px;position:relative">
+    <div id="equity-tooltip" style="display:none;position:absolute;background:var(--bg-hover);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--text);pointer-events:none;z-index:10;white-space:nowrap"></div>
+    <div id="equity-inner" style="text-align:center;color:var(--text-muted);padding-top:100px">Cargando...</div>
   </div>
 </div>
 
+<div class="section">
+  <h2>⚠️ Risk Snapshot <span class="text-muted" style="font-size:12px;font-weight:400">— peor caso si todos los stops se ejecutan ahora</span></h2>
+  <div id="risk-snapshot"></div>
+</div>
+
+<div class="section">
+  <h2>📈 Proyección & Racha</h2>
+  <div id="projection-cards" class="cards"></div>
+  <div id="projection-chart" style="margin-top:12px"></div>
+</div>
+
+<div class="section">
+  <h2>Rendimiento por Mercado</h2>
+  <table id="by-market-table"><tr><td colspan="5" class="text-muted">Cargando...</td></tr></table>
+</div>
+
+<div class="section">
+  <h2>Estado de APIs</h2>
+  <div class="cards" id="health-cards"></div>
+</div>
+
+<div class="section">
+  <h2>Posiciones Abiertas</h2>
+  <table id="positions-table"><tr><td colspan="5" class="text-muted">Cargando...</td></tr></table>
+</div>
+
+<div class="section">
+  <h2>Últimas Señales</h2>
+  <table id="signals-table"><tr><td colspan="5" class="text-muted">Cargando...</td></tr></table>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-/* ── Helpers for this page ── */
-async function doLoop(start) {
-  await api(start?'/api/loop/start':'/api/loop/stop');
-  await loadStatus();
-}
-
-function profileCard(title, d) {
-  const cls = function(v){return v>=0?'up':'dn';};
-  const sgn = function(v){return v>=0?'+':'-';};
-  return '<div class="cell" style="background:var(--s2)"><div class="cell-header"><div class="cell-title">'+title+'</div></div><div class="cell-body"><div class="grid-2">'+
-    '<div class="kpi-block"><div class="kpi-num '+cls(d.balance-1000)+'">'+fmtUSD(Math.abs(d.balance-1000))+'</div><div class="kpi-label">PnL</div><div class="kpi-sub">'+sgn(d.balance-1000)+((d.balance-1000)/1000*100).toFixed(1)+'%</div></div>'+
-    '<div class="kpi-block"><div class="kpi-num info" style="font-size:28px">'+fmtUSD(d.balance)+'</div><div class="kpi-label">Balance</div><div class="kpi-sub">'+d.open_positions+' abiertas</div></div>'+
-    '<div class="kpi-block"><div class="kpi-num '+(d.win_rate>=50?'up':'dn')+'" style="font-size:24px">'+d.win_rate+'%</div><div class="kpi-label">Win Rate</div><div class="kpi-sub">'+d.winning_trades+'/'+d.total_trades+'</div></div>'+
-    '<div class="kpi-block"><div class="kpi-num faint" style="font-size:24px">$'+d.exposure_usd.toFixed(0)+'</div><div class="kpi-label">Expuesto</div></div></div></div></div>';
-}
-
-/* ── Load data ── */
 async function loadMetrics() {
   const s = await api('/api/summary');
-  const cards = [];
-  if(s.normal) cards.push(profileCard('Normal &#x1F7E2;', s.normal));
-  if(s.fast)   cards.push(profileCard('Fast &#x1F535;', s.fast));
-  document.getElementById('profiles-grid').innerHTML = cards.join('');
+  const profiles = ['normal', 'fast'];
+  const P = {};
+  profiles.forEach(n => { if (s[n]) P[n] = s[n]; });
+  const labels = { normal: 'Normal', fast: 'Fast' };
+  const colors = { normal: 'var(--accent-green)', fast: 'var(--accent-blue)' };
+  document.getElementById('metrics').innerHTML = profiles.map(n => {
+    const d = P[n] || {};
+    const cls = (v) => v >= 0 ? 'green' : 'red';
+    const sign = (v) => v >= 0 ? '+' : '';
+    return `<div style="grid-column:${profiles.indexOf(n) === 0 ? '1/span 3' : '4/span 3'}"><h3 style="font-size:13px;color:${colors[n]};margin-bottom:8px">${labels[n]}</h3>
+      <div class="cards">
+        <div class="card"><div class="label">Balance</div><div class="value">$${(d.balance||1000).toLocaleString()}</div><div class="sub">Inicial: $1,000</div></div>
+        <div class="card"><div class="label">PnL Total</div><div class="value ${cls(d.total_pnl)}">${sign(d.total_pnl)}$${(d.total_pnl||0).toFixed(2)}</div><div class="sub ${cls(d.total_pnl_pct)}">${sign(d.total_pnl_pct)}${(d.total_pnl_pct||0).toFixed(1)}%</div></div>
+        <div class="card"><div class="label">Open Positions</div><div class="value">${d.open_positions||0}</div><div class="sub">Exp: $${(d.exposure_usd||0).toFixed(2)}</div></div>
+        <div class="card"><div class="label">Trades</div><div class="value">${d.winning_trades||0}/${d.total_trades||0}</div><div class="sub">Win Rate: ${d.win_rate||0}%</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
 
-  const ext = await api('/api/metrics/extended')||{};
-  const mEl = document.getElementById('ext-kpis');
-  if(ext.sharpe_ratio!=null){
-    const sc = ext.sharpe_ratio>=1?'up':'dn';
-    const pc = ext.profit_factor>=1.5?'up':'dn';
-    const mc = ext.max_drawdown_pct>-10?'up':'dn';
-    mEl.innerHTML =
-      '<div class="kpi-cell"><div class="kpi-block" style="gap:0"><div class="kpi-num '+sc+'" style="font-size:20px">'+ext.sharpe_ratio.toFixed(2)+'</div><div class="kpi-label">Sharpe</div></div></div>'+
-      '<div class="kpi-cell"><div class="kpi-block" style="gap:0"><div class="kpi-num '+pc+'" style="font-size:20px">'+ext.profit_factor.toFixed(2)+'</div><div class="kpi-label">Profit Factor</div></div></div>'+
-      '<div class="kpi-cell"><div class="kpi-block" style="gap:0"><div class="kpi-num '+mc+'" style="font-size:20px">'+(ext.avg_loss||0).toFixed(2)+'</div><div class="kpi-label">Avg Loss</div></div></div>'+
-      '<div class="kpi-cell"><div class="kpi-block" style="gap:0"><div class="kpi-num info" style="font-size:20px">'+(ext.avg_win||0).toFixed(2)+'</div><div class="kpi-label">Avg Win</div></div></div>';
-  } else {
-    mEl.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="empty-icon">📊</div><div class="empty-title">Sin m&eacute;tricas a&uacute;n</div></div>';
+async function loadDailyBrief() {
+  const b = await api('/api/daily-brief');
+  const briefEl = document.getElementById('daily-brief');
+  if (b.brief) {
+    briefEl.innerHTML = `
+      <div class="card" style="grid-column: 1/-1; background: var(--bg-hover); border-left: 4px solid var(--accent-blue); padding: 16px">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px">
+          <span style="font-size: 20px">📝</span>
+          <div class="label" style="margin: 0">Resumen del Día</div>
+        </div>
+        <div style="font-size: 15px; line-height: 1.6; color: var(--text)">${b.brief}</div>
+      </div>
+    `;
+  }
+}
+
+async function loadExtended() {
+  const m = await api('/api/metrics/extended');
+  const sharpeColor = m.sharpe > 1 ? 'green' : m.sharpe < 0 ? 'red' : '';
+  const pfColor = m.profit_factor > 1.5 ? 'green' : m.profit_factor < 1 ? 'red' : '';
+  document.getElementById('metrics-extended').innerHTML = `
+    <div class="card" title="Sharpe Ratio: Retorno ajustado por riesgo. >1 es bueno, >2 es excelente"><div class="label">Sharpe Ratio</div><div class="value ${sharpeColor}">${m.sharpe}</div><div class="sub">${m.trades} trades cerrados</div></div>
+    <div class="card" title="Profit Factor: Ganancias totales / Pérdidas totales. >1.5 es sólido, >2 es muy bueno"><div class="label">Profit Factor</div><div class="value ${pfColor}">${m.profit_factor}</div><div class="sub">wins/losses ratio</div></div>
+    <div class="card" title="Max Drawdown: La mayor caída del capital desde su pico. Indica el peor escenario histórico"><div class="label">Max Drawdown</div><div class="value red">$${m.max_drawdown}</div><div class="sub">peor caída acum.</div></div>
+    <div class="card" title="Avg Win: Ganancia promedio por trade ganador. Muestra potencial de upside"><div class="label">Avg Win</div><div class="value green">+$${m.avg_win}</div></div>
+    <div class="card" title="Avg Loss: Pérdida promedio por trade perdedor. Indica control de riesgo"><div class="label">Avg Loss</div><div class="value red">$${m.avg_loss}</div></div>
+  `;
+}
+
+async function loadFunnel() {
+  const f = await api('/api/metrics/funnel');
+  const total = f.total_signals || 0;
+  const action = f.actionable || 0;
+  const exec = f.executed || 0;
+  const pctAction = total > 0 ? (action / total * 100).toFixed(1) : 0;
+  const pctExec = action > 0 ? (exec / action * 100).toFixed(1) : 0;
+  document.getElementById('funnel').innerHTML = `
+    <div class="funnel-step"><div class="num">${total}</div><div class="lbl">Señales generadas</div><div class="pct">100%</div></div>
+    <div class="funnel-step"><div class="num">${action}</div><div class="lbl">Fused ≠ WAIT</div><div class="pct">${pctAction}% pasan</div></div>
+    <div class="funnel-step"><div class="num">${exec}</div><div class="lbl">Ejecutadas</div><div class="pct">${pctExec}% confirmadas</div></div>
+  `;
+}
+
+async function loadRiskSnapshot() {
+  const r = await api('/api/risk-snapshot');
+  const el = document.getElementById('risk-snapshot');
+  if (!r.positions || r.positions.length === 0) {
+    el.innerHTML = '<div class="empty-state">Sin posiciones abiertas — riesgo $0</div>';
+    return;
+  }
+  const riskColor = r.pct_at_risk > 10 ? 'var(--accent-red)' : r.pct_at_risk > 5 ? 'var(--accent-wait)' : 'var(--accent-green)';
+  const summaryCards = `
+    <div class="cards" style="margin-bottom:12px">
+      <div class="card" title="Balance actual del portfolio">
+        <div class="label">Balance actual</div>
+        <div class="value">$${r.balance.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      </div>
+      <div class="card" title="Si todos los stop-loss se ejecutan simultáneamente">
+        <div class="label">Peor caso (todos SL)</div>
+        <div class="value red">$${r.worst_balance.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+        <div class="sub red">−$${r.total_max_loss_usd.toFixed(2)}</div>
+      </div>
+      <div class="card" title="% del capital que se perdería si todos los stops se ejecutan">
+        <div class="label">Capital en riesgo</div>
+        <div class="value" style="color:${riskColor}">${r.pct_at_risk}%</div>
+        <div class="sub">de $${r.balance.toFixed(0)}</div>
+      </div>
+      <div class="card" title="Suma del capital invertido en posiciones abiertas">
+        <div class="label">Exposición total</div>
+        <div class="value">$${r.total_exposure_usd.toFixed(2)}</div>
+      </div>
+    </div>`;
+  const rows = r.positions.map(p => `<tr>
+    <td>${MARKET_EMOJI[p.market] || ''} ${p.ticker}</td>
+    <td class="signal-${p.signal}">${p.signal === 'LONG' ? '▲' : '▼'} ${p.signal}</td>
+    <td>$${p.size_usd.toFixed(2)}</td>
+    <td class="red">${p.stop_loss_pct}%</td>
+    <td class="red">−$${p.max_loss_usd.toFixed(2)}</td>
+  </tr>`).join('');
+  el.innerHTML = summaryCards + `<table>
+    <tr><th>Ticker</th><th>Dir</th><th>Tamaño</th><th>SL%</th><th>Pérdida máx.</th></tr>
+    ${rows}
+  </table>`;
+}
+
+async function loadProjection() {
+  const p = await api('/api/projection');
+  const cardsEl = document.getElementById('projection-cards');
+  const chartEl = document.getElementById('projection-chart');
+
+  let doublingText = '—';
+  let doublingColor = 'var(--text-muted)';
+  if (p.days_to_double !== null && p.avg_daily_pnl > 0) {
+    const months = Math.ceil(p.days_to_double / 30);
+    doublingText = p.days_to_double < 30
+      ? `~${p.days_to_double} días`
+      : `~${months} ${months === 1 ? 'mes' : 'meses'}`;
+    doublingColor = 'var(--accent-green)';
+  } else if (p.avg_daily_pnl <= 0) {
+    doublingText = 'En pérdida';
+    doublingColor = 'var(--accent-red)';
   }
 
-  const sig = await api('/api/signals');
-  const tEl = document.getElementById('sig-table');
-  if(!sig||!sig.length){tEl.innerHTML='<tr><td class="empty" colspan="3"><div class="empty-icon">⚡</div><div class="empty-title">Sin se&ntilde;ales</div></td></tr>';}
-  else{tEl.innerHTML='<tr><th>Mercado</th><th>Decisi&oacute;n</th><th>Conf</th></tr>'+
-    sig.slice(0,10).map(function(s){
-      return '<tr><td>'+(MKT[s.market]||'')+' '+s.market+'</td><td>'+sigTag(s.decision)+'</td><td class="num">'+confTag(s.confidence)+'</td></tr>';
-    }).join('');}
+  const badgeHtml = p.badge
+    ? `<div class="card" style="border-left:4px solid var(--accent-blue)">
+        <div class="label">Mejor racha</div>
+        <div class="value" style="font-size:28px">${p.badge.icon}</div>
+        <div class="sub">${p.badge.label}</div>
+       </div>`
+    : `<div class="card"><div class="label">Mejor racha</div><div class="value">${p.best_streak || 0}</div><div class="sub">wins seguidos</div></div>`;
 
-  const pos = await api('/api/positions');
-  const pEl = document.getElementById('pos-table');
-  if(!pos||!pos.length){pEl.innerHTML='<tr><td class="empty" colspan="4"><div class="empty-icon">💼</div><div class="empty-title">Sin posiciones</div></td></tr>';}
-  else{pEl.innerHTML='<tr><th>Ticker</th><th>Se&ntilde;al</th><th>Entrada</th><th>SL/TP</th></tr>'+
-    pos.map(function(p){
-      return '<tr><td class="num">'+p.ticker+'</td><td>'+sigTag(p.signal)+'</td><td class="num">$'+p.entry_price+'</td><td class="num">'+p.stop_loss_pct+'% / '+p.take_profit_pct+'%</td></tr>';
-    }).join('');}
+  cardsEl.innerHTML = `
+    <div class="card" title="Ganancia/pérdida promedio por día (últimos 30 días)">
+      <div class="label">Ritmo diario</div>
+      <div class="value ${(p.avg_daily_pnl||0) >= 0 ? 'green' : 'red'}">${(p.avg_daily_pnl||0) >= 0 ? '+' : ''}$${(p.avg_daily_pnl||0).toFixed(2)}</div>
+      <div class="sub">promedio/día (30d)</div>
+    </div>
+    <div class="card" title="Días estimados para duplicar el capital al ritmo actual">
+      <div class="label">Para doblar capital</div>
+      <div class="value" style="color:${doublingColor}">${doublingText}</div>
+      <div class="sub">al ritmo actual</div>
+    </div>
+    <div class="card" title="Porcentaje de trades cerrados con ganancia">
+      <div class="label">Win Rate</div>
+      <div class="value ${(p.win_rate||0) >= 50 ? 'green' : 'red'}">${(p.win_rate||0).toFixed(1)}%</div>
+    </div>
+    <div class="card" title="Ganancia media por trade ganador vs pérdida media por trade perdedor">
+      <div class="label">Avg Win / Avg Loss</div>
+      <div class="value" style="font-size:15px"><span class="green">+$${(p.avg_win||0).toFixed(2)}</span> / <span class="red">$${(p.avg_loss||0).toFixed(2)}</span></div>
+    </div>
+    ${badgeHtml}
+  `;
+
+  // mini bar chart últimos 14 días
+  const hist = p.daily_history || [];
+  if (!hist.length) { chartEl.innerHTML = ''; return; }
+  const maxAbs = Math.max(...hist.map(d => Math.abs(d.daily_pnl)), 1);
+  const barW = Math.min(40, Math.floor((600) / hist.length) - 4);
+  const bars = hist.map(d => {
+    const h = Math.round(Math.abs(d.daily_pnl) / maxAbs * 60);
+    const color = d.daily_pnl >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+    const sign = d.daily_pnl >= 0 ? '+' : '';
+    return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px" title="${d.day}: ${sign}$${d.daily_pnl.toFixed(2)}">
+      <span style="font-size:10px;color:var(--text-muted)">${sign}$${Math.abs(d.daily_pnl).toFixed(0)}</span>
+      <div style="width:${barW}px;height:${h}px;background:${color};border-radius:3px 3px 0 0;min-height:3px"></div>
+      <span style="font-size:9px;color:var(--text-muted);writing-mode:vertical-rl;transform:rotate(180deg);max-height:38px;overflow:hidden">${d.day.slice(5)}</span>
+    </div>`;
+  }).join('');
+  chartEl.innerHTML = `<div style="display:flex;align-items:flex-end;gap:4px;padding:8px 0;overflow-x:auto">${bars}</div>`;
 }
 
-async function loadStatus() {
-  const s = await api('/api/status');
-  const d = document.getElementById('page-pulse');
-  if(d)d.className='sb-pulse'+(s&&s.running?' on':'');
-  document.getElementById('page-status-txt').textContent = s&&s.running?'Bot activo':'Bot detenido';
-  document.getElementById('btn-start').disabled = s&&s.running;
-  document.getElementById('btn-stop').disabled = !s||!s.running;
+async function loadByMarket() {
+  const rows = await api('/api/metrics/by-market');
+  const t = document.getElementById('by-market-table');
+  if (!rows.length) {
+    t.innerHTML = '<tr><td colspan="5"><div class="empty-state">Sin trades registrados aún</div></td></tr>';
+    return;
+  }
+  t.innerHTML = `<tr><th>Mercado</th><th>Trades</th><th>Abiertos</th><th>Win Rate</th><th>PnL</th></tr>` +
+    rows.map(r => `<tr>
+      <td><strong>${r.market}</strong></td>
+      <td>${r.trades}</td>
+      <td>${r.open_count}</td>
+      <td>${r.wr}%</td>
+      <td class="${r.pnl >= 0 ? 'green' : 'red'}">${r.pnl >= 0 ? '+' : ''}$${r.pnl}</td>
+    </tr>`).join('');
 }
 
-async function loadFinancials() {
-  const s = await api('/api/summary');
-  const kpisEl = document.getElementById('hero-kpis');
-  if(!kpisEl)return;
-  let html='';
-  ['normal','fast'].forEach(function(n){
-    const d=s[n]||{};
-    if(s.active&&s.active.indexOf(n)===-1)return;
-    var lbl=n==='normal'?'Normal &#x1F7E2;':'Fast &#x1F535;';
-    var bal=d.balance||1000; var pnl=bal-1000;
-    html+='<div class="kpi-cell" style="grid-column:span 2"><div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--t3);margin-bottom:4px">'+lbl+'</div>'+
-      '<div class="kpi-row" style="gap:1px;background:var(--l1)">'+
-      '<div class="kpi-cell"><div class="kpi-block"><div class="kpi-num '+(pnl>=0?'up':'dn')+'">'+fmtUSD(Math.abs(pnl))+'</div><div class="kpi-label">PnL</div></div></div>'+
-      '<div class="kpi-cell"><div class="kpi-block"><div class="kpi-num info" style="font-size:22px">'+fmtUSD(bal)+'</div><div class="kpi-label">Balance</div></div></div>'+
-      '<div class="kpi-cell"><div class="kpi-block"><div class="kpi-num '+(d.win_rate>=50?'up':'dn')+'" style="font-size:22px">'+d.win_rate+'%</div><div class="kpi-label">Win Rate</div></div></div>'+
-      '<div class="kpi-cell"><div class="kpi-block"><div class="kpi-num faint" style="font-size:22px">'+d.total_trades+'</div><div class="kpi-label">Trades</div></div></div></div></div>';
-  });
-  kpisEl.innerHTML=html;
-}
+let _equityPeriod = 'all';
 
-let _eqPeriod='all';
-function setP(p,btn){
-  _eqPeriod=p;
-  document.querySelectorAll('.chip[onclick*="setP"]').forEach(function(c){c.className='chip';});
-  if(btn)btn.className='chip on';
+function setEquityPeriod(p, btn) {
+  _equityPeriod = p;
+  document.querySelectorAll('#equity-period-btns .chip').forEach(b => b.classList.remove('chip-active'));
+  btn.classList.add('chip-active');
   loadEquity();
 }
 
 async function loadEquity() {
-  const h = await api('/api/portfolio/history');
-  const labels=[]; const data=[];
-  (h||[]).forEach(function(p){labels.push(p.timestamp);data.push(p.balance_usd);});
-  var pct; if(data.length>1) pct='<span class="'+(data[data.length-1]>=data[0]?'up':'dn')+'">'+((data[data.length-1]-data[0])/data[0]*100).toFixed(2)+'%</span>';
-  document.getElementById('eq-chg').innerHTML=pct||'';
-  drawLineChart('eq-inner', data, labels, {h:220});
+  const inner = document.getElementById('equity-inner');
+  const tooltip = document.getElementById('equity-tooltip');
+  const changeEl = document.getElementById('equity-change');
+  inner.innerHTML = '<span style="color:var(--text-muted)">Cargando...</span>';
+
+  const resp = await api('/api/portfolio/history?period=' + _equityPeriod);
+  const h = (resp.history || resp || []);
+  const trades = (resp.trades || []);
+
+  if (!h.length) {
+    inner.innerHTML = '<div style="padding:80px 0;color:var(--text-muted)">Sin datos de portfolio aún. Corre el loop para empezar a graficar.</div>';
+    changeEl.textContent = '';
+    return;
+  }
+
+  const data = h.map(p => p.balance_usd);
+  const labels = h.map(p => p.timestamp);
+  const first = data[0], last = data[data.length-1];
+  const changePct = ((last - first) / first * 100).toFixed(2);
+  const changeSign = changePct >= 0 ? '+' : '';
+  changeEl.textContent = `${changeSign}${changePct}%`;
+  changeEl.style.color = changePct >= 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+
+  const container = document.getElementById('equity-chart');
+  const W = container.clientWidth - 24 || 780;
+  const H = 240;
+  const pad = {t:24,r:20,b:32,l:58};
+  const chartW = W - pad.l - pad.r;
+  const chartH = H - pad.t - pad.b;
+
+  const minV = Math.min(...data) * 0.998;
+  const maxV = Math.max(...data) * 1.002;
+
+  const xOf = i => pad.l + i / Math.max(1, data.length - 1) * chartW;
+  const yOf = v => pad.t + (maxV - v) / (maxV - minV || 1) * chartH;
+
+  const xs = data.map((_, i) => xOf(i));
+  const ys = data.map(v => yOf(v));
+
+  const lineColor = last >= first ? 'var(--accent-green)' : 'var(--accent-red)';
+  const fillId = 'equity-fill-' + Date.now();
+
+  // area fill path
+  const linePath = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  const areaPath = linePath + ` L${xs[xs.length-1].toFixed(1)},${(pad.t+chartH).toFixed(1)} L${xs[0].toFixed(1)},${(pad.t+chartH).toFixed(1)} Z`;
+
+  // y-axis labels (3 ticks)
+  const yTicks = [minV, (minV+maxV)/2, maxV].map(v => ({v, y: yOf(v)}));
+
+  // trade markers (filter to match period)
+  const periodMs = _equityPeriod === '1d' ? 86400000 : _equityPeriod === '7d' ? 604800000 : _equityPeriod === '30d' ? 2592000000 : null;
+  const now = Date.now();
+  const visibleTrades = trades.filter(t => {
+    if (!periodMs) return true;
+    return (now - new Date(t.closed_at).getTime()) <= periodMs;
+  });
+
+  // map trade timestamps to x position using nearest history point
+  const tradeMarkers = visibleTrades.map(t => {
+    const tTs = new Date(t.closed_at).getTime();
+    let closest = 0;
+    let minDiff = Infinity;
+    h.forEach((p, i) => {
+      const diff = Math.abs(new Date(p.timestamp).getTime() - tTs);
+      if (diff < minDiff) { minDiff = diff; closest = i; }
+    });
+    return { x: xs[closest], y: ys[closest], trade: t };
+  });
+
+  const markersEl = tradeMarkers.map(m => {
+    const win = m.trade.pnl_usd > 0;
+    const color = win ? 'var(--accent-green)' : 'var(--accent-red)';
+    const label = win ? '▲' : '▼';
+    return `<text x="${m.x.toFixed(1)}" y="${(m.y - 8).toFixed(1)}" text-anchor="middle" font-size="9" fill="${color}" style="cursor:pointer"
+      data-ticker="${m.trade.ticker}" data-pnl="${m.trade.pnl_usd}" data-ts="${m.trade.closed_at}">${label}</text>`;
+  }).join('');
+
+  // x-axis labels (up to 5 evenly spaced)
+  const xTickCount = Math.min(5, data.length);
+  const xTickIdxs = Array.from({length: xTickCount}, (_, i) => Math.round(i * (data.length-1) / (xTickCount-1 || 1)));
+  const xTicksEl = xTickIdxs.map(i => {
+    const raw = labels[i] || '';
+    const lbl = raw.length > 16 ? raw.slice(5,16) : raw.slice(0,10);
+    return `<text x="${xs[i].toFixed(1)}" y="${(H-6)}" text-anchor="middle" font-size="10" fill="var(--text-muted)">${lbl}</text>`;
+  }).join('');
+
+  const svg = `<svg width="${W}" height="${H}" style="display:block;overflow:visible" id="equity-svg">
+    <defs>
+      <linearGradient id="${fillId}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${yTicks.map(t => `
+      <line x1="${pad.l}" y1="${t.y.toFixed(1)}" x2="${pad.l+chartW}" y2="${t.y.toFixed(1)}" stroke="var(--border)" stroke-dasharray="3,4" stroke-width="1"/>
+      <text x="${(pad.l-6)}" y="${(t.y+4).toFixed(1)}" text-anchor="end" font-size="10" fill="var(--text-muted)">$${(t.v/1000).toFixed(1)}K</text>
+    `).join('')}
+    <path d="${areaPath}" fill="url(#${fillId})"/>
+    <path d="${linePath}" fill="none" stroke="${lineColor}" stroke-width="2"/>
+    <circle cx="${xs[xs.length-1].toFixed(1)}" cy="${ys[ys.length-1].toFixed(1)}" r="3.5" fill="${lineColor}"/>
+    ${markersEl}
+    ${xTicksEl}
+    <rect id="equity-hover-zone" x="${pad.l}" y="${pad.t}" width="${chartW}" height="${chartH}" fill="transparent" style="cursor:crosshair"/>
+    <line id="equity-crosshair" x1="0" y1="${pad.t}" x2="0" y2="${pad.t+chartH}" stroke="var(--text-muted)" stroke-width="1" stroke-dasharray="4,3" style="display:none"/>
+  </svg>`;
+
+  inner.innerHTML = svg;
+  inner.style.padding = '0';
+
+  // hover interaction
+  const zone = document.getElementById('equity-hover-zone');
+  const crosshair = document.getElementById('equity-crosshair');
+  zone.addEventListener('mousemove', (e) => {
+    const rect = zone.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const idx = Math.round(mx / chartW * (data.length - 1));
+    const clamp = Math.max(0, Math.min(data.length-1, idx));
+    const x = xs[clamp];
+    crosshair.setAttribute('x1', x.toFixed(1));
+    crosshair.setAttribute('x2', x.toFixed(1));
+    crosshair.style.display = '';
+    const ts = labels[clamp] ? labels[clamp].slice(0,16).replace('T',' ') : '';
+    const bal = data[clamp];
+    const chg = ((bal - first) / first * 100).toFixed(2);
+    const sign = chg >= 0 ? '+' : '';
+    tooltip.innerHTML = `<strong>$${bal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}</strong>&nbsp;<span style="color:${chg>=0?'var(--accent-green)':'var(--accent-red)'}">${sign}${chg}%</span><br><span style="color:var(--text-muted)">${ts}</span>`;
+    tooltip.style.display = '';
+    const tipX = (x + 24 + 140 > W) ? x - 155 : x + 12;
+    tooltip.style.left = (tipX + pad.l - xs[0]) + 'px';
+    tooltip.style.top = (ys[clamp] - 10) + 'px';
+  });
+  zone.addEventListener('mouseleave', () => {
+    crosshair.style.display = 'none';
+    tooltip.style.display = 'none';
+  });
 }
 
-loadMetrics(); loadStatus(); loadFinancials();
-setInterval(function(){loadMetrics();loadStatus();loadFinancials();},15000);
+async function loadHealth() {
+  const h = await api('/api/health');
+  document.getElementById('health-cards').innerHTML = Object.entries(h).map(([k,v]) =>
+    `<div class="card" style="text-align:center"><div class="label">${k}</div><div style="font-size:28px;margin-top:4px">${v ? '🟢' : '🔴'}</div></div>`
+  ).join('');
+}
+
+function timeAgo(isoStr) {
+  if (!isoStr) return '—';
+  const diff = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+  if (diff < 60) return diff + 's';
+  if (diff < 3600) return Math.floor(diff/60) + 'm';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h ' + Math.floor((diff%3600)/60) + 'm';
+  return Math.floor(diff/86400) + 'd';
+}
+
+const MARKET_EMOJI = { forex: '📈', stocks: '💹', polymarket: '🎲' };
+
+async function loadPositions() {
+  const pos = await api('/api/positions');
+  const t = document.getElementById('positions-table');
+  if (!pos.length) {
+    t.innerHTML = '<tr><td colspan="8"><div class="empty-state">Sin posiciones abiertas</div></td></tr>';
+    return;
+  }
+  t.innerHTML = `<tr><th>Ticker</th><th>Dir</th><th>Entrada</th><th>Precio actual</th><th>Δ%</th><th>Tamaño</th><th>SL%</th><th>TP%</th><th>Tiempo</th><th></th></tr>` +
+    pos.map(p => {
+      const slPct = p.stop_loss_pct || 0;
+      const tpPct = p.take_profit_pct || 0;
+      const mktEmoji = MARKET_EMOJI[p.market] || '';
+      const posId = p.id || p.ticker;
+      const entry = p.entry_price || 0;
+      const current = p.current_price;
+      const delta = p.delta_pct;
+      const currentCell = current != null
+        ? `$${current.toFixed(current < 1 ? 6 : current < 100 ? 4 : 2)}`
+        : '<span style="color:var(--text-muted)">—</span>';
+      let deltaCell;
+      if (delta == null) {
+        deltaCell = '<span style="color:var(--text-muted)">—</span>';
+      } else {
+        const sign = delta >= 0 ? '+' : '';
+        const cls = delta >= 0 ? 'green' : 'red';
+        deltaCell = `<span class="${cls}" style="font-weight:600">${sign}${delta.toFixed(2)}%</span>`;
+      }
+      return `<tr>
+        <td><span class="market-tag">${mktEmoji}</span> <a href="/ticker/${p.ticker}" style="color:var(--text);text-decoration:none" onmouseover="this.style.color='var(--accent-blue)'" onmouseout="this.style.color='var(--text)'">${p.ticker}</a></td>
+        <td class="signal-${p.signal}">${p.signal === 'LONG' ? '▲' : '▼'} ${p.signal}</td>
+        <td style="color:var(--text-muted)">$${entry.toFixed(entry < 1 ? 6 : entry < 100 ? 4 : 2)}</td>
+        <td><strong>${currentCell}</strong></td>
+        <td>${deltaCell}</td>
+        <td>$${(p.size_usd||0).toFixed(0)}</td>
+        <td class="red">${slPct}%</td>
+        <td class="green">${tpPct}%</td>
+        <td class="time-open">${timeAgo(p.opened_at || p.entry_time || null)}</td>
+        <td><button class="btn btn-danger" style="padding:3px 10px;font-size:11px" onclick="closePosition('${posId}',this)">✕ Cerrar</button></td>
+      </tr>`;
+    }).join('');
+}
+
+async function closePosition(id, btn) {
+  if (!confirm('¿Cerrar posición ' + id + '? (acción irreversible en paper broker)')) return;
+  btn.disabled = true;
+  const r = await api('/api/positions/' + encodeURIComponent(id) + '/close', {method:'POST'});
+  if (r.ok) loadPositions();
+  else { btn.disabled = false; alert('Error: ' + (r.error || 'desconocido')); }
+}
+
+async function loadSignals() {
+  const sig = await api('/api/signals');
+  const t = document.getElementById('signals-table');
+  if (!sig.length) {
+    t.innerHTML = '<tr><td colspan="5"><div class="empty-state">Sin señales generadas</div></td></tr>';
+    return;
+  }
+  t.innerHTML = `<tr><th>Hora</th><th>Mercado</th><th>Ticker</th><th>Decisión</th><th>Confianza</th></tr>` +
+    sig.slice(0,10).map(s => `<tr><td>${s.timestamp.slice(11,19)}</td><td>${s.market}</td><td>${s.ticker}</td><td class="signal-${s.decision}">${s.decision}</td><td>${s.confidence}</td></tr>`).join('');
+}
+
+async function toggleLoop(start) {
+  await api(start ? '/api/loop/start' : '/api/loop/stop');
+  loadStatus();
+}
+
+async function loadStatus() {
+  const st = await api('/api/status');
+  const dot = document.getElementById('status-badge').querySelector('.status-dot');
+  dot.className = 'status-dot ' + (st.running ? 'running' : 'stopped');
+  document.getElementById('status-text').textContent = st.running ? 'Corriendo' : 'Detenido';
+  document.getElementById('btn-start').disabled = st.running;
+  document.getElementById('btn-stop').disabled = !st.running;
+}
+
+function loadAll() {
+  loadDailyBrief(); loadMetrics(); loadExtended(); loadFunnel();
+  loadEquity(); loadRiskSnapshot(); loadProjection();
+  loadByMarket(); loadHealth(); loadPositions(); loadSignals();
+}
+loadAll(); loadStatus();
+setInterval(loadAll, 10000);
 </script>
 {% endblock %}

@@ -1,89 +1,74 @@
 {% extends "base.html" %}
-{% block title %}Seguimiento{% endblock %}
 {% block content %}
-
-<div class="ph">
-  <div class="ph-left">
-    <div class="ph-title">👁 Seguimiento de activos</div>
-    <div class="ph-sub">Todos los activos que el bot monitorea, con su historial de señales y operaciones</div>
-  </div>
+<h1>👁 Watchlist</h1>
+<div class="filter-bar" id="wl-filters">
+  <span class="chip active" data-mkt="all">Todos</span>
+  <span class="chip" data-mkt="forex">📈 Forex</span>
+  <span class="chip" data-mkt="stocks">💹 Stocks</span>
+  <span class="chip" data-mkt="polymarket">🎲 Polymarket</span>
 </div>
 
-<div class="filters" id="wl-filters">
-  <button class="chip on" data-mkt="all">Todos los mercados</button>
-  <button class="chip" data-mkt="forex">📈 Forex</button>
-  <button class="chip" data-mkt="stocks">💹 Acciones</button>
-  <button class="chip" data-mkt="polymarket">🎲 Polymarket</button>
+<div id="wl-loading" style="text-align:center;padding:40px;color:var(--text-muted)">Cargando...</div>
+<div id="wl-content" style="display:none">
+  <table id="wl-table">
+    <tr>
+      <th>Ticker</th><th>Mercado</th><th>Señales</th>
+      <th>L / S</th><th>Conf%</th><th>Trades</th>
+      <th>Abiertas</th><th>Win Rate</th><th>PnL</th><th>Última señal</th>
+    </tr>
+  </table>
 </div>
-
-<div id="wl-loading" class="load-center"><div class="spinner"></div> Cargando activos…</div>
-
-<div id="wl-wrap" style="display:none">
-  <div class="panel">
-    <table id="wl-tbl">
-      <tr>
-        <th>Activo</th><th>Mercado</th><th>Señales</th>
-        <th>Largo/Corto</th><th>Confianza</th><th>Ops.</th>
-        <th>Abiertas</th><th>Aciertos</th><th>Ganancia</th><th>Última señal</th>
-      </tr>
-    </table>
-  </div>
-</div>
-
-<div id="wl-empty" style="display:none">
-  <div class="panel"><div class="empty">
-    <div class="empty-icon">👁</div>
-    <div class="empty-title">Sin activos en seguimiento</div>
-    <div class="empty-desc">Cuando el bot empiece a analizar mercados, los activos aparecerán aquí</div>
-  </div></div>
-</div>
-
+<div id="wl-empty" style="display:none"><div class="empty-state">Sin datos — ejecuta el loop para generar señales y trades</div></div>
 {% endblock %}
+
 {% block scripts %}
 <script>
-let allData=[];
+const EMOJI = { forex: '📈', stocks: '💹', polymarket: '🎲' };
+let allData = [];
 
-document.querySelectorAll('#wl-filters .chip').forEach(c=>{
-  c.addEventListener('click',()=>{
-    document.querySelectorAll('#wl-filters .chip').forEach(x=>x.classList.remove('on'));
-    c.classList.add('on'); renderTable(c.dataset.mkt);
+document.querySelectorAll('#wl-filters .chip').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('#wl-filters .chip').forEach(x => x.classList.remove('active'));
+    c.classList.add('active');
+    renderTable(c.dataset.mkt);
   });
 });
 
 function renderTable(mkt) {
-  const rows=mkt==='all'?allData:allData.filter(r=>r.market===mkt);
-  document.getElementById('wl-loading').style.display='none';
+  const rows = mkt === 'all' ? allData : allData.filter(r => r.market === mkt);
+  const tbl = document.getElementById('wl-table');
   if (!rows.length) {
-    document.getElementById('wl-wrap').style.display='none';
-    document.getElementById('wl-empty').style.display='block'; return;
+    document.getElementById('wl-content').style.display = 'none';
+    document.getElementById('wl-empty').style.display = 'block';
+    return;
   }
-  document.getElementById('wl-empty').style.display='none';
-  document.getElementById('wl-wrap').style.display='block';
-  document.getElementById('wl-tbl').innerHTML=`
-    <tr><th>Activo</th><th>Mercado</th><th>Señales</th><th>Largo/Corto</th><th>Confianza</th><th>Ops.</th><th>Abiertas</th><th>Aciertos</th><th>Ganancia</th><th>Última señal</th></tr>`+
-    rows.map(r=>{
-      const wr=r.win_rate!==null
-        ?`<span style="color:${r.win_rate>=55?'var(--teal)':r.win_rate<45?'var(--rose)':'var(--ink)'};font-weight:700">${r.win_rate}%</span>`
-        :'—';
-      const pnlColor=r.total_pnl>=0?'var(--teal)':'var(--rose)';
-      const open=r.open_count>0?`<span class="tag tag-open">${r.open_count}</span>`:'<span class="text-faint">0</span>';
+  document.getElementById('wl-empty').style.display = 'none';
+  document.getElementById('wl-content').style.display = 'block';
+  tbl.innerHTML = `<tr><th>Ticker</th><th>Mercado</th><th>Señales</th><th>L / S</th><th>Conf%</th><th>Trades</th><th>Abiertas</th><th>Win Rate</th><th>PnL</th><th>Última señal</th></tr>` +
+    rows.map(r => {
+      const wr = r.win_rate !== null ? (r.win_rate >= 55 ? `<span class="green">${r.win_rate}%</span>` : r.win_rate < 45 ? `<span class="red">${r.win_rate}%</span>` : `${r.win_rate}%`) : '—';
+      const pnl = `<span class="${r.total_pnl >= 0 ? 'green' : 'red'}">${r.total_pnl >= 0 ? '+' : ''}$${r.total_pnl}</span>`;
+      const ls = `<span class="signal-LONG">${r.longs}</span> / <span class="signal-SHORT">${r.shorts}</span>`;
+      const last = r.last_signal ? r.last_signal.slice(5, 16) : '—';
+      const open = r.open_count > 0 ? `<span class="signal-LONG">${r.open_count}</span>` : '0';
       return `<tr>
-        <td><strong><a href="/ticker/${r.ticker}" style="color:var(--ink)">${r.ticker}</a></strong></td>
-        <td><span style="font-size:13px">${MKT_ICON[r.market]||''}</span> ${r.market}</td>
+        <td><strong><a href="/ticker/${r.ticker}">${r.ticker}</a></strong></td>
+        <td><span class="market-tag">${EMOJI[r.market] || ''}</span> ${r.market}</td>
         <td>${r.total_signals}</td>
-        <td><span class="c-long">${r.longs}</span> / <span class="c-short">${r.shorts}</span></td>
-        <td>${confPill(r.avg_conf)}</td>
+        <td>${ls}</td>
+        <td>${r.avg_conf}%</td>
         <td>${r.trades}</td>
         <td>${open}</td>
         <td>${wr}</td>
-        <td style="font-weight:700;color:${pnlColor}">${r.total_pnl>=0?'+':''}$${r.total_pnl}</td>
-        <td class="text-faint" style="font-size:12px">${r.last_signal?r.last_signal.slice(5,16):'—'}</td>
+        <td>${pnl}</td>
+        <td class="text-muted" style="font-size:12px">${last}</td>
       </tr>`;
     }).join('');
 }
 
-(async function(){
-  allData=await api('/api/watchlist')||[];
+(async function() {
+  allData = await api('/api/watchlist');
+  document.getElementById('wl-loading').style.display = 'none';
   renderTable('all');
 })();
 </script>
