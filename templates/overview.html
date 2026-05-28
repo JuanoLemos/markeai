@@ -13,8 +13,6 @@
       <span class="sb-dot" id="page-dot"></span>
       <span id="page-status-txt">Verificando…</span>
     </div>
-    <button class="btn btn-primary" onclick="doLoop(true)"  id="btn-start">▶ Activar bot</button>
-    <button class="btn btn-danger"  onclick="doLoop(false)" id="btn-stop" >■ Pausar bot</button>
   </div>
 </div>
 
@@ -147,12 +145,6 @@ async function loadStatus() {
   document.getElementById('page-dot').className = 'sb-dot' + (on?' on':'');
   document.getElementById('page-status-txt').textContent = on ? 'Bot activo' : 'Bot detenido';
   document.getElementById('page-status-txt').style.color = on ? 'var(--teal)' : 'var(--ink-2)';
-  document.getElementById('btn-start').disabled = on;
-  document.getElementById('btn-stop').disabled  = !on;
-}
-async function doLoop(start) {
-  await api(start ? '/api/loop/start' : '/api/loop/stop');
-  loadStatus();
 }
 
 /* ─ Brief ─ */
