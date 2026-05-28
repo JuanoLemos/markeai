@@ -709,6 +709,7 @@ pre.log {
 [data-tip] {
   position: relative;
   cursor: help;
+  overflow: visible !important;
 }
 [data-tip]::after {
   content: attr(data-tip);
