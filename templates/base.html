@@ -97,6 +97,21 @@ function confPill(c) {
   const lbl = c >= 70 ? '🔥 Alta' : c >= 50 ? '👍 Media' : '⚠️ Baja';
   return `<span class="conf-pill ${cls}">${c}% ${lbl}</span>`;
 }
+function friendlyTicker(t) {
+  const slugs = {
+    'will-the-fdv-of-openseas-token-1-week-after-launch-be-above-blurs-fdv': 'OpenSea > Blur? (1sem)',
+    'will-the-fdv-of-openseas-token-be-a-b5': 'OpenSea FDV > $5b?',
+    'will-the-fdv-of-openseas-token-be-a-10b': 'OpenSea FDV > $10b?',
+    'will-the-fdv-of-openseas-token-be-a-15b': 'OpenSea FDV > $15b?',
+    'will-gpt-4-have-500b-parameters': 'GPT-4 > 500B params?',
+    'will-julie-su-be-the-next-us-secret': 'Julie Su labor secretary?',
+    'will-tim-ryan-be-the-next-secretary': 'Tim Ryan labor secretary?',
+    'will-the-fed-cut-rates-in-2023': 'Fed cut rates 2023?',
+    'will-there-be-a-senate-vacancy-in-p': 'PA Senate vacancy?',
+    'will-trump-win-the-2024-iowa-caucus': 'Trump wins Iowa 2024?',
+  };
+  return slugs[t] || t;
+}
 function timeAgo(iso) {
   if (!iso) return '—';
   const s = Math.floor((Date.now() - new Date(iso)) / 1000);

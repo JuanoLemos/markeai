@@ -109,8 +109,15 @@ class MarketAIOrchestrator:
         self.risk_engine = RiskEngine(initial_balance=1000)
         self.ict_analyzer = ICTAnalyzer()
         self.adx_analyzer = ADXRegimeAnalyzer()
+        self._news_cache = {}
+
+    def _get_news(self, market_type: str) -> dict:
+        if market_type not in self._news_cache:
+            self._news_cache[market_type] = self.news_collector.get_sentiment_summary(market_type, 24)
+        return self._news_cache[market_type]
 
     def run_iteration(self):
+        self._news_cache = {}
         self.log.info("=== Starting iteration ===")
         try:
             for market, market_cfg in self.markets_cfg.items():
@@ -280,7 +287,7 @@ class MarketAIOrchestrator:
                     self.log.error(f"Polymarket onchain[{slug}] error: {e}")
                 break
             try:
-                news = self.news_collector.get_sentiment_summary("crypto", 24)
+                news = self._get_news("crypto")
                 if self.config["layers"]["sentiment"]["enabled"]:
                     sr = self.sentiment_analyzer.analyze(news)
                     if sr:
@@ -300,7 +307,7 @@ class MarketAIOrchestrator:
             market_data = summary.get("forex", {})
             dxy = self.yf_collector.get_dxy()
             vix = self.yf_collector.get_vix()
-            news = self.news_collector.get_sentiment_summary("forex", 24)
+            news = self._get_news("forex")
             for pair in pairs:
                 data = self.yf_collector.get_historical(pair, "14d", "1h")
                 try:
@@ -358,7 +365,7 @@ class MarketAIOrchestrator:
             summary = self.yf_collector.get_market_summary()
             market_data = summary.get("stocks", {})
             vix = self.yf_collector.get_vix()
-            news = self.news_collector.get_sentiment_summary("stocks", 24)
+            news = self._get_news("stocks")
 
             primary = tickers[0] if tickers else "SPY"
             data = self.yf_collector.get_historical(primary, "14d", "1h")
