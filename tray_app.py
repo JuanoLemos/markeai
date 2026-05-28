@@ -10,7 +10,10 @@ import pystray
 from PIL import Image, ImageDraw, ImageFont
 
 BASE_DIR = Path(__file__).parent
-STATE_PATH = BASE_DIR / "data" / "cache" / "pb_normal.json"
+STATE_PATHS = {
+    "normal": BASE_DIR / "data" / "cache" / "pb_normal.json",
+    "fast": BASE_DIR / "data" / "cache" / "pb_fast.json",
+}
 STOP_FILE = BASE_DIR / "STOP"
 
 loop_process = None
@@ -33,21 +36,29 @@ def create_icon():
     return img
 
 
+def _profile_pnl(profile: str) -> str:
+    path = STATE_PATHS.get(profile)
+    if not path:
+        return "?"
+    try:
+        with open(path) as f:
+            state = json.load(f)
+        balance = float(state.get("balance", 1000))
+        pnl = balance - 1000
+        pnl_pct = (pnl / 1000) * 100
+        sign = "+" if pnl >= 0 else ""
+        return f"{sign}${pnl:.0f} ({sign}{pnl_pct:.1f}%)"
+    except Exception:
+        return "?"
+
+
 def get_status_text():
     global loop_process
     if loop_process is None or loop_process.poll() is not None:
         return "servermktai — Detenido"
-    try:
-        with open(STATE_PATH) as f:
-            state = json.load(f)
-        s = list(state.values())[0] if isinstance(state, dict) and "normal" not in state else state.get("balance", None)
-        if s is None:
-            s = state.get("normal", {}).get("balance", 0)
-        balance = float(s) if s else 0
-        pnl = balance - 1000
-        return f"servermktai — Corriendo | Balance: ${balance:.0f} | PnL: ${pnl:+.0f}"
-    except Exception:
-        return "servermktai — Corriendo"
+    normal_pnl = _profile_pnl("normal")
+    fast_pnl = _profile_pnl("fast")
+    return f"servermktai | N: {normal_pnl} | F: {fast_pnl}"
 
 
 def start_loop():
