@@ -112,9 +112,9 @@ class MarketAIOrchestrator:
         self._news_cache = {}
 
     def _get_news(self, market_type: str) -> dict:
-        if market_type not in self._news_cache:
-            self._news_cache[market_type] = self.news_collector.get_sentiment_summary(market_type, 24)
-        return self._news_cache[market_type]
+        if "_all" not in self._news_cache:
+            self._news_cache["_all"] = self.news_collector.get_sentiment_summary("all", 24)
+        return self._news_cache["_all"]
 
     def run_iteration(self):
         self._news_cache = {}
