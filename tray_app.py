@@ -77,16 +77,26 @@ def start_loop():
 
 def stop_loop():
     global loop_process
-    STOP_FILE.write_text("stop")
-    if loop_process and loop_process.poll() is None:
+    if loop_process is None or loop_process.poll() is not None:
+        return
+    try:
+        STOP_FILE.write_text("stop")
         loop_process.wait(timeout=10)
+    except Exception:
+        try:
+            loop_process.kill()
+        except Exception:
+            pass
     loop_process = None
 
 
 def do_exit():
     stop_loop()
-    if icon_instance:
-        icon_instance.stop()
+    try:
+        if icon_instance:
+            icon_instance.stop()
+    except Exception:
+        pass
     os._exit(0)
 
 
