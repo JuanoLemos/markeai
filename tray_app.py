@@ -104,6 +104,15 @@ def on_show():
     webbrowser_open("http://localhost:8050")
 
 
+def _cleanup_old():
+    try:
+        subprocess.run(["powershell", "-Command",
+            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'orchestrator|dashboard' } | Stop-Process -Force"
+        ], capture_output=True, timeout=10)
+    except Exception:
+        pass
+
+
 def activate_bot():
     try:
         subprocess.run(["powershell", "-Command",
@@ -184,7 +193,7 @@ def main():
             time.sleep(3)
 
     threading.Thread(target=tick, daemon=True).start()
-    kill_services()
+    _cleanup_old()
     start_loop()
     start_dashboard()
     icon.run()
