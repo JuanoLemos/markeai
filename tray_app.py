@@ -38,8 +38,8 @@ def create_icon():
 
 def _profile_pnl(profile: str) -> str:
     path = STATE_PATHS.get(profile)
-    if not path:
-        return "?"
+    if not path or not path.exists():
+        return "$0 (0.0%)"
     try:
         with open(path) as f:
             state = json.load(f)
@@ -81,7 +81,7 @@ def stop_loop():
         return
     try:
         STOP_FILE.write_text("stop")
-        loop_process.wait(timeout=10)
+        loop_process.wait(timeout=3)
     except Exception:
         try:
             loop_process.kill()
