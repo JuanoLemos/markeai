@@ -105,6 +105,13 @@ def on_show():
 
 
 def activate_bot():
+    try:
+        subprocess.run(["powershell", "-Command",
+            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'orchestrator' } | Stop-Process -Force"
+        ], capture_output=True, timeout=10)
+    except Exception:
+        pass
+    time.sleep(1)
     start_loop()
 
 
@@ -116,16 +123,6 @@ def kill_services():
 
 
 def start_dashboard():
-    try:
-        result = subprocess.run([
-            "powershell", "-Command",
-            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'dashboard' } | Measure-Object | Select-Object -ExpandProperty Count"
-        ], capture_output=True, text=True, timeout=10)
-        count = int(result.stdout.strip()) if result.stdout.strip().isdigit() else 0
-        if count > 0:
-            return
-    except Exception:
-        pass
     try:
         subprocess.Popen(
             [sys.executable, str(BASE_DIR / "dashboard.py")],
@@ -187,6 +184,7 @@ def main():
             time.sleep(3)
 
     threading.Thread(target=tick, daemon=True).start()
+    kill_services()
     start_loop()
     start_dashboard()
     icon.run()
