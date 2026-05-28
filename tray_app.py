@@ -158,6 +158,18 @@ def restart_dashboard():
     start_dashboard()
 
 
+def restart_server():
+    try:
+        subprocess.run(["powershell", "-Command",
+            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'orchestrator|dashboard' } | Stop-Process -Force"
+        ], capture_output=True, timeout=10)
+    except Exception:
+        pass
+    time.sleep(1)
+    start_loop()
+    start_dashboard()
+
+
 def webbrowser_open(url):
     import webbrowser
     webbrowser.open(url)
@@ -166,6 +178,7 @@ def webbrowser_open(url):
 def build_menu():
     return pystray.Menu(
         pystray.MenuItem("Mostrar Dashboard", on_show, default=True),
+        pystray.MenuItem("Reiniciar Servidor", restart_server),
         pystray.MenuItem("Reiniciar Dashboard", restart_dashboard),
         pystray.MenuItem("──────────────────", None, enabled=False),
         pystray.MenuItem("▶ Activar", activate_bot),
