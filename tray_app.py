@@ -160,9 +160,17 @@ def restart_dashboard():
 
 def restart_server():
     try:
-        subprocess.run(["powershell", "-Command",
-            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'orchestrator|dashboard' } | Stop-Process -Force"
-        ], capture_output=True, timeout=10)
+        result = subprocess.run(
+            'wmic process where "name=\'python.exe\'" get processid,commandline /format:csv',
+            shell=True, capture_output=True, text=True, timeout=10
+        )
+        for line in result.stdout.splitlines():
+            if 'dashboard' in line.lower() or 'orchestrator' in line.lower():
+                parts = line.split(',')
+                for p in parts:
+                    pid = p.strip()
+                    if pid.isdigit():
+                        subprocess.run(["taskkill", "/f", "/pid", pid], capture_output=True)
     except Exception:
         pass
     time.sleep(1)

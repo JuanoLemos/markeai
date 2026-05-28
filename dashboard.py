@@ -335,7 +335,7 @@ def create_app():
                   SUM(CASE WHEN pnl_usd > 0 THEN 1 ELSE 0 END) AS wins,
                   SUM(CASE WHEN pnl_usd IS NOT NULL AND pnl_usd <= 0 THEN 1 ELSE 0 END) AS losses,
                   SUM(COALESCE(pnl_usd, 0)) AS total_pnl,
-                  SUM(CASE WHEN closed_at IS NULL THEN 1 ELSE 0 END) AS open_count
+                  SUM(CASE WHEN status = 'open' THEN 1 ELSE 0 END) AS open_count
                 FROM trades GROUP BY ticker
             """)
             trades_by_ticker = {r["ticker"]: dict(r) for r in cur.fetchall()}
