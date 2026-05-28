@@ -490,20 +490,12 @@ class MarketAIOrchestrator:
         self.check_stops_and_evolve()
 
     def run_backtest(self):
-        self.log.info("Running backtest")
+        self.log.info("Running backtest via replay (full MarketAI pipeline)")
         for market, cfg in self.markets_cfg.items():
-            if not cfg.get("enabled"):
+            if not cfg.get("enabled") or market == "polymarket":
                 continue
-            if market == "forex":
-                for pair in cfg.get("pairs", []):
-                    data = self.yf_collector.get_historical(pair, "3mo", "1h")
-                    r = self.backtester.run(market, pair, data)
-                    self.log.info(f"BT {pair}: {json.dumps(r, default=str)}")
-            elif market == "stocks":
-                for tk in cfg.get("tickers", []):
-                    data = self.yf_collector.get_historical(tk, "3mo", "1h")
-                    r = self.backtester.run(market, tk, data)
-                    self.log.info(f"BT {tk}: {json.dumps(r, default=str)}")
+            result = self.run_replay(market=market, days=90, use_deepseek=False)
+            self.log.info(f"Backtest complete for {market}")
 
     def run_report(self):
         s = self.paper_broker.get_summary()
@@ -635,6 +627,14 @@ class MarketAIOrchestrator:
             avg_loss = abs(np.mean([t["pnl_usd"] for t in closed_trades if t["pnl_usd"] <= 0])) if losses > 0 else 0
 
             self.log.info(f"    {ticker}: {len(closed_trades)} trades, {wins}W/{losses}L, WR {win_rate:.1f}%, PnL ${total_pnl:.2f}, Sharpe {sharpe:.2f}, MaxDD ${max_dd:.2f}")
+            bt_result = {
+                "trades": len(closed_trades), "wins": wins, "losses": losses,
+                "win_rate": round(win_rate, 1), "total_pnl_usd": round(total_pnl, 2),
+                "sharpe_ratio": round(sharpe, 2), "max_drawdown_usd": round(max_dd, 2),
+                "profit_factor": round(pf, 2) if pf != float("inf") else "inf",
+                "avg_win": round(avg_win, 2), "avg_loss": round(avg_loss, 2),
+            }
+            self.log.info(f"BT {ticker}: {json.dumps(bt_result)}")
             if pf == float("inf"):
                 self.log.info(f"      Avg Win ${avg_win:.2f} | Avg Loss ${avg_loss:.2f} | Profit Factor: inf (no losses)")
             else:
