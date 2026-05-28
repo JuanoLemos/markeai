@@ -676,6 +676,16 @@ pre.log {
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
+/* ── Truncated ticker ── */
+.ticker-cell {
+  display: inline-block;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 960px) {
   :root { --sidebar-w: 0px; }

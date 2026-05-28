@@ -70,7 +70,7 @@ function render(){
         <td class="text-faint" style="font-size:12px">${(r.exit_time||r.entry_time||'').slice(0,10)}</td>
         <td><span class="tag tag-${prof==='normal'?'normal':'fast'}">${prof==='normal'?'Normal':'Rápido'}</span></td>
         <td>${MKT_ICON[mkt]||''} ${mkt}</td>
-        <td><strong>${r.ticker}</strong></td>
+        <td><strong class="ticker-cell" data-tip="${r.ticker}">${r.ticker}</strong></td>
         <td><span class="tag tag-${r.signal.toLowerCase()}">${r.signal==='LONG'?'▲ Largo':'▼ Corto'}</span></td>
         <td class="mono" style="font-size:12px">$${r.entry_price}</td>
         <td class="mono" style="font-size:12px">${r.exit_price?'$'+r.exit_price:'—'}</td>
