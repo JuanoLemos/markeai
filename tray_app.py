@@ -14,8 +14,6 @@ STATE_PATH = BASE_DIR / "data" / "cache" / "pb_normal.json"
 STOP_FILE = BASE_DIR / "STOP"
 
 loop_process = None
-paused = False
-status = "detenido"
 icon_instance = None
 
 
@@ -36,11 +34,9 @@ def create_icon():
 
 
 def get_status_text():
-    global loop_process, paused, status
+    global loop_process
     if loop_process is None or loop_process.poll() is not None:
         return "servermktai — Detenido"
-    if paused:
-        return "servermktai — En pausa"
     try:
         with open(STATE_PATH) as f:
             state = json.load(f)
@@ -76,20 +72,6 @@ def stop_loop():
     loop_process = None
 
 
-def do_pause():
-    global paused, status
-    paused = True
-    status = "pausado"
-    stop_loop()
-
-
-def do_resume():
-    global paused, status
-    paused = False
-    status = "corriendo"
-    start_loop()
-
-
 def do_exit():
     stop_loop()
     if icon_instance:
@@ -99,6 +81,17 @@ def do_exit():
 
 def on_show():
     webbrowser_open("http://localhost:8050")
+
+
+def activate_bot():
+    start_loop()
+
+
+def kill_services():
+    try:
+        subprocess.run(["powershell", "-Command", "Get-Process -Name python* | Stop-Process -Force"], capture_output=True, timeout=10)
+    except Exception:
+        pass
 
 
 def start_dashboard():
@@ -144,16 +137,13 @@ def webbrowser_open(url):
 
 
 def build_menu():
-    global paused, loop_process
-    running = loop_process is not None and loop_process.poll() is None
     return pystray.Menu(
         pystray.MenuItem("Mostrar Dashboard", on_show, default=True),
         pystray.MenuItem("Reiniciar Dashboard", restart_dashboard),
         pystray.MenuItem("──────────────────", None, enabled=False),
-        pystray.MenuItem("▶ Reanudar" if paused else "⏸ Pausar",
-                         do_resume if paused else do_pause,
-                         enabled=paused or running),
-        pystray.MenuItem("■ Detener", stop_loop, enabled=running and not paused),
+        pystray.MenuItem("▶ Activar", activate_bot),
+        pystray.MenuItem("──────────────────", None, enabled=False),
+        pystray.MenuItem("💀 Kill Services", kill_services),
         pystray.MenuItem("──────────────────", None, enabled=False),
         pystray.MenuItem("Salir", do_exit),
     )
