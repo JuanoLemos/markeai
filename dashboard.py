@@ -59,8 +59,10 @@ def create_app():
 
     @app.route("/api/status")
     def api_status():
-        global loop_process
-        running = loop_process is not None and loop_process.poll() is None
+        try:
+            running = LOG_PATH.exists() and time.time() - LOG_PATH.stat().st_mtime < 60
+        except Exception:
+            running = False
         return jsonify({"running": running})
 
     @app.route("/api/summary")
