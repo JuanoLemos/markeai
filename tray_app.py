@@ -149,12 +149,12 @@ def build_menu():
     return pystray.Menu(
         pystray.MenuItem("Mostrar Dashboard", on_show, default=True),
         pystray.MenuItem("Reiniciar Dashboard", restart_dashboard),
-        pystray.MenuItem("Separador", None, enabled=False, visible=False),
+        pystray.MenuItem("──────────────────", None, enabled=False),
         pystray.MenuItem("▶ Reanudar" if paused else "⏸ Pausar",
                          do_resume if paused else do_pause,
                          enabled=paused or running),
         pystray.MenuItem("■ Detener", stop_loop, enabled=running and not paused),
-        pystray.MenuItem("Separador2", None, enabled=False, visible=False),
+        pystray.MenuItem("──────────────────", None, enabled=False),
         pystray.MenuItem("Salir", do_exit),
     )
 
