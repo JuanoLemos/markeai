@@ -362,7 +362,7 @@ async function loadProjection() {
         const h=Math.max(Math.round(Math.abs(d.daily_pnl)/maxAbs*70),3);
         const c=d.daily_pnl>=0?'var(--teal)':'var(--rose)';
         const s=d.daily_pnl>=0?'+':'';
-        return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:22px" title="${d.day}: ${s}$${d.daily_pnl.toFixed(2)}">
+        return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:22px" data-tip="${d.day}: ${s}$${d.daily_pnl.toFixed(2)}">
           <span style="font-size:9px;color:var(--ink-3)">${s}$${Math.abs(d.daily_pnl).toFixed(0)}</span>
           <div style="width:100%;height:${h}px;background:${c};border-radius:3px 3px 0 0;opacity:.85"></div>
         </div>`;

@@ -704,3 +704,36 @@ pre.log {
   .kpi-value { font-size: 22px; }
   table { font-size: 12px; }
 }
+
+/* ── Custom tooltips ── */
+[data-tip] {
+  position: relative;
+  cursor: help;
+}
+[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e2333;
+  color: #eef0f6;
+  padding: 8px 13px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  max-width: 280px;
+  white-space: normal;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s;
+  z-index: 999;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+}
+[data-tip]:hover::after {
+  opacity: 1;
+}
