@@ -145,20 +145,14 @@
 | sessionStorage backtest | ✅ | Persiste estado al cambiar pestañas |
 | Timeout backtest 900s | ✅ | 15 min para pipeline completo |
 | API status vía log time | ✅ | Verifica loop con mtime <60s |
-| Status motores en dashboard | ✅ | Heartbeat DB + chips de estado en Overview |
-| Risk snapshot dual profile | ✅ | Agrega posiciones de Normal + Fast |
-| DeepSeek health check cache | ✅ | Cache 60s, modelo desde config.yaml |
 | Endpoint /api/debug | ✅ | Traza fuentes de datos para depuracion |
-
-### Pendientes P1
-
-| ID | Qué | Prioridad |
-|---|---|---|
-| 9.1 | Pagina /sandbox con controles manuales de broker | Media |
-| 9.2 | Retencion configurable de senales (purga >90 dias) | Media |
-| 9.3 | Tabla backtest_runs con snapshot de config + resultados | Baja |
-| 9.4 | POST /api/debug/inject-signal para pruebas sinteticas | Baja |
-| 9.5 | CHANGELOG.md + reglas de version management | Baja |
+| Pagina /sandbox | ✅ | Controles manuales de broker + debug |
+| Retencion configurable de senales | ✅ | prune_signals() con purga >90d |
+| Tabla backtest_runs | ✅ | Snapshot de config + resultados |
+| POST /api/debug/inject-signal | ✅ | Pruebas sinteticas en vivo |
+| CHANGELOG.md | ✅ | Historial de versiones en doc/ |
+| POST /api/debug/reset-broker | ✅ | Resetear perfil a $1000 |
+| POST /api/debug/motors-clear | ✅ | Limpiar heartbeats |
 
 ---
 

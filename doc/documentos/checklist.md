@@ -59,7 +59,7 @@
 
 ### Database
 - [x] `database.py` crea tablas en SQLite
-- [x] Esquema `trades`, `signals`, `market_data`, `strategy_performance`, `portfolio`
+- [x] Esquema `trades`, `signals`, `market_data`, `strategy_performance`, `portfolio`, `motor_heartbeat`, `backtest_runs`
 
 ### Tests
 - [x] `tests/test_collectors.py` pasa
@@ -210,7 +210,7 @@
 ## FASE 7: Sistema Completo
 
 ### Dashboard Web
-- [x] Flask + 9 páginas (Overview, Señales, Trades, Analytics, Backtest, Config, News, Watchlist, Logs)
+- [x] Flask + 10 páginas (Overview, Señales, Trades, Analytics, Backtest, Config, News, Watchlist, Sandbox, Logs)
 - [x] Loop control desde system tray (sin botones en dashboard)
 - [x] Configuración editable desde dashboard
 - [x] 6 temas visuales (Dark, Light, Bloomberg, Mint, Cyberpunk, Solarized)
@@ -322,12 +322,19 @@ Get-Content orchestrator.log -Tail 20
 ### Dashboard
 - [x] Equity curve interactivo con selector de período
 - [x] Daily Brief narrativo en español
-- [x] Risk Snapshot (peor caso si todos los stops se ejecutan)
+- [x] Risk Snapshot (peor caso si todos los stops se ejecutan) — dual profile
 - [x] Proyección & Racha
 - [x] Decision Funnel (señales → fused → ejecutadas)
 - [x] Página /ticker/<symbol> con drill-down
 - [x] Página /news con feed + filtros
 - [x] Página /watchlist con cross-signals/trades
+- [x] Página /sandbox con controles manuales de debug
+- [x] StatusMarketAi con heartbeat DB + Bot status
+- [x] DeepSeek health check con cache (60s) + modelo desde config
+- [x] Endpoint /api/debug para trazabilidad de fuentes
+- [x] POST /api/debug/inject-signal para pruebas sintéticas
+- [x] POST /api/debug/reset-broker para resetear perfil
+- [x] POST /api/debug/motors-clear para limpiar heartbeats
 - [x] 6 temas visuales con persistencia localStorage
 - [x] sessionStorage persistencia en backtest
 
@@ -344,3 +351,6 @@ Get-Content orchestrator.log -Tail 20
 - [x] API status via orchestrator.log mod time
 - [x] Dual profile: Normal + Fast simultáneos
 - [x] Python 3.14.0, yfinance 1.3.0, pystray 0.19.5
+- [x] CHANGELOG.md en doc/
+- [x] prune_signals() para retención configurable (90d)
+- [x] Tabla backtest_runs con snapshot de config

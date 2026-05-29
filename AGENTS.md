@@ -72,7 +72,7 @@ python -m pytest tests/ -v
 
 - Archivo: `MarketAI.db` (creado automáticamente)
 - Schema en `data/database.py` → clase `Database()`
-- Tablas: `trades`, `signals`, `market_data`, `strategy_performance`, `portfolio`
+- Tablas: `trades`, `signals`, `market_data`, `strategy_performance`, `portfolio`, `motor_heartbeat`, `backtest_runs`
 - Sin migraciones. Tablas con `CREATE TABLE IF NOT EXISTS`.
 
 ## Auth
@@ -91,7 +91,7 @@ Archivos críticos: `config.yaml`, `.env`, `orchestrator.py`, `data/database.py`
 
 ## Modelos de IA
 
-- DeepSeek V4 Pro para decisiones de trading (`config.yaml` → `deepseek.model`)
+- DeepSeek V4 Flash para decisiones de trading (`config.yaml` → `deepseek.model`)
 - Temperatura: 0.3 (configurable en config.yaml)
 - Fallback: WAIT si respuesta inválida
 
@@ -109,7 +109,7 @@ Archivos críticos: `config.yaml`, `.env`, `orchestrator.py`, `data/database.py`
 | Directorio | Propósito |
 |---|---|
 | `engine/` | Fusión de señales + decisión DeepSeek |
-| `analyzers/` | **8 analizadores** (técnico, on-chain, sentimiento, orderbook, fundamental, macro, cross-asset, ICT/SMC) |
+| `analyzers/` | **9 analizadores** (técnico, on-chain, sentimiento, orderbook, fundamental, macro, cross-asset, ICT/SMC, ADX Regime) |
 | `data/` | Recolectores + database |
 | `execution/` | Paper broker, risk engine + ejecutores reales (Alpaca/OANDA) |
 | `learning/` | Journal + strategy evolver + backtest + replay |
@@ -120,7 +120,7 @@ Archivos críticos: `config.yaml`, `.env`, `orchestrator.py`, `data/database.py`
 | `doc/documentos/` | Roadmap, checklist, metodología |
 
 | `doc/informes/` | Reportes, reglas para agentes IA |
-| `templates/` | HTML templates del dashboard Flask |
+| `templates/` | HTML templates del dashboard Flask (10 páginas) |
 | `static/` | CSS y assets del dashboard |
 | `tests/` | Tests pytest |
 | `doc/skills/` | Skills cargables + ICT FVG standalone |

@@ -1,5 +1,15 @@
 # Changelog — MarketAI / servermktai
 
+## v1.2.0 — 2026-05-28
+- New: Pagina /sandbox con controles manuales (inyectar senal, reset broker, limpiar motors)
+- New: POST /api/debug/inject-signal — pruebas sinteticas en DB + broker
+- New: POST /api/debug/reset-broker — reset perfil a $1000
+- New: POST /api/debug/motors-clear — purga heartbeats
+- Fix: StatusMarketAi renombrado, incluye Bot status
+- Fix: Risk snapshot dual profile (Normal + Fast)
+- Fix: DeepSeek health check cache (60s) + modelo desde config
+- Docs: Checklist + roadmap + AGENTS.md sincronizados con features actuales
+
 ## v1.1.0 — 2026-05-28
 - Fix: Risk snapshot ahora lee ambos profiles (Normal + Fast)
 - Fix: DeepSeek health check con cache (60s) + modelo correcto desde config

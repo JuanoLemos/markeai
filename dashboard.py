@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from threading import Thread
 
@@ -68,6 +69,10 @@ def create_app():
     def news_page():
         return render_template("news.html", page="news")
 
+    @app.route("/sandbox")
+    def sandbox_page():
+        return render_template("sandbox.html", page="sandbox")
+
     # ─── API routes ──────────────────────────────────────
 
     @app.route("/api/status")
@@ -127,6 +132,76 @@ def create_app():
             except Exception:
                 pass
             return jsonify(info)
+        except Exception as e:
+            return jsonify({"error": str(e)})
+
+    @app.route("/api/debug/inject-signal", methods=["POST"])
+    def api_debug_inject():
+        try:
+            body = request.get_json(force=True)
+            market = body.get("market", "forex")
+            ticker = body.get("ticker", "EURUSD=X")
+            decision = body.get("decision", "LONG")
+            confidence = int(body.get("confidence", 65))
+            profile = body.get("profile", "normal")
+            trigger_broker = body.get("trigger_broker", False)
+            price = float(body.get("price", 1.05))
+
+            db = Database()
+            fused = body.get("layer_scores", {"technical": {"signal":"LONG","score":65},"fusion":{"signal":"LONG","score":70}})
+            db.insert_signal({
+                "market": market, "ticker": ticker,
+                "decision": decision, "confidence": confidence,
+                "layer_scores": fused, "reasoning": "[DEBUG] Senal inyectada manualmente",
+            })
+
+            if trigger_broker:
+                state_path = BASE_DIR / "data" / "cache" / f"pb_{profile}.json"
+                try:
+                    with open(state_path) as f:
+                        state = json.load(f)
+                except (FileNotFoundError, json.JSONDecodeError):
+                    state = {"balance": 1000, "positions": {}, "trade_log": [], "daily_pnl": 0}
+                pid = f"{market}_{ticker}_{int(time.time())}"
+                entry_price = price
+                sl_pct = body.get("sl_pct", 2.0)
+                tp_pct = body.get("tp_pct", 5.0)
+                size = body.get("size_usd", 50)
+                state["positions"][pid] = {
+                    "market": market, "ticker": ticker, "signal": decision,
+                    "entry_price": entry_price, "size_usd": size,
+                    "stop_loss_pct": sl_pct, "take_profit_pct": tp_pct,
+                    "opened_at": datetime.now(timezone.utc).isoformat(),
+                }
+                with open(state_path, "w") as f:
+                    json.dump(state, f, indent=2)
+                db.record_heartbeat("execution", "ok", f"[DEBUG] {profile} {market} {ticker} {decision} ${size}")
+                return jsonify({"ok": True, "position_id": pid, "profile": profile})
+
+            return jsonify({"ok": True, "signal": f"{decision} {ticker} @ {confidence}"})
+        except Exception as e:
+            return jsonify({"error": str(e)})
+
+    @app.route("/api/debug/reset-broker", methods=["POST"])
+    def api_debug_reset():
+        try:
+            body = request.get_json(force=True) or {}
+            profile = body.get("profile", "all")
+            targets = ["normal", "fast"] if profile == "all" else [profile]
+            for name in targets:
+                path = BASE_DIR / "data" / "cache" / f"pb_{name}.json"
+                with open(path, "w") as f:
+                    json.dump({"balance": 1000, "positions": {}, "trade_log": [], "daily_pnl": 0}, f, indent=2)
+            return jsonify({"ok": True, "reset": targets})
+        except Exception as e:
+            return jsonify({"error": str(e)})
+
+    @app.route("/api/debug/motors-clear", methods=["POST"])
+    def api_debug_motors_clear():
+        try:
+            db = Database()
+            db.prune_signals(0)
+            return jsonify({"ok": True})
         except Exception as e:
             return jsonify({"error": str(e)})
 
