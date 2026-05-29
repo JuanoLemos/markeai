@@ -26,6 +26,11 @@ strategies/trade_journal.md
 
 # Backups
 nppBackup/
+*.bak
+*.bak_*
+
+# Logs
+*.log
 
 # OS
 .DS_Store

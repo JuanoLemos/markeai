@@ -8,7 +8,7 @@
 
 ### Estructura
 - [x] `C:\xampp\htdocs\MarketAI\` creado
-- [x] `doc/documentos/` con roadmap.md, checklist.md, metodologia.md
+- [x] `doc/documentos/` con roadmap.md, checklist.md, metodologia.md, bugs.md
 - [x] `doc/guias/` con guia_instalacion.md, guia_configuracion.md, guia_uso.md
 - [x] `data/` con subcarpeta `cache/`
 - [x] `analyzers/` con `__init__.py`
@@ -227,17 +227,19 @@
 ### Tray App
 - [x] Icono $ blanco en system tray
 - [x] VBS launcher invisible (trayapp.vbs)
-- [x] Menú contextual (▶ Activar, 💀 Kill Services, Reiniciar Servidor, Reiniciar Dashboard, Mostrar Dashboard, Salir)
+- [x] Menú contextual (▶ Activar, 💀 Kill Services, Reiniciar Servidor, Reiniciar Dashboard, Mostrar Dashboard)
 - [x] Tooltip con PnL dual (Normal + Fast)
 - [x] Auto-restart del loop si muerto >30s
 - [x] Pulse dot status en icono
-- [x] wmic+taskkill para restart_server
+- [x] Get-CimInstance para restart_server
 
 ### Documentación
 - [x] README.md (español)
 - [x] Roadmap actualizado
 - [x] Checklist actualizada
 - [x] Guías de instalación, configuración, uso, motores, usuario actualizadas
+- [x] Guías complementarias: COMANDOS.md, position-sizing-reference.md
+- [x] Bug tracker (doc/documentos/bugs.md) con 34 bugs enumerados, 22 resueltos
 - [x] Metodología de proyecto documentada
 - [x] Skills: backup-pre-edit + actualizar-docs
 

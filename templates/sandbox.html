@@ -12,7 +12,7 @@
 <div class="grid-2">
   <!-- Inject Signal -->
   <div class="panel">
-    <div class="panel-h">📡 Inyectar señal</div>
+    <div class="panel-header">📡 Inyectar señal</div>
     <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
       <div class="form-row"><label>Mercado</label><select id="inject-market"><option>forex</option><option>stocks</option><option>polymarket</option></select></div>
       <div class="form-row"><label>Ticker</label><input id="inject-ticker" value="EURUSD=X"></div>
@@ -33,10 +33,10 @@
 
   <!-- Broker controls -->
   <div class="panel">
-    <div class="panel-h">💰 Control de broker</div>
+    <div class="panel-header">💰 Control de broker</div>
     <div class="panel-body" style="display:flex;flex-direction:column;gap:10px">
       <div class="form-row"><label>Reset perfil</label><select id="reset-profile"><option value="all">Ambos</option><option value="normal">Normal</option><option value="fast">Fast</option></select></div>
-      <button class="btn btn-neg" onclick="resetBroker()">🔄 Reset broker a $1000</button>
+      <button class="btn btn-danger" onclick="resetBroker()">🔄 Reset broker a $1000</button>
       <div id="reset-result" style="font-size:13px;margin-top:6px"></div>
       <hr style="border-color:var(--line);margin:8px 0">
       <button class="btn btn-warn" onclick="clearMotors()">🧹 Limpiar heartbeats</button>

@@ -6,6 +6,7 @@ from .fundamental import FundamentalAnalyzer
 from .macro import MacroAnalyzer
 from .cross_asset import CrossAssetAnalyzer
 from .ict_smc import ICTAnalyzer
+from .adx_regime import ADXRegimeAnalyzer
 
 __all__ = [
     "TechnicalAnalyzer",
@@ -16,4 +17,5 @@ __all__ = [
     "MacroAnalyzer",
     "CrossAssetAnalyzer",
     "ICTAnalyzer",
+    "ADXRegimeAnalyzer",
 ]

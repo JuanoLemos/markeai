@@ -136,10 +136,17 @@ def activate_bot():
 
 
 def kill_services():
+    global loop_process
     try:
-        subprocess.run(["powershell", "-Command", "Get-Process -Name python* | Stop-Process -Force"], capture_output=True, timeout=10)
+        if loop_process is not None:
+            try:
+                loop_process.kill()
+            except Exception:
+                pass
+            loop_process = None
     except Exception:
         pass
+    _cleanup_old()
 
 
 def start_dashboard():
@@ -161,27 +168,16 @@ def restart_dashboard():
             "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'dashboard' } | Stop-Process -Force"
         ], capture_output=True, timeout=10)
     except Exception:
-        try:
-            subprocess.run("wmic process where \"name='python.exe' and commandline like '%dashboard%'\" delete", shell=True, capture_output=True, timeout=10)
-        except Exception:
-            pass
+        pass
     time.sleep(1)
     start_dashboard()
 
 
 def restart_server():
     try:
-        result = subprocess.run(
-            'wmic process where "name=\'python.exe\'" get processid,commandline /format:csv',
-            shell=True, capture_output=True, text=True, timeout=10
-        )
-        for line in result.stdout.splitlines():
-            if 'dashboard' in line.lower() or 'orchestrator' in line.lower():
-                parts = line.split(',')
-                for p in parts:
-                    pid = p.strip()
-                    if pid.isdigit():
-                        subprocess.run(["taskkill", "/f", "/pid", pid], capture_output=True)
+        subprocess.run(["powershell", "-Command",
+            "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match 'orchestrator|dashboard' } | Stop-Process -Force"
+        ], capture_output=True, timeout=10)
     except Exception:
         pass
     time.sleep(1)
@@ -203,8 +199,6 @@ def build_menu():
         pystray.MenuItem("▶ Activar", activate_bot),
         pystray.MenuItem("──────────────────", None, enabled=False),
         pystray.MenuItem("💀 Kill Services", kill_services),
-        pystray.MenuItem("──────────────────", None, enabled=False),
-        pystray.MenuItem("Salir", do_exit),
     )
 
 

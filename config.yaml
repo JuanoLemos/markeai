@@ -1,4 +1,4 @@
-version: "1.2.0"
+version: "1.2.1"
 alerts:
   discord:
     enabled: false
@@ -14,55 +14,49 @@ deepseek:
   model: deepseek-v4-flash
   temperature: 0.3
   timeout_seconds: 30
-global:
-  data_cache_ttl_minutes: 5
-  log_file: orchestrator.log
-  log_level: INFO
-  max_retries: 3
-  retry_delay_seconds: 10
 layers:
   adx_regime:
-    enabled: 1
+    enabled: true
     weight_forex: 0.1
     weight_polymarket: 0
     weight_stocks: 0.1
   cross_asset:
-    enabled: 1
+    enabled: true
     weight_forex: 0.1
     weight_polymarket: 0
     weight_stocks: 0.1
   fundamental:
-    enabled: 1
+    enabled: true
     weight_forex: 0.1
     weight_polymarket: 0
     weight_stocks: 0.2
   ict_smc:
-    enabled: 1
+    enabled: true
     weight_forex: 0.15
     weight_polymarket: 0
     weight_stocks: 0.1
   macro:
-    enabled: 1
+    enabled: true
     weight_forex: 0.25
     weight_polymarket: 0
     weight_stocks: 0.15
   onchain:
-    enabled: 1
+    enabled: true
     weight_forex: 0.1
     weight_polymarket: 0.25
     weight_stocks: 0.1
   orderbook:
-    enabled: 1
+    enabled: true
     weight_forex: 0
     weight_polymarket: 0.3
     weight_stocks: 0
   sentiment:
-    enabled: 1
+    enabled: true
     weight_forex: 0.2
     weight_polymarket: 0.2
     weight_stocks: 0.25
   technical:
-    enabled: 1
+    enabled: true
     weight_forex: 0.35
     weight_polymarket: 0.25
     weight_stocks: 0.3
@@ -71,7 +65,7 @@ markets:
     check_interval_min: 60
     enabled: true
     max_position_usd: 30
-    min_confidence: ''
+    min_confidence: 0
     mode: paper
     pairs:
     - EURUSD=X
@@ -84,13 +78,13 @@ markets:
     enabled: true
     max_position_usd: 50
     max_positions_concurrent: 2
-    min_confidence: ''
+    min_confidence: 0
     mode: paper
   stocks:
     check_interval_min: 60
     enabled: true
     max_position_usd: 30
-    min_confidence: ''
+    min_confidence: 0
     mode: paper
     tickers:
     - SPY

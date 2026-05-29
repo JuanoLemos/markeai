@@ -133,7 +133,7 @@ class TraditionalExecutor:
 
         order_data = {
             "symbol": ticker,
-            "qty": max(1, int(size_usd / 100)),
+            "notional": str(size_usd),
             "side": mapped_side,
             "type": order_type,
             "time_in_force": "day",

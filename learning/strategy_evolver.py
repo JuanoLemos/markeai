@@ -1,7 +1,5 @@
-import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 
 class StrategyEvolver:
@@ -44,7 +42,7 @@ class StrategyEvolver:
         if best_strat and best_win_rate > 0.6:
             suggestions.append(f"- ✅ La estrategia '{best_strat}' tiene {best_win_rate*100:.0f}% win rate. Considera darle más peso.")
         self._update_strategy_md(suggestions, performance, strategies_used)
-        self._write_skills(suggestions, performance, strategies_used)
+        self._write_skills(strategies_used)
         return "; ".join(suggestions) if suggestions else "no_suggestions"
 
     def _update_strategy_md(self, suggestions: list, performance: dict, strategies: dict):
@@ -87,7 +85,7 @@ class StrategyEvolver:
         with open(self.strategy_path, "w") as f:
             f.write(content)
 
-    def _write_skills(self, suggestions: list, performance: dict, strategies: dict):
+    def _write_skills(self, strategies: dict):
         skills_dir = Path(__file__).parent.parent / "skills"
         skills_dir.mkdir(exist_ok=True)
         for strat, stats in strategies.items():

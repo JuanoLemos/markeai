@@ -1,6 +1,4 @@
 import os
-from datetime import datetime, timezone
-from typing import Optional
 from dotenv import load_dotenv
 
 load_dotenv()

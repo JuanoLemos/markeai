@@ -1,5 +1,13 @@
 # Changelog — MarketAI / servermktai
 
+## v1.2.1 — 2026-05-29
+- Fix: B-01 — trades cerrados ahora persisten en DB (close_trade recibía id=0)
+- Fix: B-02 — VIX > 30 ya no es código muerto en macro analyzer
+- Fix: B-03 — executor tradicional usa notional USD en vez de qty=$100/share
+- Fix: Guard para KeyError en real mode (Alpaca IDs en PaperBroker)
+- Change: Adaptación de comandos a estándar OpenCode global
+- Change: Bug tracker (doc/documentos/bugs.md) con 34 bugs, 22 resueltos
+
 ## v1.2.0 — 2026-05-28
 - New: Pagina /sandbox con controles manuales (inyectar senal, reset broker, limpiar motors)
 - New: POST /api/debug/inject-signal — pruebas sinteticas en DB + broker

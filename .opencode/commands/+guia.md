@@ -1,9 +1,9 @@
-# /newguia — Crear nueva guía
+# /+guia — Crear nueva guía
 
 Crea un documento de guía en `doc/guias/`.
 
 ## Argumentos
-`/newguia NOMBRE` — nombre del archivo (ej: `/newguia TUTORIAL_ADVANZADO`)
+`/+guia NOMBRE` — nombre del archivo (ej: `/+guia TUTORIAL_ADVANZADO`)
 
 ## Qué hace
 1. Verifica que `NOMBRE` no exista ya en `doc/guias/`

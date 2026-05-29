@@ -216,7 +216,6 @@ def create_app():
             conn = sqlite3.connect(str(DB_PATH))
             conn.row_factory = sqlite3.Row
             cur = conn.cursor()
-            state = _read_state()
 
             # signals, trades, positions hoy
             import datetime
@@ -229,7 +228,7 @@ def create_app():
             conn.close()
 
             # generar resumen narrativo
-            opened = len(state.get("positions", {})) if state else 0
+            opened = sum(len(_profile_from_file(n).get("positions", {})) for n in ("normal", "fast"))
             signals_cnt = sig.get("cnt") or 0
             trades_closed = trd.get("total") or 0
             pnl_today = round(trd.get("pnl") or 0, 2)
@@ -254,8 +253,13 @@ def create_app():
     @app.route("/api/positions")
     def api_positions():
         import sqlite3
-        state = _read_state()
-        positions = list(state.get("positions", {}).values()) if state else []
+        positions = []
+        for name in ("normal", "fast"):
+            prof = _profile_from_file(name)
+            for pid, pos in prof.get("positions", {}).items():
+                pos["_profile"] = name
+                pos["_profile_id"] = pid
+                positions.append(pos)
         if not positions:
             return jsonify([])
         try:
@@ -285,20 +289,22 @@ def create_app():
 
     @app.route("/api/positions/<pos_id>/close", methods=["POST"])
     def api_close_position(pos_id):
-        state = _read_state()
-        positions = state.get("positions", {})
-        if pos_id not in positions:
-            matched = next((k for k, v in positions.items() if str(v.get("ticker")) == pos_id), None)
-            if not matched:
-                return jsonify({"ok": False, "error": "not found"}), 404
-            pos_id = matched
-        del state["positions"][pos_id]
-        try:
-            with open(STATE_PATH, "w") as f:
-                json.dump(state, f, indent=2)
-            return jsonify({"ok": True})
-        except Exception as e:
-            return jsonify({"ok": False, "error": str(e)}), 500
+        for name in ("normal", "fast"):
+            prof = _profile_from_file(name)
+            if pos_id in prof.get("positions", {}):
+                del prof["positions"][pos_id]
+                path = BASE_DIR / "data" / "cache" / f"pb_{name}.json"
+                with open(path, "w") as f:
+                    json.dump(prof, f, indent=2)
+                return jsonify({"ok": True, "profile": name})
+            matched = next((k for k, v in prof.get("positions", {}).items() if str(v.get("ticker")) == pos_id), None)
+            if matched:
+                del prof["positions"][matched]
+                path = BASE_DIR / "data" / "cache" / f"pb_{name}.json"
+                with open(path, "w") as f:
+                    json.dump(prof, f, indent=2)
+                return jsonify({"ok": True, "profile": name})
+        return jsonify({"ok": False, "error": "not found"}), 404
 
     @app.route("/api/signals")
     def api_signals():
@@ -734,9 +740,10 @@ def create_app():
             stats = dict(cur.fetchone() or {})
             conn.close()
 
-            state = _read_state()
-            balance = state.get("balance", 1000)
-            initial = 1000.0
+            normal = _profile_from_file("normal")
+            fast = _profile_from_file("fast")
+            balance = normal.get("balance", 1000) + fast.get("balance", 1000)
+            initial = 2000.0
 
             avg_daily = sum(r["daily_pnl"] for r in rows) / len(rows) if rows else 0
             wr = round(stats.get("wr") or 0, 1)
@@ -750,7 +757,10 @@ def create_app():
             streak = 0
             best_streak = 0
             cur_streak = 0
-            state_trades = sorted(state.get("trade_log", []), key=lambda x: x.get("timestamp",""))
+            state_trades = sorted(
+                (normal.get("trade_log", []) + fast.get("trade_log", [])),
+                key=lambda x: x.get("timestamp", "")
+            )
             for t in state_trades:
                 if t.get("type") == "close":
                     if (t.get("pnl") or 0) > 0:

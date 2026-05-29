@@ -139,6 +139,7 @@ class PaperBroker:
             "pnl_pct": round((pnl_net / position["size_usd"]) * 100, 2) if position["size_usd"] > 0 else 0,
             "reason": reason,
             "exit_time": datetime.now(timezone.utc).isoformat(),
+            "_db_id": position.get("_db_id"),
         }
         self.trade_log.append({
             "type": "close",

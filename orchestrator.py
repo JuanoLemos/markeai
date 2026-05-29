@@ -33,7 +33,7 @@ from execution.executor_polymarket import PolymarketExecutor
 from execution.executor_traditional import TraditionalExecutor
 from learning.journal import TradeJournal
 from learning.strategy_evolver import StrategyEvolver
-from learning.backtest import Backtester
+
 from alerts.notifier import Notifier
 from execution.risk_engine import RiskEngine
 from execution.entry_filters import session_hours, correlation_check
@@ -104,7 +104,7 @@ class MarketAIOrchestrator:
         self.trad_executor = TraditionalExecutor()
         self.journal = TradeJournal()
         self.evolver = StrategyEvolver()
-        self.backtester = Backtester()
+
         self.notifier = Notifier()
         self.risk_engine = RiskEngine(initial_balance=1000)
         self.ict_analyzer = ICTAnalyzer()
@@ -200,7 +200,8 @@ class MarketAIOrchestrator:
                     if prof_cfg.get("adx_alignment") == "required" and adx_regime == "ranging":
                         self.log.info(f"  {prof_name} blocked: ADX ranging")
                         continue
-                    decision = self.decider.decide(market, ticker, fused, market_data, fused.get("layer_scores", {}), profile=prof_name)
+                    pb = self.paper_brokers[prof_name]
+                    decision = self.decider.decide(market, ticker, fused, {**market_data, "open_positions": pb.get_positions()}, fused.get("layer_scores", {}), profile=prof_name)
                     self._hb("deepseek", "ok", f"{prof_name} {market} {ticker}: {decision.get('signal')} conf={decision.get('confidence')}")
                     self.log.info(f"  {prof_name} DeepSeek: {decision.get('signal')} (conf:{decision.get('confidence')})")
                     if decision["signal"] == "WAIT":
@@ -214,7 +215,6 @@ class MarketAIOrchestrator:
                     if not session_hours(market, hour, profile=prof_name):
                         self.log.info(f"  {prof_name} session blocked at hour {hour}")
                         continue
-                    pb = self.paper_brokers[prof_name]
                     if prof_cfg.get("correlation_filter") and pb and pb.get_positions():
                         if not correlation_check(pb.get_positions(), market, ticker, decision.get("signal", "LONG")):
                             self.log.info(f"  {prof_name} correlation blocked")
@@ -257,7 +257,7 @@ class MarketAIOrchestrator:
                         self.risk_engine.record_trade(trade)
                         self.journal.record_trade(trade)
                         self.notifier.send_trade_entry(trade)
-                        self.db.insert_trade({
+                        db_trade_id = self.db.insert_trade({
                             "market": f"{prof_name}_{market}", "ticker": ticker,
                             "signal": decision["signal"], "entry_price": trade.get("entry_price", 0),
                             "position_size_usd": trade.get("size_usd", trade.get("size", 0)),
@@ -265,6 +265,8 @@ class MarketAIOrchestrator:
                             "confidence": decision.get("confidence", 0),
                             "strategy_used": f"{prof_name}_{market}_{fused['signal']}",
                         })
+                        if trade and "id" in trade and db_trade_id and trade["id"] in pb.positions:
+                            pb.positions[trade["id"]]["_db_id"] = db_trade_id
 
     def _analyze_polymarket(self, market_cfg: dict) -> tuple:
         layer_results = {}
@@ -472,7 +474,11 @@ class MarketAIOrchestrator:
                 self.risk_engine.record_trade(c)
                 self.journal.record_trade(c)
                 self.notifier.send_trade_exit(c)
-                self.db.close_trade(0, c["exit_price"], c["reason"], c["pnl_usd"], c["pnl_pct"])
+                db_id = c.get("_db_id", 0)
+                if db_id:
+                    self.db.close_trade(db_id, c["exit_price"], c["reason"], c["pnl_usd"], c["pnl_pct"])
+                else:
+                    self.log.warning(f"B-01: No DB trade_id for closed position {c.get('position_id', '?')}")
             if len(pb.trade_log) > 0 and len(pb.trade_log) % 10 == 0:
                 self.evolver.evolve(pb.trade_log, pb.get_summary())
 

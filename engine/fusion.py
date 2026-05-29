@@ -1,6 +1,3 @@
-import numpy as np
-
-
 class FusionEngine:
     def __init__(self, config: dict):
         self.config = config
@@ -56,6 +53,7 @@ class FusionEngine:
             confidence = int(deviation * total_layers * 2)
         else:
             confidence = 0
+        confidence = max(0, min(100, confidence))
         return {
             "signal": signal,
             "score": round(float(weighted_score), 1),

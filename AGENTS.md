@@ -15,27 +15,49 @@ Skills cargables con `skill("nombre")` para tareas recurrentes:
 | `backup-pre-edit` | `doc/skills/backup-pre-edit.md` | Antes de editar archivos críticos — workflow backup/restore |
 | `actualizar-docs` | `doc/skills/actualizar-docs.md` | Al invocar `/updoc` — sincronización documental completa |
 
+## Comandos globales heredados
+
+Estos comandos viven en `~/.config/opencode/commands/` y funcionan sin configuración:
+
+| Comando | Función |
+|---------|---------|
+| `/debug` | Análisis profundo de sección (backend, frontend, DB, módulo) |
+| `/health` | Verificar integridad del código (sintaxis, rutas) |
+| `/plan` | Planificar (PLAN) → ejecutar (BUILD) tras aprobación |
+
 ## Comandos personalizados (.opencode/commands/)
 
 | Comando | Archivo | Función |
-|---|---|---|---|
+|---|---|---|
 | `/backup` | `.opencode/commands/backup.md` | Backup de archivos críticos |
 | `/backupall` | `.opencode/commands/backupall.md` | Backup completo del proyecto (.zip) |
 | `/checklist` | `.opencode/commands/checklist.md` | Revisar checklist + roadmap |
-| `/commit` | `.opencode/commands/commit.md` | Commit con formato del proyecto |
-| `/debug` | `.opencode/commands/debug.md` | Análisis profundo de módulo |
+| `/commit` | `.opencode/commands/commit.md` | Commit con formato del proyecto (hereda global) |
 | `/estado` | `.opencode/commands/estado.md` | Reporte rápido de estado del proyecto |
-| `/focotx` | `.opencode/commands/focotx.md` | Enfocar mente en lo técnico |
-| `/focoui` | `.opencode/commands/focoui.md` | Enfocar mente en diseño visual |
-| `/focoux` | `.opencode/commands/focoux.md` | Enfocar mente en experiencia de usuario |
-| `/limpiar` | `.opencode/commands/limpiar.md` | Limpiar archivos temporales |
-| `/newguia` | `.opencode/commands/newguia.md` | Crear nueva guía |
-| `/newidea` | `.opencode/commands/newidea.md` | Agregar idea al roadmap |
+| `/foco` | `.opencode/commands/foco.md` | Enfocar agente en modo de trabajo (`tx\|ui\|ux`) |
+| `/limpiar` | `.opencode/commands/limpiar.md` | Limpiar archivos temporales (hereda global) |
 | `/next` | `.opencode/commands/next.md` | Próximos 5 pasos del roadmap |
-| `/plan` | `.opencode/commands/plan.md` | Planificar con PLAN v4 Pro, luego BUILD tras aprobación |
 | `/rm` | `.opencode/commands/rm.md` | Revisar roadmap |
+| `/+guia` | `.opencode/commands/+guia.md` | Crear nueva guía |
+| `/+rmi` | `.opencode/commands/+rmi.md` | Agregar idea al roadmap |
 | `/updoc` | `.opencode/commands/updoc.md` | Actualizar documentación completa |
 | `/upguia` | `.opencode/commands/upguia.md` | Actualizar guía existente |
+
+## Mapeo de rutas para comandos
+
+| Variable | Ruta en MarketAI |
+|---|---|
+| `$RM` | `doc/documentos/roadmap.md` |
+| `$CHECKLIST` | `doc/documentos/checklist.md` |
+| `$GUIAS_DIR` | `doc/guias/` |
+| `$GUIAS_TEMPLATE` | `doc/guias/_template.md` |
+| `$CRITICAL_FILES` | `config.yaml`, `.env`, `orchestrator.py`, `data/database.py`, `engine/decider.py` |
+
+## Foco por área
+
+- `tx` → backend: `engine/`, `analyzers/`, `data/`, `execution/`
+- `ui` → frontend: `templates/`, `static/`, `dashboard.py`
+- `ux` → experiencia: `doc/guias/`, `alerts/`, `strategies/`
 
 ---
 
@@ -117,7 +139,7 @@ Archivos críticos: `config.yaml`, `.env`, `orchestrator.py`, `data/database.py`
 | `strategies/` | Estrategias documentadas + trade journal |
 | `doc/guias/` | Guías de instalación, configuración, uso |
 
-| `doc/documentos/` | Roadmap, checklist, metodología |
+| `doc/documentos/` | Roadmap, checklist, metodología, bugs |
 
 | `doc/informes/` | Reportes, reglas para agentes IA |
 | `templates/` | HTML templates del dashboard Flask (10 páginas) |

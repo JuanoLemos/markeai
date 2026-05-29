@@ -16,12 +16,12 @@ class MacroAnalyzer:
             if vix < 15:
                 signals.append(f"vix_low_{vix:.1f}")
                 scores.append(55)
-            elif vix > 25:
-                signals.append(f"vix_elevated_{vix:.1f}")
-                scores.append(35)
             elif vix > 30:
                 signals.append(f"vix_high_{vix:.1f}")
                 scores.append(25)
+            elif vix > 25:
+                signals.append(f"vix_elevated_{vix:.1f}")
+                scores.append(35)
             else:
                 signals.append(f"vix_normal_{vix:.1f}")
                 scores.append(50)

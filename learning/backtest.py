@@ -1,15 +1,10 @@
-import json
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from typing import Optional
-
 import numpy as np
 import pandas as pd
 
 
 class Backtester:
     def __init__(self):
-        self.results = {}
+        pass
 
     def run(self, market: str, ticker: str, historical_data: pd.DataFrame, strategy_params: dict = None) -> dict:
         if historical_data.empty or len(historical_data) < 50:

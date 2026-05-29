@@ -1,9 +1,9 @@
-# /newidea — Agregar idea al roadmap
+# /+rmi — Agregar idea al roadmap
 
 Guarda una idea de la sesión actual como documento en `doc/informes/ideas/` y agrega referencia en `doc/documentos/roadmap.md`.
 
 ## Argumentos
-`/newidea TITULO` — nombre del archivo
+`/+rmi TITULO` — nombre del archivo
 
 ## Qué hace
 1. Crea `doc/informes/ideas/TITULO.md` con:
