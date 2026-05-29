@@ -20,7 +20,7 @@ python orchestrator.py --mode loop          # 24/7
 .\tray_app.bat                              # System tray (recomendado)
 ```
 
-Ver `guias/` para instalación, configuración y uso detallado.
+Ver `doc/guias/` para instalación, configuración y uso detallado.
 
 ## Tests
 

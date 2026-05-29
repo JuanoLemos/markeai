@@ -8,8 +8,8 @@
 
 ### Estructura
 - [x] `C:\xampp\htdocs\MarketAI\` creado
-- [x] `documentos/` con roadmap.md, checklist.md, metodologia.md
-- [x] `guias/` con guia_instalacion.md, guia_configuracion.md, guia_uso.md
+- [x] `doc/documentos/` con roadmap.md, checklist.md, metodologia.md
+- [x] `doc/guias/` con guia_instalacion.md, guia_configuracion.md, guia_uso.md
 - [x] `data/` con subcarpeta `cache/`
 - [x] `analyzers/` con `__init__.py`
 - [x] `engine/` con `__init__.py`
@@ -17,7 +17,7 @@
 - [x] `learning/` con `__init__.py`
 - [x] `alerts/` con `__init__.py`
 - [x] `strategies/`
-- [x] `skills/`
+- [x] `doc/skills/`
 - [x] `tests/`
 
 ### Dependencias
@@ -180,7 +180,7 @@
 ### Strategy Evolver
 - [x] Detecta patrones ganadores/perdedores
 - [x] Sugiere ajustes a estrategias
-- [ ] Skills auto-generados en `skills/`
+- [ ] Skills auto-generados en `doc/skills/`
 
 ### Backtest
 - [x] Walk-forward: train/validation/test

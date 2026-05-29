@@ -12,8 +12,8 @@ Skills cargables con `skill("nombre")` para tareas recurrentes:
 
 | Skill | Archivo | Cuándo cargar |
 |---|---|---|
-| `backup-pre-edit` | `skills/backup-pre-edit.md` | Antes de editar archivos críticos — workflow backup/restore |
-| `actualizar-docs` | `skills/actualizar-docs.md` | Al invocar `/updoc` — sincronización documental completa |
+| `backup-pre-edit` | `doc/skills/backup-pre-edit.md` | Antes de editar archivos críticos — workflow backup/restore |
+| `actualizar-docs` | `doc/skills/actualizar-docs.md` | Al invocar `/updoc` — sincronización documental completa |
 
 ## Comandos personalizados (.opencode/commands/)
 
@@ -115,13 +115,15 @@ Archivos críticos: `config.yaml`, `.env`, `orchestrator.py`, `data/database.py`
 | `learning/` | Journal + strategy evolver + backtest + replay |
 | `alerts/` | Telegram + Discord notifier |
 | `strategies/` | Estrategias documentadas + trade journal |
-| `guias/` | Guías de instalación, configuración, uso |
-| `documentos/` | Roadmap, checklist, metodología |
-| `informes/` | Reportes, reglas para agentes IA, ideas de sesión |
+| `doc/guias/` | Guías de instalación, configuración, uso |
+
+| `doc/documentos/` | Roadmap, checklist, metodología |
+
+| `doc/informes/` | Reportes, reglas para agentes IA |
 | `templates/` | HTML templates del dashboard Flask |
 | `static/` | CSS y assets del dashboard |
 | `tests/` | Tests pytest |
-| `skills/` | Skills cargables + ICT FVG standalone |
+| `doc/skills/` | Skills cargables + ICT FVG standalone |
 
 ---
 
@@ -141,11 +143,11 @@ Si la edición modificó comportamiento visible para el usuario (config flags, e
 
 | Cambio | Docs a actualizar |
 |---|---|
-| `config.yaml` (flags, perfiles, time-exit) | `guias/guia_configuracion.md` |
-| `dashboard.py` (endpoints, páginas) | `guias/guia_uso.md` (tabla de rutas) |
-| `execution/paper_broker.py`, `risk_engine.py`, `entry_filters.py` | `guias/guia_trading.md`, `guias/guia_configuracion.md` |
-| `analyzers/` (nuevo analyzer, cambios de peso) | `guias/guia_configuracion.md` (tabla de capas) |
-| `tray_app.py` | `guias/guia_uso.md` (sección tray) |
-| Cambio en número de tests | `README.md`, `documentos/checklist.md`, `documentos/roadmap.md` |
+| `config.yaml` (flags, perfiles, time-exit) | `doc/guias/guia_configuracion.md` |
+| `dashboard.py` (endpoints, páginas) | `doc/guias/guia_uso.md` (tabla de rutas) |
+| `execution/paper_broker.py`, `risk_engine.py`, `entry_filters.py` | `doc/guias/guia_trading.md`, `doc/guias/guia_configuracion.md` |
+| `analyzers/` (nuevo analyzer, cambios de peso) | `doc/guias/guia_configuracion.md` (tabla de capas) |
+| `tray_app.py` | `doc/guias/guia_uso.md` (sección tray) |
+| Cambio en número de tests | `README.md`, `doc/documentos/checklist.md`, `doc/documentos/roadmap.md` |
 
 Cargar `skill("actualizar-docs")` para el checklist completo.

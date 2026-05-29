@@ -19,6 +19,14 @@
 <!-- Daily brief -->
 <div id="brief-box"></div>
 
+<!-- Motors -->
+<div class="section">
+  <div class="section-h"><h2>🔧 StatusMarketAi</h2></div>
+  <div class="motor-grid" id="motor-grid">
+    <div class="load-center"><div class="spinner"></div></div>
+  </div>
+</div>
+
 <!-- Hero KPIs -->
 <div class="kpi-grid" id="hero-kpis"></div>
 
@@ -155,6 +163,33 @@ async function loadBrief() {
     <div class="explain" style="margin-bottom:20px;border-left:3px solid var(--blue)">
       <strong>📝 Resumen del día:</strong> ${b.brief}
     </div>`;
+}
+
+/* ─ Motors ─ */
+async function loadMotors() {
+  const m = await api('/api/motors');
+  if (!m || !m.length) return;
+  const chips = m.map(mt => {
+    const st = mt.last_status || 'warn';
+    const icons = { ok:'🟢', warn:'⚠️', error:'🔴' };
+    const ago = mt.last_run ? timeAgo(mt.last_run) : 'nunca';
+    return `<div class="motor-chip motor-${st}" data-tip="${mt.last_message||''}">
+      <span class="motor-icon">${icons[st]||'⚪'}</span>
+      <div>
+        <div class="motor-name">${mt.label}</div>
+        <div class="motor-ago">${ago}</div>
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('motor-grid').innerHTML = chips;
+}
+
+function timeAgo(iso) {
+  const sec = (Date.now() - new Date(iso+'Z').getTime()) / 1000;
+  if (sec < 60) return 'hace unos segundos';
+  if (sec < 3600) return `hace ${Math.floor(sec/60)}min`;
+  if (sec < 86400) return `hace ${Math.floor(sec/3600)}h`;
+  return `hace ${Math.floor(sec/86400)}d`;
 }
 
 /* ─ Hero KPIs ─ */
@@ -536,7 +571,7 @@ async function loadEquity() {
 
 /* ─ Init ─ */
 function refresh() {
-  loadBrief(); loadHeroKpis(); loadProfiles(); loadExtKpis();
+  loadBrief(); loadMotors(); loadHeroKpis(); loadProfiles(); loadExtKpis();
   loadFunnel(); loadRisk(); loadProjection(); loadMarket();
   loadHealth(); loadPositions(); loadSignals(); loadEquity();
 }

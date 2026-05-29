@@ -39,7 +39,7 @@ Descripción:
   - Eliminado informes/ideas/ (vacío)
   - Movido guia_trading.md → guias/
   - Movido position-sizing-reference.md → guias/
-Archivos afectados: [múltiples — ver bitacora.md]
+Archivos afectados: [múltiples — ver doc/informes/bitacora.md]
 
 ## 2026-05-28 - Actualización documental completa
 Estado: implementado

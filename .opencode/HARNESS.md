@@ -24,8 +24,8 @@ Archivo principal: `AGENTS.md` (136 líneas)
 
 | Skill | Ruta |
 |---|---|
-| `backup-pre-edit` | `skills/backup-pre-edit.md` |
-| `actualizar-docs` | `skills/actualizar-docs.md` |
+| `backup-pre-edit` | `doc/skills/backup-pre-edit.md` |
+| `actualizar-docs` | `doc/skills/actualizar-docs.md` |
 
 ## Modelos del proyecto
 

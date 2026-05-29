@@ -7,6 +7,7 @@ import time
 from pathlib import Path
 
 import pystray
+import yaml
 from PIL import Image, ImageDraw, ImageFont
 
 BASE_DIR = Path(__file__).parent
@@ -15,6 +16,14 @@ STATE_PATHS = {
     "fast": BASE_DIR / "data" / "cache" / "pb_fast.json",
 }
 STOP_FILE = BASE_DIR / "STOP"
+
+def _version():
+    try:
+        with open(BASE_DIR / "config.yaml") as f:
+            c = yaml.safe_load(f)
+        return c.get("version", "1.0.0")
+    except Exception:
+        return "1.0.0"
 
 loop_process = None
 icon_instance = None
@@ -55,11 +64,12 @@ def _profile_pnl(profile: str) -> str:
 
 def get_status_text():
     global loop_process
+    prefix = f"servermktai {_version()}"
     if loop_process is None or loop_process.poll() is not None:
-        return "servermktai — Detenido"
+        return f"{prefix} — Detenido"
     normal_pnl = _profile_pnl("normal")
     fast_pnl = _profile_pnl("fast")
-    return f"servermktai | N: {normal_pnl} | F: {fast_pnl}"
+    return f"{prefix} | N: {normal_pnl} | F: {fast_pnl}"
 
 
 def start_loop():
@@ -201,7 +211,7 @@ def build_menu():
 def main():
     global icon_instance
 
-    icon = pystray.Icon("servermktai", create_icon(), "servermktai", menu=build_menu())
+    icon = pystray.Icon("servermktai", create_icon(), f"servermktai {_version()}", menu=build_menu())
     icon_instance = icon
 
     def tick():

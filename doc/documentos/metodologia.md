@@ -11,10 +11,10 @@ Definen el estado ACTUAL del proyecto. **Inmutables excepto decisiones explícit
 
 | Archivo | Propósito | Se actualiza cuando... | Frecuencia |
 |---|---|---|---|---|
-| `documentos/roadmap.md` | Tareas, fases, backlog, priorización | Se completa tarea, se descubre bug | Fin de cada instancia |
-| `documentos/checklist.md` | Checklist detallado por fase | Se completa ítem del checklist | Fin de cada instancia |
+| `doc/documentos/roadmap.md` | Tareas, fases, backlog, priorización | Se completa tarea, se descubre bug | Fin de cada instancia |
+| `doc/documentos/checklist.md` | Checklist detallado por fase | Se completa ítem del checklist | Fin de cada instancia |
 | `config.yaml` | Configuración central del sistema | Cambian parámetros de trading/riesgo | Por decisión |
-| `informes/bitacora.md` | Razonamiento detrás de decisiones | Se cierra una instancia | Fin de cada instancia |
+| `doc/informes/bitacora.md` | Razonamiento detrás de decisiones | Se cierra una instancia | Fin de cada instancia |
 
 ### Archivos de Implementación (Código)
 Especifican **cómo** funciona el sistema.
@@ -33,12 +33,12 @@ Ayudan a entender "cómo usar" algo. **Actualizables frecuentemente.**
 
 | Archivo | Propósito | Audiencia |
 |---|---|---|---|
-| `guias/guia_instalacion.md` | Cómo instalar desde cero | Nuevo usuario |
-| `guias/guia_configuracion.md` | Cómo configurar .env, config.yaml y perfiles | Usuario |
-| `guias/guia_uso.md` | Cómo operar el sistema | Usuario |
-| `guias/guia_usuario.md` | Manual completo del sistema | Usuario avanzado |
-| `guias/guia_trading.md` | Referencia de trading (Kelly, trailing, sesiones) | Trader |
-| `guias/guia_motores.md` | Explicación de motores internos | Desarrollador |
+| `doc/guias/guia_instalacion.md` | Cómo instalar desde cero | Nuevo usuario |
+| `doc/guias/guia_configuracion.md` | Cómo configurar .env, config.yaml y perfiles | Usuario |
+| `doc/guias/guia_uso.md` | Cómo operar el sistema | Usuario |
+| `doc/guias/guia_usuario.md` | Manual completo del sistema | Usuario avanzado |
+| `doc/guias/guia_trading.md` | Referencia de trading (Kelly, trailing, sesiones) | Trader |
+| `doc/guias/guia_motores.md` | Explicación de motores internos | Desarrollador |
 
 ### Archivos de Contexto (Memoria del Proyecto)
 Describen "qué es esto" para onboarding y coherencia a largo plazo.
@@ -59,7 +59,7 @@ Describen "qué es esto" para onboarding y coherencia a largo plazo.
 Usuario toma decisión importante
         ↓
 ¿Es decisión de arquitectura/diseño significativa?
-        ├─ SÍ → Crear ADR (en informes/adr.md si aplica)
+         ├─ SÍ → Crear ADR (en doc/informes/adr.md si aplica)
         │         ↓
         │       Registrar en roadmap
         │         ↓
@@ -81,8 +81,8 @@ Usuario toma decisión importante
 ## 3. CICLO DE INSTANCIA
 
 ### Al INICIO de una instancia
-- [ ] Leer `documentos/roadmap.md` (qué se espera)
-- [ ] Leer `informes/bitacora.md` última entrada (contexto anterior)
+- [ ] Leer `doc/documentos/roadmap.md` (qué se espera)
+- [ ] Leer `doc/informes/bitacora.md` última entrada (contexto anterior)
 - [ ] Verificar estado de tests (`python -m pytest tests/ -v`)
 
 ### DURANTE la instancia
@@ -92,11 +92,11 @@ Usuario toma decisión importante
 
 ### Al CERRAR instancia
 **Orden de actualización:**
-1. `informes/bitacora.md` ← Registrar POR QUÉ se decidió así
-2. `documentos/roadmap.md` ← Marcar completados, agregar pendientes
-3. `documentos/checklist.md` ← Sincronizar con roadmap
+1. `doc/informes/bitacora.md` ← Registrar POR QUÉ se decidió así
+2. `doc/documentos/roadmap.md` ← Marcar completados, agregar pendientes
+3. `doc/documentos/checklist.md` ← Sincronizar con roadmap
 4. `config.yaml` ← Si cambió configuración
-5. `guias/` ← Si cambió uso del sistema
+5. `doc/guias/` ← Si cambió uso del sistema
 
 ---
 

@@ -116,17 +116,26 @@ class MarketAIOrchestrator:
             self._news_cache["_all"] = self.news_collector.get_sentiment_summary("all", 24)
         return self._news_cache["_all"]
 
+    def _hb(self, motor: str, status: str = "ok", message: str = ""):
+        try:
+            self.db.record_heartbeat(motor, status, message)
+        except Exception:
+            pass
+
     def run_iteration(self):
         self._news_cache = {}
         self.log.info("=== Starting iteration ===")
+        self._hb("loop", "ok", "Iniciando iteracion")
         try:
             for market, market_cfg in self.markets_cfg.items():
                 if not market_cfg.get("enabled", False):
                     continue
                 self.log.info(f"Processing market: {market}")
                 self._process_market(market, market_cfg)
+            self._hb("loop", "ok", "Iteracion completa")
         except Exception as e:
             self.log.error(f"Iteration error: {e}")
+            self._hb("loop", "error", str(e))
             self.notifier.send_error(f"Iteration failed: {e}")
         self.log.info("=== Iteration complete ===")
         self._snapshot_portfolio()
@@ -154,13 +163,16 @@ class MarketAIOrchestrator:
             layer_results, market_data = self._analyze_stocks(market_cfg)
         if not layer_results:
             self.log.info(f"No layer results for {market}, skipping")
+            self._hb("data", "error", f"{market}: sin resultados")
             return
+        self._hb("data", "ok", f"{market}: {len(layer_results)} capas")
         target_tickers = self._get_tickers(market, market_cfg)
         if market == "polymarket" and market_data.get("slug"):
             target_tickers = [market_data["slug"]]
         for ticker in target_tickers:
             self.log.info(f"  Analyzing {ticker}...")
             fused = self.fusion_engine.fuse(layer_results, market)
+            self._hb("fusion", "ok", f"{market} {ticker}: {fused['signal']} score={fused['score']}")
             layers_with_score = {**fused.get("layer_scores", {}), "_fused_score": fused.get("score", 50)}
             self.db.insert_signal({
                 "market": market,
@@ -189,6 +201,7 @@ class MarketAIOrchestrator:
                         self.log.info(f"  {prof_name} blocked: ADX ranging")
                         continue
                     decision = self.decider.decide(market, ticker, fused, market_data, fused.get("layer_scores", {}), profile=prof_name)
+                    self._hb("deepseek", "ok", f"{prof_name} {market} {ticker}: {decision.get('signal')} conf={decision.get('confidence')}")
                     self.log.info(f"  {prof_name} DeepSeek: {decision.get('signal')} (conf:{decision.get('confidence')})")
                     if decision["signal"] == "WAIT":
                         continue
@@ -240,6 +253,7 @@ class MarketAIOrchestrator:
                             strategy_used=f"{prof_name}_{market}_{fused['signal']}",
                         )
                     if trade and "error" not in trade:
+                        self._hb("execution", "ok", f"{prof_name} {market} {ticker} {decision['signal']} ${trade.get('size_usd',0):.0f}")
                         self.risk_engine.record_trade(trade)
                         self.journal.record_trade(trade)
                         self.notifier.send_trade_entry(trade)

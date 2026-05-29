@@ -80,17 +80,16 @@ Formato:
 
 | Cuando cambia… | Actualizar también |
 |---|---|
-| **Modelo DeepSeek** o temperatura | `config.yaml` + `guias/guia_configuracion.md` |
-| **Variable de entorno** | `.env.example` + `guias/guia_configuracion.md` |
-| **Analizador nuevo** | `guias/guia.md` §2 + `documentos/roadmap.md` |
-| **Métrica de riesgo** | `config.yaml` + `guias/guia_uso.md` |
-| **Estrategia de trading** | `strategies/master_strategy.md` |
-| **Fase completada** | `documentos/roadmap.md` + `documentos/checklist.md` |
-| **Decisión importante de instancia** | `informes/bitacora.md` (crear si no existe) |
+| **Modelo DeepSeek** o temperatura | `config.yaml` + `doc/guias/guia_configuracion.md` |
+| **Variable de entorno** | `.env.example` + `doc/guias/guia_configuracion.md` |
+| **Analizador nuevo** | `doc/guias/guia_configuracion.md` + `doc/documentos/roadmap.md` |
+| **Métrica de riesgo** | `config.yaml` + `doc/guias/guia_uso.md` |
+| **Fase completada** | `doc/documentos/roadmap.md` + `doc/documentos/checklist.md` |
+| **Decisión importante de instancia** | `doc/informes/bitacora.md` (crear si no existe) |
 
 ### Quién edita qué (sin pedir aprobación)
-- **OpenCode edita libre:** `documentos/checklist.md`, `documentos/roadmap.md`, `guias/`, `informes/`, código en `engine/`, `data/`, `analyzers/`, `execution/`, `learning/`, `alerts/`, `strategies/`, `scripts/`
-- **OpenCode edita con aprobación:** Cambios a motor de decisión (`engine/decider.py`), risk management, `config.yaml` (estructura), OPENCODE.md, `documentos/metodologia.md`
+- **OpenCode edita libre:** `doc/documentos/checklist.md`, `doc/documentos/roadmap.md`, `doc/guias/`, `doc/informes/`, código en `engine/`, `data/`, `analyzers/`, `execution/`, `learning/`, `alerts/`, `strategies/`, `scripts/`
+- **OpenCode edita con aprobación:** Cambios a motor de decisión (`engine/decider.py`), risk management, `config.yaml` (estructura), OPENCODE.md, `doc/documentos/metodologia.md`
 
 ### Cuándo NO editar
 - No tocar archivos en `nppBackup/` (histórico)
@@ -124,9 +123,9 @@ Formato:
 ## 8. REGLA DE CIERRE DE INSTANCIA
 
 ### Pasos obligatorios antes de cerrar
-1. **Actualizar `documentos/checklist.md`** — marcar completado como ✅ DONE
-2. **Actualizar `documentos/roadmap.md`** — reflejar nuevos estados
-3. **Escribir `informes/bitacora.md`** — entrada con: instancia #, qué se hizo, decisiones, próximo paso
+1. **Actualizar `doc/documentos/checklist.md`** — marcar completado como ✅ DONE
+2. **Actualizar `doc/documentos/roadmap.md`** — reflejar nuevos estados
+3. **Escribir `doc/informes/bitacora.md`** — entrada con: instancia #, qué se hizo, decisiones, próximo paso
 4. **Nombrar el próximo paso**
 
 ### Formato resumen de cierre
@@ -168,7 +167,7 @@ CIERRE INSTANCIA XX — [Fecha]
 | 8.2 | Micro-montos reales ($10-50) |
 | 8.3 | Monitoreo diario con ajustes manuales |
 
-Ver `documentos/roadmap.md` para backlog completo.
+Ver `doc/documentos/roadmap.md` para backlog completo.
 
 ---
 

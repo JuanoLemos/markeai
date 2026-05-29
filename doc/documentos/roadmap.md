@@ -145,6 +145,20 @@
 | sessionStorage backtest | ✅ | Persiste estado al cambiar pestañas |
 | Timeout backtest 900s | ✅ | 15 min para pipeline completo |
 | API status vía log time | ✅ | Verifica loop con mtime <60s |
+| Status motores en dashboard | ✅ | Heartbeat DB + chips de estado en Overview |
+| Risk snapshot dual profile | ✅ | Agrega posiciones de Normal + Fast |
+| DeepSeek health check cache | ✅ | Cache 60s, modelo desde config.yaml |
+| Endpoint /api/debug | ✅ | Traza fuentes de datos para depuracion |
+
+### Pendientes P1
+
+| ID | Qué | Prioridad |
+|---|---|---|
+| 9.1 | Pagina /sandbox con controles manuales de broker | Media |
+| 9.2 | Retencion configurable de senales (purga >90 dias) | Media |
+| 9.3 | Tabla backtest_runs con snapshot de config + resultados | Baja |
+| 9.4 | POST /api/debug/inject-signal para pruebas sinteticas | Baja |
+| 9.5 | CHANGELOG.md + reglas de version management | Baja |
 
 ---
 
@@ -158,3 +172,74 @@
 | Max drawdown | <15% | Peak-to-trough máximo en dashboard |
 | Señales por día | 2-5 | Trades ejecutados en paper broker |
 | Tests | 95/95 | `python -m pytest tests/ -v` |
+
+---
+
+## Apéndice — Especificaciones de Mejoras Implementadas
+
+Este apéndice documenta las especificaciones técnicas detalladas de cada mejora de Fase 9, para referencia durante mantenimiento futuro.
+
+### ATR Trailing Stop
+
+**Archivo:** `execution/paper_broker.py` → `check_stops()`
+
+Comportamiento:
+```
+1. Position LONG opened at $100
+2. Price moves to $105 (ATR = $2)
+3. Trailing stop = 105 - (2 x 2.5) = 100 → SL at $100
+4. Price moves to $110 → trailing stop = 110 - 5 = 105 → SL at $105
+5. Price drops to $105 → STOP LOSS at $105 (gain of $5 secured)
+```
+
+### Break-even Stop
+
+**Archivo:** `execution/paper_broker.py` → `check_stops()`
+
+Comportamiento:
+```
+1. Position LONG at $100, original SL at $95
+2. Price reaches $102 (1.5x ATR away) → break-even trigger
+3. SL moved from $95 to $100 (entry price)
+4. If price drops back to $100 → STOP LOSS at $100 (0 loss)
+```
+
+### Session Entry Filter
+
+**Archivo:** `execution/entry_filters.py`
+
+Reglas:
+- Normal profile: 18h/día (sesiones principales London + NY)
+- Fast profile: 22h/día (incluye overlap extendido)
+- Polymarket: sin filtro de sesión (24/7)
+
+### ADX Market Regime Analyzer
+
+**Archivo:** `analyzers/adx_regime.py`
+
+| ADX | Régimen | Señal |
+|---|---|---|
+| > 25 | Trending | Seguir tendencia (LONG/SHORT según dirección) |
+| < 20 | Ranging | Mean reversion, esperar |
+| 20-25 | Transición | WAIT — no operar |
+
+### Correlation Entry Filter
+
+**Archivo:** `execution/entry_filters.py`
+
+Reglas:
+- EUR/USD + GBP/USD correlation ≈ 0.85 → no abrir ambas SHORT
+- EUR/USD SHORT + USD/JPY LONG = USD play en ambas → no permitido
+- Mismo mercado + misma dirección → bloqueado
+- Mercados distintos → siempre permitido
+
+### Partial Take-Profit
+
+**Archivo:** `execution/paper_broker.py` → `check_stops()`
+
+| Perfil | TP1 | TP2 |
+|---|---|---|
+| Normal | 2% → cerrar 50% | 5% → cerrar 50% restante |
+| Fast | 0.8% → cerrar 50% | 1.5% → cerrar 50% restante |
+
+SL ajustado a break-even tras TP1. Si el tamaño de posición es < $10, no aplicar partial TP.

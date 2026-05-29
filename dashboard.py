@@ -8,6 +8,7 @@ from threading import Thread
 
 import yaml
 from flask import Flask, jsonify, render_template, request
+from data.database import Database
 
 BASE_DIR = Path(__file__).parent
 CONFIG_PATH = BASE_DIR / "config.yaml"
@@ -20,6 +21,18 @@ loop_process = None
 
 def create_app():
     app = Flask(__name__, template_folder=BASE_DIR / "templates", static_folder=BASE_DIR / "static")
+
+    def _version():
+        try:
+            with open(CONFIG_PATH) as f:
+                c = yaml.safe_load(f)
+            return c.get("version", "1.0.0")
+        except Exception:
+            return "1.0.0"
+
+    @app.context_processor
+    def inject_globals():
+        return dict(app_version=_version())
 
     # ─── HTML routes ─────────────────────────────────────
 
@@ -64,6 +77,58 @@ def create_app():
         except Exception:
             running = False
         return jsonify({"running": running})
+
+    @app.route("/api/motors")
+    def api_motors():
+        try:
+            db = Database()
+            motors = db.get_heartbeats(minutes=120)
+            db._get_conn().close()
+            labels = {"loop":"Loop","data":"Datos","fusion":"Fusion","deepseek":"DeepSeek","execution":"Ejecucion"}
+            for m in motors:
+                m["label"] = labels.get(m["motor"], m["motor"])
+            running = LOG_PATH.exists() and time.time() - LOG_PATH.stat().st_mtime < 60
+            motors.append({
+                "motor": "bot",
+                "label": "Bot",
+                "last_status": "ok" if running else "error",
+                "last_message": "Loop activo" if running else "Detenido o sin heartbeat >60s",
+                "last_run": "ahora" if running else "hace >1min",
+            })
+            return jsonify(motors)
+        except Exception as e:
+            return jsonify([])
+
+    @app.route("/api/debug")
+    def api_debug():
+        try:
+            info = {}
+            info["api_version"] = _version()
+            info["motors_db"] = Database().get_heartbeats(minutes=120)
+            info["motors_count"] = len(info["motors_db"])
+            info["signals_count"] = 0
+            info["portfolio_rows"] = 0
+            info["trades_open"] = 0
+            info["profiles"] = {}
+            for n in ("normal", "fast"):
+                p = _profile_from_file(n)
+                info["profiles"][n] = {
+                    "balance": p.get("balance"),
+                    "positions_count": len(p.get("positions", {})),
+                    "trade_log_count": len(p.get("trade_log", [])),
+                }
+            try:
+                import sqlite3
+                conn = sqlite3.connect(str(DB_PATH))
+                info["signals_count"] = conn.execute("SELECT COUNT(*) FROM signals").fetchone()[0]
+                info["portfolio_rows"] = conn.execute("SELECT COUNT(*) FROM portfolio").fetchone()[0]
+                info["trades_open"] = conn.execute("SELECT COUNT(*) FROM trades WHERE status='open'").fetchone()[0]
+                conn.close()
+            except Exception:
+                pass
+            return jsonify(info)
+        except Exception as e:
+            return jsonify({"error": str(e)})
 
     @app.route("/api/summary")
     def api_summary():
@@ -539,26 +604,31 @@ def create_app():
 
     @app.route("/api/risk-snapshot")
     def api_risk_snapshot():
-        state = _read_state()
-        positions = state.get("positions", {})
-        balance = state.get("balance", 1000)
         items = []
         total_exposure = 0.0
         total_max_loss = 0.0
-        for ticker, p in positions.items():
-            size = p.get("size_usd") or 0
-            sl_pct = p.get("stop_loss_pct") or 0
-            max_loss = round(size * sl_pct / 100, 2)
-            total_exposure += size
-            total_max_loss += max_loss
-            items.append({
-                "ticker": ticker,
-                "market": p.get("market", ""),
-                "signal": p.get("signal", ""),
-                "size_usd": round(size, 2),
-                "stop_loss_pct": sl_pct,
-                "max_loss_usd": max_loss,
-            })
+        total_balance = 0.0
+        for name in ("normal", "fast"):
+            state = _profile_from_file(name)
+            pos = state.get("positions", {})
+            bal = state.get("balance", 0) or 0
+            total_balance += bal
+            for pid, p in pos.items():
+                size = p.get("size_usd") or 0
+                sl_pct = p.get("stop_loss_pct") or 0
+                max_loss = round(size * sl_pct / 100, 2)
+                total_exposure += size
+                total_max_loss += max_loss
+                items.append({
+                    "ticker": pid,
+                    "market": p.get("market", ""),
+                    "signal": p.get("signal", ""),
+                    "profile": name,
+                    "size_usd": round(size, 2),
+                    "stop_loss_pct": sl_pct,
+                    "max_loss_usd": max_loss,
+                })
+        balance = total_balance if total_balance > 0 else 1000
         worst_balance = round(balance - total_max_loss, 2)
         pct_at_risk = round(total_max_loss / balance * 100, 2) if balance > 0 else 0
         return jsonify({
@@ -683,34 +753,52 @@ def _read_all_profiles() -> dict:
     return result
 
 
+_health_cache = {"data": {}, "ts": 0}
+
 def _check_health() -> dict:
+    now = time.time()
+    if now - _health_cache["ts"] < 60:
+        return _health_cache["data"]
     apis = {}
+    deepseek_key = os.getenv("DEEPSEEK_API_KEY", "")
+    apis["deepseek"] = bool(deepseek_key)
     try:
         import requests
-        r = requests.get("https://api.etherscan.io/v2/api", params={
-            "chainid": "137", "module": "account", "action": "balance",
-            "address": "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E",
-            "apikey": os.getenv("POLYSCAN_API_KEY", ""),
-        }, timeout=5)
-        apis["polyscan"] = r.status_code == 200 and r.json().get("status") == "1"
-    except Exception:
+        if deepseek_key:
+            try:
+                cfg = yaml.safe_load(open(CONFIG_PATH, encoding="utf-8"))
+                model = cfg.get("deepseek", {}).get("model", "deepseek-v4-flash")
+            except Exception:
+                model = "deepseek-v4-flash"
+            try:
+                r = requests.post(
+                    "https://api.deepseek.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {deepseek_key}"},
+                    json={"model": model, "messages": [{"role": "user", "content": "ping"}], "max_tokens": 1},
+                    timeout=4,
+                )
+                apis["deepseek"] = r.status_code == 200
+            except Exception:
+                apis["deepseek"] = False
+        try:
+            r = requests.get("https://api.etherscan.io/v2/api", params={
+                "chainid": "137", "module": "account", "action": "balance",
+                "address": "0x4bFb41d5B3570DeFd03C39a9A4D8dE6Bd8B8982E",
+                "apikey": os.getenv("POLYSCAN_API_KEY", ""),
+            }, timeout=4)
+            apis["polyscan"] = r.status_code == 200 and r.json().get("status") == "1"
+        except Exception:
+            apis["polyscan"] = False
+    except ImportError:
         apis["polyscan"] = False
-    try:
-        r = requests.get("https://api.deepseek.com/chat/completions",
-            headers={"Authorization": f"Bearer {os.getenv('DEEPSEEK_API_KEY','')}"},
-            json={"model": "deepseek-v4-pro", "messages": [{"role":"user","content":"ping"}], "max_tokens":5},
-            timeout=5,
-        )
-        apis["deepseek"] = r.status_code == 200
-    except Exception:
-        apis["deepseek"] = False
-    apis["yfinance"] = True
     try:
         import yfinance as yf
         d = yf.download("SPY", period="1d", interval="1m", progress=False)
         apis["yfinance"] = not d.empty
     except Exception:
         apis["yfinance"] = False
+    _health_cache["data"] = apis
+    _health_cache["ts"] = now
     return apis
 
 

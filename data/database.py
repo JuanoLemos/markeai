@@ -91,11 +91,28 @@ class Database:
                 total_pnl REAL DEFAULT 0.0
             );
 
+            CREATE TABLE IF NOT EXISTS motor_heartbeat (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                motor TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('ok','warn','error')),
+                message TEXT DEFAULT '',
+                timestamp TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS backtest_runs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                created TEXT NOT NULL DEFAULT (datetime('now')),
+                market TEXT NOT NULL,
+                config_snapshot TEXT NOT NULL,
+                results TEXT
+            );
+
             CREATE INDEX IF NOT EXISTS idx_trades_market ON trades(market);
             CREATE INDEX IF NOT EXISTS idx_trades_status ON trades(status);
             CREATE INDEX IF NOT EXISTS idx_trades_entry ON trades(entry_time);
             CREATE INDEX IF NOT EXISTS idx_signals_timestamp ON signals(timestamp);
             CREATE INDEX IF NOT EXISTS idx_market_data_ticker ON market_data(ticker);
+            CREATE INDEX IF NOT EXISTS idx_motor_ts ON motor_heartbeat(motor, timestamp);
         """)
         conn.commit()
         conn.close()
@@ -228,3 +245,44 @@ class Database:
         ).fetchall()
         conn.close()
         return reversed([dict(r) for r in rows])
+
+    def record_heartbeat(self, motor: str, status: str = "ok", message: str = ""):
+        conn = self._get_conn()
+        conn.execute(
+            "INSERT INTO motor_heartbeat (motor, status, message) VALUES (?, ?, ?)",
+            (motor, status, message),
+        )
+        conn.commit()
+        conn.close()
+
+    def get_heartbeats(self, motors: list = None, minutes: int = 60) -> list:
+        conn = self._get_conn()
+        if motors:
+            placeholders = ",".join("?" for _ in motors)
+            rows = conn.execute(
+                f"SELECT motor, status, message, timestamp FROM motor_heartbeat "
+                f"WHERE motor IN ({placeholders}) AND timestamp >= datetime('now', '-' || ? || ' minutes') "
+                f"ORDER BY motor, timestamp DESC",
+                [*motors, minutes],
+            ).fetchall()
+        else:
+            rows = conn.execute(
+                "SELECT motor, status, message, timestamp FROM motor_heartbeat "
+                "WHERE timestamp >= datetime('now', '-' || ? || ' minutes') "
+                "ORDER BY motor, timestamp DESC",
+                (minutes,),
+            ).fetchall()
+        conn.close()
+        result = {}
+        for r in rows:
+            m = r["motor"]
+            if m not in result:
+                result[m] = {"motor": m, "last_status": r["status"], "last_message": r["message"], "last_run": r["timestamp"]}
+        return list(result.values())
+
+    def prune_signals(self, days: int = 90):
+        conn = self._get_conn()
+        conn.execute("DELETE FROM signals WHERE timestamp < datetime('now', '-' || ? || ' days')", (days,))
+        conn.execute("DELETE FROM motor_heartbeat WHERE timestamp < datetime('now', '-' || ? || ' days')", (days,))
+        conn.commit()
+        conn.close()

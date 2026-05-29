@@ -676,6 +676,31 @@ pre.log {
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
+/* ── Motor chips ── */
+.motor-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.motor-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  font-size: 13px;
+  min-width: 150px;
+}
+.motor-chip.motor-ok { border-color: var(--teal); }
+.motor-chip.motor-warn { border-color: var(--amber); }
+.motor-chip.motor-error { border-color: var(--rose); }
+.motor-icon { font-size: 18px; }
+.motor-name { font-weight: 600; color: var(--ink); }
+.motor-ago { font-size: 11px; color: var(--ink-2); margin-top: 2px; }
+.load-center { text-align: center; padding: 20px; }
+
 /* ── Truncated ticker ── */
 .ticker-cell {
   display: inline-block;
