@@ -1,5 +1,4 @@
 import json
-import os
 import subprocess
 import sys
 import threading
@@ -108,7 +107,7 @@ def do_exit():
             icon_instance.stop()
     except Exception:
         pass
-    os._exit(0)
+    sys.exit(0)
 
 
 def on_show():
@@ -136,17 +135,9 @@ def activate_bot():
 
 
 def kill_services():
-    global loop_process
-    try:
-        if loop_process is not None:
-            try:
-                loop_process.kill()
-            except Exception:
-                pass
-            loop_process = None
-    except Exception:
-        pass
+    stop_loop()
     _cleanup_old()
+    do_exit()
 
 
 def start_dashboard():

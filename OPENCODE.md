@@ -51,6 +51,8 @@ Datos → 8 Analizadores → Fusión → DeepSeek → Ejecución → Journal
 
 **Regla de oro:** Cambios de arquitectura o motor de decisión → revisar ADR primero. Bugfixes menores → actuar y documentar después.
 
+**Regla de salud estructural:** Si un cambio mueve, renombra o elimina archivos de autoridad (`ROADMAP.md`, `CHECKLIST.md`, `CHANGELOG.md`, `DILIGENCIA.md`), ejecutar verificación de salud (Fase D del roadmap) antes de cerrar la instancia.
+
 ---
 
 ## 4. CÓMO RESPONDO (dos modos)
@@ -82,14 +84,14 @@ Formato:
 |---|---|
 | **Modelo DeepSeek** o temperatura | `config.yaml` + `doc/guias/guia_configuracion.md` |
 | **Variable de entorno** | `.env.example` + `doc/guias/guia_configuracion.md` |
-| **Analizador nuevo** | `doc/guias/guia_configuracion.md` + `doc/documentos/roadmap.md` |
-| **Métrica de riesgo** | `config.yaml` + `doc/guias/guia_uso.md` |
-| **Fase completada** | `doc/documentos/roadmap.md` + `doc/documentos/checklist.md` |
-| **Decisión importante de instancia** | `doc/informes/bitacora.md` (crear si no existe) |
+| **Analizador nuevo** | `doc/guias/guia_configuracion.md` + `$RM` |
+| **Variable de entorno** | `.env.example` + `doc/guias/guia_configuracion.md` |
+| **Fase completada** | `$RM` + `$CHECKLIST` |
+| **Decisión importante de instancia** | `$BITACORA` (crear si no existe) |
 
 ### Quién edita qué (sin pedir aprobación)
-- **OpenCode edita libre:** `doc/documentos/checklist.md`, `doc/documentos/roadmap.md`, `doc/guias/`, `doc/informes/`, código en `engine/`, `data/`, `analyzers/`, `execution/`, `learning/`, `alerts/`, `strategies/`, `scripts/`
-- **OpenCode edita con aprobación:** Cambios a motor de decisión (`engine/decider.py`), risk management, `config.yaml` (estructura), OPENCODE.md, `doc/documentos/metodologia.md`
+- **OpenCode edita libre:** `$CHECKLIST`, `$RM`, `doc/guias/`, `$BITACORA`, código en `engine/`, `data/`, `analyzers/`, `execution/`, `learning/`, `alerts/`, `strategies/`, `scripts/`
+- **OpenCode edita con aprobación:** Cambios a motor de decisión (`engine/decider.py`), risk management, `config.yaml` (estructura), OPENCODE.md, `doc/arch/metodologia.md`, `DILIGENCIA.md` (estructural)
 
 ### Cuándo NO editar
 - No tocar archivos en `nppBackup/` (histórico)
@@ -123,9 +125,9 @@ Formato:
 ## 8. REGLA DE CIERRE DE INSTANCIA
 
 ### Pasos obligatorios antes de cerrar
-1. **Actualizar `doc/documentos/checklist.md`** — marcar completado como ✅ DONE
-2. **Actualizar `doc/documentos/roadmap.md`** — reflejar nuevos estados
-3. **Escribir `doc/informes/bitacora.md`** — entrada con: instancia #, qué se hizo, decisiones, próximo paso
+1. **Actualizar `$CHECKLIST`** — marcar completado como ✅ DONE
+2. **Actualizar `$RM`** — reflejar nuevos estados
+3. **Escribir `$BITACORA`** — entrada con: instancia #, qué se hizo, decisiones, próximo paso
 4. **Nombrar el próximo paso**
 
 ### Formato resumen de cierre
@@ -167,7 +169,7 @@ CIERRE INSTANCIA XX — [Fecha]
 | 8.2 | Micro-montos reales ($10-50) |
 | 8.3 | Monitoreo diario con ajustes manuales |
 
-Ver `doc/documentos/roadmap.md` para backlog completo.
+Ver `$RM` para backlog completo.
 
 ---
 

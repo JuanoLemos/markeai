@@ -13,11 +13,10 @@ Migración de metodología OpenCode desde Nemesis Detective a MarketAI.
 - `.opencode/` con 17 comandos slash
 - `AGENTS.md` — datos prácticos del proyecto
 - `OPENCODE.md` — ancla de sesión
-- `doc/documentos/metodologia.md` — taxonomía, jerarquía de cambios, ciclo de instancia
-- `doc/skills/backup-pre-edit.md` + `doc/skills/actualizar-docs.md`
-- `scripts/backup-critical.py`
-- `doc/informes/bitacora.md` — este archivo
-- `doc/informes/ideas/` — directorio para ideas de sesión
+- `doc/arch/metodologia.md` — taxonomía, jerarquía de cambios, ciclo de instancia
+- `skills/backup-pre-edit.md` + `skills/actualizar-docs.md`
+- `doc/arch/bitacora.md` — este archivo
+- `doc/pendientes/` — directorio para ideas de sesión
 
 ---
 
@@ -109,18 +108,17 @@ Auto-restart del loop, timeout backtest extendido, persistencia de backtest, lim
   - Eliminado `templates/Claude/v1/` (copias redundantes de templates)
   - Eliminado `backup_dashboard/` (conservado v2)
   - Eliminado `nppBackup/` (basura de editor)
-  - Eliminado `doc/documentos/guia.md` (solapaba con `doc/guias/`)
-  - Eliminado `doc/informes/ideas/` (vacío)
+  - Eliminado `doc/arch/guia.md` (solapaba con `doc/guias/`)
   - Movido `guia_trading.md` y `position-sizing-reference.md` a `doc/guias/`
 - Documentación actualizada:
-  - `doc/documentos/checklist.md` — Fase 9 agregada, 95 tests, 9 páginas, dual profile
-  - `doc/documentos/roadmap.md` — 9 analizadores, Fase 9, métricas actualizadas
-  - `doc/documentos/metodologia.md` — 9 analizadores, guías actualizadas
+  - `$CHECKLIST` — Fase 9 agregada, 95 tests, 9 páginas, dual profile
+  - `$RM` — 9 analizadores, Fase 9, métricas actualizadas
+  - `doc/arch/metodologia.md` — 9 analizadores, guías actualizadas
   - `doc/guias/guia_configuracion.md` — perfiles, time-exit, flash model
   - `doc/guias/guia_instalacion.md` — pyarrow, RSS fallback, 95 tests
   - `doc/guias/guia_uso.md` — 9 páginas, tray simplificado, dual profile
-  - `doc/informes/bitacora.md` — todas las instancias registradas
-  - `doc/informes/reglas.md` — 9 analizadores, 6 temas
-  - `doc/skills/actualizar-docs.md` — checklist concreto por tipo de cambio
+  - `$BITACORA` — todas las instancias registradas
+  - `doc/arch/reglas.md` — 9 analizadores, 6 temas
+  - `skills/actualizar-docs.md` — checklist concreto por tipo de cambio
   - `AGENTS.md` — regla post-edit para docs
   - `README.md` — 9 analizadores, 95 tests

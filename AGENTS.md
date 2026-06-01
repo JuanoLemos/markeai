@@ -6,18 +6,61 @@ OPENCODE.md explica **cómo trabajar** (protocolo, reglas). AGENTS.md explica **
 
 ---
 
+## Mapeo de rutas
+
+Variables que los comandos del proyecto usan para referirse a archivos. Definidas acá para mantener un solo punto de configuración.
+
+| Variable | Ruta estándar | Descripción |
+|----------|---------------|-------------|
+| $RM | `ROADMAP.md` | Roadmap del proyecto |
+| $CHECKLIST | `CHECKLIST.md` | Checklist del proyecto |
+| $CHANGELOG | `CHANGELOG.md` | Historial de versiones |
+| $BITACORA | `doc/arch/bitacora.md` | Bitácora de sesiones |
+| $BUGS | `doc/arch/bugs.md` | Bug tracker |
+| $INCIDENTS | `doc/arch/incidentes.md` | Registro de incidentes |
+| $GUIAS | `doc/guias/` | Directorio de guías |
+| $GUIAS_TEMPLATE | `doc/guias/_template.md` | Plantilla de guía |
+| $COMANDOS_FILE | `doc/guias/COMANDOS.md` | Documentación de comandos |
+| $ARCH | `doc/arch/` | ADRs, sistema, informes |
+| $PEND | `doc/pendientes/` | Pendientes de revisión |
+| $QA | `doc/qa/` | Situaciones QA |
+| $TESTING | `doc/testing/` | Testing pendiente |
+| $SKILLS_DIR | `skills/` | Skills cargables |
+| $CONFIG | `config.yaml` | Configuración central |
+| $ENV | `.env` | API keys y secretos |
+| $ORCHESTRATOR | `orchestrator.py` | Loop principal |
+| $DASHBOARD | `dashboard.py` | Flask dashboard |
+| $DATABASE | `data/database.py` | Schema SQLite |
+| $DECIDER | `engine/decider.py` | Motor DeepSeek |
+| $BACKUP_SCRIPT | `scripts/backup-critical.py` | Backup de críticos |
+| $ENGINE_DIR | `engine/` | Fusión + decisión |
+| $ANALYZERS_DIR | `analyzers/` | Analizadores de mercado |
+| $DATA_DIR | `data/` | Recolectores + DB |
+| $EXECUTION_DIR | `execution/` | Broker, risk, entry |
+| $TEMPLATES_DIR | `templates/` | HTML templates |
+| $STATIC_DIR | `static/` | CSS y assets |
+| $ALERTS_DIR | `alerts/` | Notificaciones |
+| $STRATEGIES_DIR | `strategies/` | Estrategias + journal |
+| $LEARNING_DIR | `learning/` | Backtest + evolver |
+| $SCRIPTS_DIR | `scripts/` | Scripts auxiliares |
+| $TESTS_DIR | `tests/` | Tests pytest |
+| $COMMANDS_DIR | `.opencode/commands/` | Comandos slash |
+| $CRITICAL_FILES | `$CONFIG`, `$ENV`, `$ORCHESTRATOR`, `$DATABASE`, `$DECIDER` | Archivos críticos |
+
+---
+
 ## Skills disponibles
 
 Skills cargables con `skill("nombre")` para tareas recurrentes:
 
 | Skill | Archivo | Cuándo cargar |
 |---|---|---|
-| `backup-pre-edit` | `doc/skills/backup-pre-edit.md` | Antes de editar archivos críticos — workflow backup/restore |
-| `actualizar-docs` | `doc/skills/actualizar-docs.md` | Al invocar `/updoc` — sincronización documental completa |
+| `backup-pre-edit` | `$SKILLS_DIR/backup-pre-edit.md` | Antes de editar archivos críticos — workflow backup/restore |
+| `actualizar-docs` | `$SKILLS_DIR/actualizar-docs.md` | Al invocar `/updoc` — sincronización documental completa |
 
 ## Comandos globales heredados
 
-Estos comandos viven en `~/.config/opencode/commands/` y funcionan sin configuración:
+Estos comandos viven en `~/.config/opencode/commands/` y funcionan sin configuración. También tienen copia local en `.opencode/commands/`:
 
 | Comando | Función |
 |---------|---------|
@@ -29,35 +72,42 @@ Estos comandos viven en `~/.config/opencode/commands/` y funcionan sin configura
 
 | Comando | Archivo | Función |
 |---|---|---|
-| `/backup` | `.opencode/commands/backup.md` | Backup de archivos críticos |
-| `/backupall` | `.opencode/commands/backupall.md` | Backup completo del proyecto (.zip) |
-| `/checklist` | `.opencode/commands/checklist.md` | Revisar checklist + roadmap |
-| `/commit` | `.opencode/commands/commit.md` | Commit con formato del proyecto (hereda global) |
-| `/estado` | `.opencode/commands/estado.md` | Reporte rápido de estado del proyecto |
-| `/foco` | `.opencode/commands/foco.md` | Enfocar agente en modo de trabajo (`tx\|ui\|ux`) |
-| `/limpiar` | `.opencode/commands/limpiar.md` | Limpiar archivos temporales (hereda global) |
-| `/next` | `.opencode/commands/next.md` | Próximos 5 pasos del roadmap |
-| `/rm` | `.opencode/commands/rm.md` | Revisar roadmap |
-| `/+guia` | `.opencode/commands/+guia.md` | Crear nueva guía |
-| `/+rmi` | `.opencode/commands/+rmi.md` | Agregar idea al roadmap |
-| `/updoc` | `.opencode/commands/updoc.md` | Actualizar documentación completa |
-| `/upguia` | `.opencode/commands/upguia.md` | Actualizar guía existente |
-
-## Mapeo de rutas para comandos
-
-| Variable | Ruta en MarketAI |
-|---|---|
-| `$RM` | `doc/documentos/roadmap.md` |
-| `$CHECKLIST` | `doc/documentos/checklist.md` |
-| `$GUIAS_DIR` | `doc/guias/` |
-| `$GUIAS_TEMPLATE` | `doc/guias/_template.md` |
-| `$CRITICAL_FILES` | `config.yaml`, `.env`, `orchestrator.py`, `data/database.py`, `engine/decider.py` |
+| `/+guia` | `+guia.md` | Crear nueva guía |
+| `/+mec` | `+mec.md` | Crear nueva mecánica en `doc/mecanicas/` |
+| `/+pend` | `+pend.md` | Agregar pendiente de revisión en `doc/pendientes/` |
+| `/+rm` | `+rm.md` | Agregar ítem al roadmap |
+| `/+rmi` | `+rmi.md` | Agregar idea al roadmap |
+| `/adaptar` | `adaptar.md` | Adaptar proyecto a metodología Diligencia |
+| `/apply` | `apply.md` | Aplicar cambios de diseño aprobados |
+| `/backup` | `backup.md` | Backup de archivos críticos |
+| `/backupall` | `backupall.md` | Backup completo del proyecto (.zip) |
+| `/bug` | `bug.md` | Registrar bug en `doc/arch/bugs.md` |
+| `/checklist` | `checklist.md` | Revisar checklist + roadmap |
+| `/commit` | `commit.md` | Commit con formato del proyecto (hereda global) |
+| `/deprecar` | `deprecar.md` | Marcar funcionalidad como deprecada |
+| `/diligencia-check` | `diligencia-check.md` | Verificar integridad Diligencia |
+| `/estado` | `estado.md` | Reporte rápido de estado del proyecto |
+| `/explica` | `explica.md` | Explicar sección de código |
+| `/foco` | `foco.md` | Enfocar agente en modo de trabajo (`tx\|ui\|ux`) |
+| `/head` | `head.md` | Preparar edición de sección PeriodicoView |
+| `/incidente` | `incidente.md` | Registrar incidente en `doc/arch/incidentes.md` |
+| `/limpiar` | `limpiar.md` | Limpiar archivos temporales (hereda global) |
+| `/news` | `news.md` | Leer y distribuir items de `news.txt` |
+| `/next` | `next.md` | Próximos 5 pasos del roadmap |
+| `/notify` | `notify.md` | Enviar notificación vía Telegram/Slack |
+| `/qa` | `qa.md` | Registrar situación UX |
+| `/report` | `report.md` | Generar reporte de avances |
+| `/rm` | `rm.md` | Revisar roadmap |
+| `/updoc` | `updoc.md` | Actualizar documentación completa |
+| `/upguia` | `upguia.md` | Actualizar guía existente |
+| `/upmec` | `upmec.md` | Actualizar mecánicas existentes |
+| `/version` | `version.md` | Cerrar sesión con bump de versión |
 
 ## Foco por área
 
-- `tx` → backend: `engine/`, `analyzers/`, `data/`, `execution/`
-- `ui` → frontend: `templates/`, `static/`, `dashboard.py`
-- `ux` → experiencia: `doc/guias/`, `alerts/`, `strategies/`
+- `tx` → backend: `$ENGINE_DIR`, `$ANALYZERS_DIR`, `$DATA_DIR`, `$EXECUTION_DIR`
+- `ui` → frontend: `$TEMPLATES_DIR`, `$STATIC_DIR`, `$DASHBOARD`
+- `ux` → experiencia: `$GUIAS`, `$ALERTS_DIR`, `$STRATEGIES_DIR`
 
 ---
 
@@ -109,7 +159,7 @@ Copy-Item config.yaml "config.yaml.bak_$(Get-Date -Format 'yyyyMMdd')"
 # O usar /backup (copia a .bak_<fecha>/)
 ```
 
-Archivos críticos: `config.yaml`, `.env`, `orchestrator.py`, `data/database.py`, `engine/decider.py`. Cargar `skill("backup-pre-edit")` para más detalle.
+Archivos críticos: `$CRITICAL_FILES`. Cargar `skill("backup-pre-edit")` para más detalle.
 
 ## Modelos de IA
 
@@ -130,22 +180,20 @@ Archivos críticos: `config.yaml`, `.env`, `orchestrator.py`, `data/database.py`
 
 | Directorio | Propósito |
 |---|---|
-| `engine/` | Fusión de señales + decisión DeepSeek |
-| `analyzers/` | **9 analizadores** (técnico, on-chain, sentimiento, orderbook, fundamental, macro, cross-asset, ICT/SMC, ADX Regime) |
-| `data/` | Recolectores + database |
-| `execution/` | Paper broker, risk engine + ejecutores reales (Alpaca/OANDA) |
-| `learning/` | Journal + strategy evolver + backtest + replay |
-| `alerts/` | Telegram + Discord notifier |
-| `strategies/` | Estrategias documentadas + trade journal |
-| `doc/guias/` | Guías de instalación, configuración, uso |
-
-| `doc/documentos/` | Roadmap, checklist, metodología, bugs |
-
-| `doc/informes/` | Reportes, reglas para agentes IA |
-| `templates/` | HTML templates del dashboard Flask (10 páginas) |
-| `static/` | CSS y assets del dashboard |
-| `tests/` | Tests pytest |
-| `doc/skills/` | Skills cargables + ICT FVG standalone |
+| `$ENGINE_DIR` | Fusión de señales + decisión DeepSeek |
+| `$ANALYZERS_DIR` | **9 analizadores** (técnico, on-chain, sentimiento, orderbook, fundamental, macro, cross-asset, ICT/SMC, ADX Regime) |
+| `$DATA_DIR` | Recolectores + database |
+| `$EXECUTION_DIR` | Paper broker, risk engine + ejecutores reales (Alpaca/OANDA) |
+| `$LEARNING_DIR` | Journal + strategy evolver + backtest + replay |
+| `$ALERTS_DIR` | Telegram + Discord notifier |
+| `$STRATEGIES_DIR` | Estrategias documentadas + trade journal |
+| `$GUIAS` | Guías de instalación, configuración, uso |
+| `$ARCH` | ADRs, metodología, bugs, bitácora, reglas, reportes |
+| `$IDEAS_DIR` | Ideas de sesión pendientes |
+| `$TEMPLATES_DIR` | HTML templates del dashboard Flask (10 páginas) |
+| `$STATIC_DIR` | CSS y assets del dashboard |
+| `$TESTS_DIR` | Tests pytest |
+| `$SKILLS_DIR` | Skills cargables + ICT FVG standalone |
 
 ---
 
@@ -164,12 +212,12 @@ Después de CADA edición de >5 líneas:
 Si la edición modificó comportamiento visible para el usuario (config flags, endpoints, parámetros de estrategia, SL/TP, perfiles, columnas de DB, analizadores), actualizar la guía correspondiente en el mismo commit:
 
 | Cambio | Docs a actualizar |
-|---|---|
-| `config.yaml` (flags, perfiles, time-exit) | `doc/guias/guia_configuracion.md` |
-| `dashboard.py` (endpoints, páginas) | `doc/guias/guia_uso.md` (tabla de rutas) |
-| `execution/paper_broker.py`, `risk_engine.py`, `entry_filters.py` | `doc/guias/guia_trading.md`, `doc/guias/guia_configuracion.md` |
-| `analyzers/` (nuevo analyzer, cambios de peso) | `doc/guias/guia_configuracion.md` (tabla de capas) |
-| `tray_app.py` | `doc/guias/guia_uso.md` (sección tray) |
-| Cambio en número de tests | `README.md`, `doc/documentos/checklist.md`, `doc/documentos/roadmap.md` |
+|---|---|---|
+| `$CONFIG` (flags, perfiles, time-exit) | `$GUIAS/guia_configuracion.md` |
+| `$DASHBOARD` (endpoints, páginas) | `$GUIAS/guia_uso.md` (tabla de rutas) |
+| `$EXECUTION_DIR/paper_broker.py`, `risk_engine.py`, `entry_filters.py` | `$GUIAS/guia_trading.md`, `$GUIAS/guia_configuracion.md` |
+| `$ANALYZERS_DIR` (nuevo analyzer, cambios de peso) | `$GUIAS/guia_configuracion.md` (tabla de capas) |
+| `tray_app.py` | `$GUIAS/guia_uso.md` (sección tray) |
+| Cambio en número de tests | `README.md`, `$CHECKLIST`, `$RM` |
 
 Cargar `skill("actualizar-docs")` para el checklist completo.

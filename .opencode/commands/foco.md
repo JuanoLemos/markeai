@@ -14,13 +14,13 @@ Cambia la inclinación del agente hacia un área específica: técnica, diseño 
 4. Reporta próximos pasos + items del roadmap
 
 ### Modo `tx` — Técnico
-- Revisa: `engine/`, `analyzers/`, `data/`, `execution/`
+- Revisa: `$ENGINE_DIR`, `$ANALYZERS_DIR`, `$DATA_DIR`, `$EXECUTION_DIR`
 - Enfoque: optimizaciones, deuda técnica, rendimiento, tests faltantes
 
 ### Modo `ui` — Diseño
-- Revisa: `templates/`, `static/`, `dashboard.py`
+- Revisa: `$TEMPLATES_DIR`, `$STATIC_DIR`, `$DASHBOARD`
 - Enfoque: coherencia visual, temas, responsive, gráficos Plotly, accesibilidad
 
 ### Modo `ux` — Experiencia
-- Revisa: `doc/guias/`, `alerts/`, `strategies/`
+- Revisa: `$GUIAS`, `$ALERTS_DIR`, `$STRATEGIES_DIR`
 - Enfoque: métricas visibles, alertas, flujo de operación, reportes

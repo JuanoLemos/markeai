@@ -8,16 +8,12 @@
 
 ### Estructura
 - [x] `C:\xampp\htdocs\MarketAI\` creado
-- [x] `doc/documentos/` con roadmap.md, checklist.md, metodologia.md, bugs.md
+- [x] `ROADMAP.md`, `CHECKLIST.md`, `CHANGELOG.md`, `DILIGENCIA.md` (raíz)
+- [x] `doc/arch/` con metodologia.md, bugs.md, bitacora.md, reglas.md
 - [x] `doc/guias/` con guia_instalacion.md, guia_configuracion.md, guia_uso.md
-- [x] `data/` con subcarpeta `cache/`
-- [x] `analyzers/` con `__init__.py`
-- [x] `engine/` con `__init__.py`
-- [x] `execution/` con `__init__.py`
-- [x] `learning/` con `__init__.py`
-- [x] `alerts/` con `__init__.py`
-- [x] `strategies/`
-- [x] `doc/skills/`
+- [x] `doc/pendientes/` — ideas de sesión
+- [x] `doc/testing/` — test logs
+- [x] `skills/` — skills cargables
 - [x] `tests/`
 
 ### Dependencias
@@ -180,7 +176,7 @@
 ### Strategy Evolver
 - [x] Detecta patrones ganadores/perdedores
 - [x] Sugiere ajustes a estrategias
-- [ ] Skills auto-generados en `doc/skills/`
+- [ ] Skills auto-generados en `skills/`
 
 ### Backtest
 - [x] Walk-forward: train/validation/test
@@ -239,7 +235,7 @@
 - [x] Checklist actualizada
 - [x] Guías de instalación, configuración, uso, motores, usuario actualizadas
 - [x] Guías complementarias: COMANDOS.md, position-sizing-reference.md
-- [x] Bug tracker (doc/documentos/bugs.md) con 34 bugs enumerados, 22 resueltos
+- [x] Bug tracker ($BUGS) con 35 bugs enumerados, 23 resueltos
 - [x] Metodología de proyecto documentada
 - [x] Skills: backup-pre-edit + actualizar-docs
 
@@ -287,7 +283,7 @@
 - [x] Resultados no son None/empty
 
 ### R.4 — Ejecutar Tests Automáticos
-- [x] `python -m pytest tests/ -v` → 95/95 tests pasan
+- [x] `python -m pytest tests/ -v` → 98/98 tests pasan
 
 ### R.5 — R.13 — Validación completa del pipeline
 - [x] Paper trading, señales, DeepSeek, backtest, loop, alertas
@@ -353,6 +349,45 @@ Get-Content orchestrator.log -Tail 20
 - [x] API status via orchestrator.log mod time
 - [x] Dual profile: Normal + Fast simultáneos
 - [x] Python 3.14.0, yfinance 1.3.0, pystray 0.19.5
-- [x] CHANGELOG.md en doc/
+- [x] CHANGELOG.md en raíz
 - [x] prune_signals() para retención configurable (90d)
 - [x] Tabla backtest_runs con snapshot de config
+
+---
+
+## FASE A: Expansión de tickers (ETFs + Index Funds)
+
+| Ítem | Estado | Descripción |
+|------|--------|-------------|
+| A.1 | ✅ | 8 ETFs + 2 index funds en config.yaml |
+| A.2 | ✅ | Matriz de correlación expandida en entry_filters.py |
+| A.3 | ✅ | Tests existentes pasan (98/98) |
+
+---
+
+## FASE C: CEDEARs Argentina (BYMA)
+
+| Ítem | Estado | Descripción |
+|------|--------|-------------|
+| C.1 | ✅ | 7 CEDEARs .BA en config.yaml |
+| C.2 | ✅ | get_usd_ars_rate() en collector_yfinance |
+| C.3 | ✅ | Precios ARS → pseudo-USD en orchestrator |
+| C.4 | ✅ | BYMA session hours (12-19 UTC) en entry_filters.py |
+| C.5 | ✅ | Correlación CEDEAR vs subyacente (0.98) bloquea duplicados |
+| C.6 | ✅ | market_data cubre todos los 24 tickers |
+
+---
+
+## FASE D: Diligencia — Salud estructural del proyecto
+
+**Objetivo: Mantener integridad de la estructura Diligencia durante y después de adaptaciones.**
+
+| Ítem | Estado | Descripción |
+|------|--------|-------------|
+| D.1 | ✅ | `$variables` en AGENTS.md resuelven a paths existentes |
+| D.2 | ✅ | Comandos usan `$variables` sin paths hardcodeados |
+| D.3 | Pendiente | OPENCODE.md y metodologia.md reflejan estructura real |
+| D.4 | Pendiente | Ciclos de instancia ejecutables con estructura actual |
+| D.5 | ✅ | No quedan directorios legacy con contenido residual |
+| D.6 | ✅ | DILIGENCIA.md coincide con estructura real del proyecto |
+| D.7 | Pendiente | Dependencias entre archivos de autoridad verificadas |

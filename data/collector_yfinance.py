@@ -113,6 +113,12 @@ class YFinanceCollector:
                 "priceToBook": info.get("priceToBook"),
                 "revenueGrowth": info.get("revenueGrowth"),
                 "earningsGrowth": info.get("earningsQuarterlyGrowth", info.get("earningsGrowth")),
+                "quoteType": info.get("quoteType"),
+                "totalAssets": info.get("totalAssets"),
+                "ytdReturn": info.get("ytdReturn"),
+                "expenseRatio": info.get("expenseRatio"),
+                "fiftyTwoWeekHigh": info.get("fiftyTwoWeekHigh"),
+                "fiftyTwoWeekLow": info.get("fiftyTwoWeekLow"),
             }
             try:
                 cal = t.calendar
@@ -149,3 +155,7 @@ class YFinanceCollector:
 
     def get_vix(self) -> Optional[float]:
         return self.get_current_price("^VIX")
+
+    def get_usd_ars_rate(self) -> Optional[float]:
+        """Obtiene la tasa USD/ARS desde Yahoo Finance."""
+        return self.get_current_price("USDARS=X")

@@ -155,6 +155,48 @@ class TestFundamentalAnalyzer:
         result = a.analyze("SPY", {"volume_24h": 1000000, "avg_volume_20d": 500000, "change_24h_pct": 2.5})
         assert result["signal"] in ("LONG", "SHORT", "WAIT")
 
+    def test_etf_bullish(self):
+        from analyzers.fundamental import FundamentalAnalyzer
+        a = FundamentalAnalyzer()
+        fund_data = {
+            "quoteType": "ETF",
+            "totalAssets": 50e9,
+            "expenseRatio": 0.0003,
+            "ytdReturn": 0.15,
+            "averageVolume": 10e6,
+        }
+        price_data = {"price": 450, "volume_24h": 25e6, "change_24h_pct": 2.5}
+        result = a.analyze("SPY", price_data, fund_data)
+        assert result["score"] > 50
+        assert result["signal"] in ("LONG", "WAIT")
+
+    def test_etf_bearish(self):
+        from analyzers.fundamental import FundamentalAnalyzer
+        a = FundamentalAnalyzer()
+        fund_data = {
+            "quoteType": "ETF",
+            "totalAssets": 50e6,
+            "expenseRatio": 0.015,
+            "ytdReturn": -0.12,
+            "averageVolume": 500_000,
+        }
+        price_data = {"price": 50, "volume_24h": 100_000, "change_24h_pct": -4.0}
+        result = a.analyze("QQQ", price_data, fund_data)
+        assert result["score"] < 50
+        assert result["signal"] in ("SHORT", "WAIT")
+
+    def test_etf_detected_by_heuristic(self):
+        from analyzers.fundamental import FundamentalAnalyzer
+        a = FundamentalAnalyzer()
+        fund_data = {
+            "averageVolume": 5e6,
+            "sector": "Technology",
+        }
+        price_data = {"price": 200, "volume_24h": 50e6, "change_24h_pct": 1.0}
+        result = a.analyze("XLK", price_data, fund_data)
+        assert "details" in result
+        assert result["score"] != 50 or result["signal"] == "WAIT"
+
 
 class TestMacroAnalyzer:
     def test_analyze_forex(self):

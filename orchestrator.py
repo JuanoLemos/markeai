@@ -212,7 +212,7 @@ class MarketAIOrchestrator:
                         self.log.warning(f"  Risk block ({prof_name}): {reason}")
                         continue
                     hour = datetime.now(timezone.utc).hour
-                    if not session_hours(market, hour, profile=prof_name):
+                    if not session_hours(market, hour, profile=prof_name, ticker=ticker):
                         self.log.info(f"  {prof_name} session blocked at hour {hour}")
                         continue
                     if prof_cfg.get("correlation_filter") and pb and pb.get_positions():
@@ -380,6 +380,18 @@ class MarketAIOrchestrator:
             tickers = market_cfg.get("tickers", ["SPY", "QQQ"])
             summary = self.yf_collector.get_market_summary()
             market_data = summary.get("stocks", {})
+            all_data = self.yf_collector.get_stocks(tickers)
+            market_data.update(all_data)
+            usd_ars_rate = None
+            for tk in list(market_data.keys()):
+                if tk.endswith(".BA"):
+                    if usd_ars_rate is None:
+                        usd_ars_rate = self.yf_collector.get_usd_ars_rate()
+                    if usd_ars_rate and usd_ars_rate > 0:
+                        for field in ["price", "high_24h", "low_24h"]:
+                            if field in market_data[tk]:
+                                market_data[tk][field] = round(market_data[tk][field] / usd_ars_rate, 2)
+                        market_data[tk]["_currency"] = "ARS"
             vix = self.yf_collector.get_vix()
             news = self._get_news("stocks")
 
@@ -465,6 +477,10 @@ class MarketAIOrchestrator:
                 try:
                     price = self.yf_collector.get_current_price(tk)
                     if price:
+                        if tk.endswith(".BA"):
+                            ars_rate = self.yf_collector.get_usd_ars_rate()
+                            if ars_rate and ars_rate > 0:
+                                price = round(price / ars_rate, 2)
                         current_prices[tk] = price
                 except Exception:
                     pass

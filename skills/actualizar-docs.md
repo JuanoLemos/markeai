@@ -18,28 +18,28 @@ Cuando el usuario pide `/updoc` o "actualizá los docs", o después de cambios q
 ### 3. Si editaste `execution/` (broker, risk, entry_filters)
 - [ ] `doc/guias/guia_trading.md` — referencias de trailing, partial TP, time-exit
 - [ ] `doc/guias/guia_configuracion.md` — si cambió SL/TP o filtros por perfil
-- [ ] `doc/documentos/checklist.md` — Fase 4 (Ejecución) o Fase 9 (Mejoras)
+- [ ] `$CHECKLIST` — Fase 4 (Ejecución) o Fase 9 (Mejoras)
 
 ### 4. Si editaste `analyzers/`
 - [ ] `doc/guias/guia_configuracion.md` — tabla de capas (pesos, enabled)
-- [ ] `doc/documentos/roadmap.md` — Fase 2 (Analizadores)
-- [ ] `doc/documentos/checklist.md` — Fase 2
+- [ ] `$RM` — Fase 2 (Analizadores)
+- [ ] `$CHECKLIST` — Fase 2
 
 ### 5. Si editaste `tray_app.py`
 - [ ] `doc/guias/guia_uso.md` — sección System Tray (menú, tooltip, auto-restart)
 
 ### 6. Si cambió el número de tests
 - [ ] `README.md` — línea de tests
-- [ ] `doc/documentos/checklist.md` — Hito R.4
-- [ ] `doc/documentos/roadmap.md` — Métricas de Éxito
+- [ ] `$CHECKLIST` — Hito R.4
+- [ ] `$RM` — Métricas de Éxito
 
 ### 7. Si editaste `AGENTS.md` u `OPENCODE.md`
 - [ ] Verificar que `README.md` aún sea coherente
-- [ ] Verificar que `doc/documentos/metodologia.md` refleje el cambio
+- [ ] Verificar que `doc/arch/metodologia.md` refleje el cambio
 
 ## Archivos que modifica este skill
-- `doc/documentos/checklist.md`
-- `doc/documentos/roadmap.md`
+- `$CHECKLIST`
+- `$RM`
 - `doc/guias/guia_configuracion.md`
 - `doc/guias/guia_uso.md`
 - `doc/guias/guia_trading.md`

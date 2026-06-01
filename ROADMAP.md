@@ -150,9 +150,53 @@
 | Retencion configurable de senales | ✅ | prune_signals() con purga >90d |
 | Tabla backtest_runs | ✅ | Snapshot de config + resultados |
 | POST /api/debug/inject-signal | ✅ | Pruebas sinteticas en vivo |
-| CHANGELOG.md | ✅ | Historial de versiones en doc/ |
+| CHANGELOG.md | ✅ | Historial de versiones en raíz |
 | POST /api/debug/reset-broker | ✅ | Resetear perfil a $1000 |
 | POST /api/debug/motors-clear | ✅ | Limpiar heartbeats |
+
+---
+
+## Fase A: Expansión de tickers (ETFs + Index Funds)
+
+**Objetivo: Agregar 8 ETFs de amplio mercado y 2 fondos indexados para diversificar cobertura de mercado.**
+
+| Item | Estado | Descripción |
+|------|--------|-------------|
+| A.1 | ✅ | 8 ETFs (IVV, EEM, IWM, XLK, XLF, GLD, TLT, VTI) + 2 index funds (VFIAX, FXAIX) en config.yaml |
+| A.2 | ✅ | Matriz de correlación expandida con 17 nuevos tickers en entry_filters.py |
+| A.3 | ✅ | 98 tests pasan — sin cambios a brokers/risk/fusion/decider |
+| A.4 | Pendiente | Analizador fundamental con métricas ETF (AUM, expense ratio, YTD return) — Fase B |
+
+---
+
+## Fase C: CEDEARs Argentina (BYMA)
+
+**Objetivo: Soportar tickers argentinos .BA con conversión USD/ARS y horario BYMA.**
+
+| Item | Estado | Descripción |
+|------|--------|-------------|
+| C.1 | ✅ | 7 CEDEARs .BA (KO, AAPL, MSFT, GOOGL, WMT, VIST, GGAL) en config.yaml |
+| C.2 | ✅ | get_usd_ars_rate() en collector_yfinance para tasa USD/ARS |
+| C.3 | ✅ | Precios ARS → pseudo-USD en orchestrator (market_data + check_stops) |
+| C.4 | ✅ | BYMA session hours 12:00-19:00 UTC en entry_filters.py |
+| C.5 | ✅ | Correlación CEDEAR vs subyacente seteada a 0.98 (bloquea posiciones duplicadas) |
+| C.6 | ✅ | _analyze_stocks() pasa todos los 24 tickers a get_stocks() |
+
+---
+
+## Fase D: Diligencia — Salud estructural del proyecto
+
+**Objetivo: Mantener integridad de la estructura Diligencia durante y después de adaptaciones.**
+
+| Ítem | Estado | Descripción |
+|------|--------|-------------|
+| D.1 | ✅ | Verificar que `$variables` en AGENTS.md resuelvan a paths existentes |
+| D.2 | ✅ | Verificar que comandos usen `$variables` sin paths hardcodeados |
+| D.3 | ✅ | Verificar que OPENCODE.md y metodologia.md reflejen estructura real |
+| D.4 | ✅ | Verificar que ciclos de instancia sean ejecutables con estructura actual |
+| D.5 | ✅ | Verificar que no queden directorios legacy con contenido residual |
+| D.6 | ✅ | Verificar DILIGENCIA.md coincida con estructura real del proyecto |
+| D.7 | ✅ | Verificar dependencias entre archivos de autoridad (RM → CHECKLIST → BITACORA) |
 
 ---
 
@@ -165,7 +209,7 @@
 | Profit factor | >1.5 | Ganancia bruta / pérdida bruta |
 | Max drawdown | <15% | Peak-to-trough máximo en dashboard |
 | Señales por día | 2-5 | Trades ejecutados en paper broker |
-| Tests | 95/95 | `python -m pytest tests/ -v` |
+| Tests | 98/98 | `python -m pytest tests/ -v` |
 
 ---
 

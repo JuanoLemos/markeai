@@ -3,7 +3,7 @@
 
 ## Propósito
 
-Guía de referencia rápida de todos los comandos slash disponibles para el proyecto Némesis Detective.
+Guía de referencia rápida de todos los comandos slash disponibles para el proyecto.
 
 ## Uso
 

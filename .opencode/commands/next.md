@@ -1,10 +1,10 @@
 # /next — Próximos pasos según roadmap + dependencias
 
-Lee `doc/documentos/roadmap.md` y `doc/documentos/checklist.md`, identifica los próximos 5 items más relevantes para implementar, considerando dependencias y bloqueos.
+Lee `$RM` y `$CHECKLIST`, identifica los próximos 5 items más relevantes para implementar, considerando dependencias y bloqueos.
 
 ## Qué hace
-1. Lee `doc/documentos/roadmap.md` (pendientes por fase)
-2. Lee `doc/documentos/checklist.md` (items pendientes)
+1. Lee `$RM` (pendientes por fase)
+2. Lee `$CHECKLIST` (items pendientes)
 3. Cruza dependencias: items bloqueados por fases anteriores van al final
 4. Prioriza: P1 → P2 → P3
 5. Devuelve los 5 items más accionables con:

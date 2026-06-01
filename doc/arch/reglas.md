@@ -46,7 +46,7 @@
 Todo análisis, bug encontrado, punto de vista alternativo o propuesta de diseño se escribe en:
 
 ```
-doc/informes/news.txt
+doc/arch/news.txt
 ```
 
 Con formato libre, pero incluyendo siempre:
