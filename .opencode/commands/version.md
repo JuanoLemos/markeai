@@ -36,7 +36,7 @@ Versiona el proyecto, documenta cambios, actualiza CHANGELOG, y prepara commit d
 5. Consolidar resultados del pre-flight:
    a. ARMAR tabla unificada: Check | Estado | Detalle
    b. Si 0 alertas → "✅ Pre-flight limpio" (continuar directamente)
-   c. Si 1+ alertas → MOSTRAR tabla + ABORTAR. "⚠️ /version requiere proyecto limpio. Ejecutar `/circuito updoc` para resolver pendientes documentales antes de versionar."
+   c. Si 1+ alertas → MOSTRAR tabla + ABORTAR. "⚠️ /version requiere proyecto limpio. Ejecutar `/CBP updoc` para resolver pendientes documentales antes de versionar."
 6. PREGUNTAR CONFIRMACIÓN antes de continuar
 7. Si confirma: aplicar bump de versión
    - Si existe package.json: actualizar `"version"` field
@@ -68,7 +68,7 @@ Versiona el proyecto, documenta cambios, actualiza CHANGELOG, y prepara commit d
 
 ## Validación
 - Los 6 checks de pre-flight se ejecutaron (paso 4a-f)
-- Si hubo alertas en pre-flight, /version se abortó y redirigió a `/circuito updoc`
+- Si hubo alertas en pre-flight, /version se abortó y redirigió a `/CBP updoc`
 - La versión actual se detectó correctamente de package.json, CHANGELOG.md o version.txt
 - El incremento es válido: minor (A.B+1.0), patch (A.B.C+1), o X.Y.Z explícito
 - CHANGELOG.md se actualizó con entrada de la nueva versión (categorías: Added, Changed, Deprecated, Removed, Fixed, Security)
@@ -80,7 +80,7 @@ Versiona el proyecto, documenta cambios, actualiza CHANGELOG, y prepara commit d
 
 ## Anti-patrones
 - NO saltarse pre-flight — los 6 checks (paso 4a-f) son obligatorios; d/e pueden omitirse solo si proyecto ≠ Diligencia
-- Si pre-flight tiene 1+ alertas: ABORTAR y sugerir `/circuito updoc`. NO ofrecer "forzar versionado".
+- Si pre-flight tiene 1+ alertas: ABORTAR y sugerir `/CBP updoc`. NO ofrecer "forzar versionado".
 - NO modificar archivos sin confirmación del usuario (paso 6 obligatorio)
 - NO usar versión hardcodeada — detectarla del proyecto
 - NO hacer commit manual — delegar a /commit para validación Conventional Commits

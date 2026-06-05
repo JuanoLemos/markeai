@@ -103,7 +103,7 @@ Para cada candidato obsoleto:
 - AGREGAR entrada en CHANGELOG.md en sección "Changed" o nueva entrada no versionada: "- `/doctor`: <N> correcciones aplicadas"
 - Si hubo cambios en AGENTS.md o estructura: SUGERIR commit message `chore: /doctor — <N> correcciones en estructura, código, tracking`
 - AUTOCIERRE: Si `/doctor` está como `🔴 Pendiente` en RM "Next" → actualizar a `✅ Hecho`. Si está `[ ]` en CHECKLIST → marcar `[x]`.
-- SUGERIR: usar `/circuito doctor` para cerrar el chain completo (incluye /version patch si hay correcciones). Si no hubo correcciones, workflow terminado.
+- SUGERIR: usar `/CBP doctor` para cerrar el chain completo (incluye /version patch si hay correcciones). Si no hubo correcciones, workflow terminado.
 
 ---
 

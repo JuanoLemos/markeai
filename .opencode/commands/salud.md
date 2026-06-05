@@ -45,7 +45,7 @@ Sin argumentos: genera status-salud.md con datos heredados.
 ## Validación
 
 - BUILD* ejecutado solo si /updoc o /doctor ejecutó PLAN previamente en el mismo workflow
-- NO ejecutar standalone — siempre debe ser invocado por /circuito
+- NO ejecutar standalone — siempre debe ser invocado por /CBP
 - Si no hay datos de diagnóstico en el contexto: ERROR "No se detectó PLAN previo. Ejecutar /updoc o /doctor primero."
 - status-salud.md actualizado en INDEX.md
 

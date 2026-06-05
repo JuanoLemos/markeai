@@ -70,6 +70,7 @@ Estos comandos viven en `~/.config/opencode/commands/` y funcionan sin configura
 | `/plan` | Planificar (PLAN) → ejecutar (BUILD) tras aprobación |
 | `/salud` | Reporte de salud del proyecto |
 | `/reanudar` | Continuar sesión interrumpida |
+| `/cbp` | Circuito basado en plan — orquestador multi-workflow |
 | `/circuito` | Orquestador de workflows vinculantes |
 | `/doctor` | Cuidado integral del proyecto |
 
