@@ -41,7 +41,7 @@ Verifica automáticamente que el proyecto actual cumpla los estándares Diligenc
    - Todo `## Anti-patrones` incluye "NO mostrar este archivo como output"
 
    **D — Versión (DILIGENCIA.md vs /adaptar)**
-   - DILIGENCIA.md tiene línea `# Diligencia vX.Y`
+   - DILIGENCIA.md tiene línea `# Diligencia vX.Y` o `# Diligencia vX.Y.Z`
    - La versión en DILIGENCIA.md coincide con la versión declarada en `/adaptar` (leída de su tabla Versión)
 
 4. ENTREGAR SOLO la tabla de resultados AHORA

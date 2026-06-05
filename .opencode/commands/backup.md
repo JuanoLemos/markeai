@@ -1,20 +1,37 @@
-# /backup — Backup de archivos críticos
+INSTRUCCIÓN: EJECUTAR backup pre-edit. NO modificar archivos originales. NO mostrar este archivo como output. ENTREGAR solo el listado de archivos respaldados.
 
-Ejecuta `$BACKUP_SCRIPT` para respaldar los archivos críticos del proyecto antes de editarlos.
+# /backup — Backup de archivos críticos pre-edit
 
-## Archivos críticos
-1. `$CONFIG` — configuración central del sistema
-2. `$ENV` — API keys y secretos
-3. `$ORCHESTRATOR` — loop principal
-4. `$DATABASE` — schema SQLite
-5. `$DECIDER` — motor de decisión DeepSeek
+Respalda archivos críticos antes de editarlos, usando git stash o copia manual.
+
+## Argumentos
+/backup [archivo1 archivo2 ...]
+
+- Sin argumentos: usa lista automática (git-tracked files modificados + AGENTS.md, ROADMAP.md, CHECKLIST.md, CHANGELOG.md)
+- Con argumentos: respalda solo los archivos especificados
 
 ## Qué hace
-1. Ejecuta `python $BACKUP_SCRIPT`
-2. Crea `.bak_<YYYY-MM-DD>/` en la raíz del proyecto
-3. Copia archivos con timestamp
-4. Reporta archivos respaldados
+1. Si git está disponible y working tree no está limpio:
+   - `git stash push -m "backup pre-edit $(date)"` para archivos modificados
+   - Reportar: "✅ backup: git stash creado"
+2. Si no hay git:
+   - Copiar cada archivo crítico a .old/bak_<archivo>.<fecha>
+   - Si no existe .old/: preguntar si crearlo
+3. Reportar SOLO la lista de archivos respaldados
 
-## Diferencia con /backupall
-- `/backup` → respalda archivos críticos individuales (rápido, pre-edit)
-- `/backupall` → respalda el proyecto completo (lento, pre-deploy o cierre de sesión)
+## Formato de salida
+✅ backup: <N> archivos respaldados
+  - archivo1 → destino1
+  - archivo2 → destino2
+
+## Validación
+- Los archivos respaldados existen antes de la copia
+- Los destinos se crearon correctamente (stash o copia física)
+
+## Anti-patrones
+- NO ejecutar backup sin mostrar qué archivos se respaldarán
+- NO sobrescribir backups existentes sin preguntar
+- NO hacer git stash si el working tree está limpio
+
+## Archivos que modifica
+- .old/ (copia manual) o git stash (si hay git)

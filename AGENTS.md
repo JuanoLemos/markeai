@@ -25,6 +25,7 @@ Variables que los comandos del proyecto usan para referirse a archivos. Definida
 | $PEND | `doc/pendientes/` | Pendientes de revisión |
 | $QA | `doc/qa/` | Situaciones QA |
 | $TESTING | `doc/testing/` | Testing pendiente |
+| $MECANICAS | `doc/mecanicas/` | Reglas de negocio / mecánicas del proyecto |
 | $SKILLS_DIR | `skills/` | Skills cargables |
 | $CONFIG | `config.yaml` | Configuración central |
 | $ENV | `.env` | API keys y secretos |
@@ -67,6 +68,10 @@ Estos comandos viven en `~/.config/opencode/commands/` y funcionan sin configura
 | `/debug` | Análisis profundo de sección (backend, frontend, DB, módulo) |
 | `/health` | Verificar integridad del código (sintaxis, rutas) |
 | `/plan` | Planificar (PLAN) → ejecutar (BUILD) tras aprobación |
+| `/salud` | Reporte de salud del proyecto |
+| `/reanudar` | Continuar sesión interrumpida |
+| `/circuito` | Orquestador de workflows vinculantes |
+| `/doctor` | Cuidado integral del proyecto |
 
 ## Comandos personalizados (.opencode/commands/)
 

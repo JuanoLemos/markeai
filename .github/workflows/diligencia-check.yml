@@ -1,0 +1,56 @@
+name: Diligencia Structure Check
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  structure-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Diligencia structure (ADR-003)
+        run: |
+          echo "## Diligencia Structure Check"
+          echo ""
+          PASS=0
+          FAIL=0
+
+          check() {
+            if [ -e "$1" ]; then
+              echo "✅ $2 — \`$1\`"
+              PASS=$((PASS + 1))
+            else
+              echo "❌ $2 — \`$1\` no encontrado"
+              FAIL=$((FAIL + 1))
+            fi
+          }
+
+          echo "### Category A — Structure (ADR-003)"
+          echo ""
+          check "ROADMAP.md" "ROADMAP.md"
+          check "CHECKLIST.md" "CHECKLIST.md"
+          check "CHANGELOG.md" "CHANGELOG.md"
+          check "AGENTS.md" "AGENTS.md"
+          check "DILIGENCIA.md" "DILIGENCIA.md"
+          check ".markdownlint.json" ".markdownlint.json"
+          check "doc/arch" "doc/arch/"
+          check "doc/guias" "doc/guias/"
+          check ".opencode" ".opencode/"
+          check ".opencode/HARNESS.md" ".opencode/HARNESS.md"
+
+          echo ""
+          TOTAL=$((PASS + FAIL))
+          echo "**Resultado:** $PASS/$TOTAL aprobado, $FAIL fallido"
+
+          if [ $FAIL -gt 0 ]; then
+            echo ""
+            echo "::error::$FAIL checks fallidos. Revisá la estructura según ADR-003."
+            exit 1
+          fi
+
+          echo "✅ Todos los checks de estructura Diligencia pasaron."

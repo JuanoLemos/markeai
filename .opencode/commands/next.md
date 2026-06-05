@@ -1,14 +1,36 @@
-# /next — Próximos pasos según roadmap + dependencias
+INSTRUCCIÓN: EJECUTAR las instrucciones de abajo sobre los archivos del proyecto ($RM, $CHECKLIST). NO mostrar este archivo como output. ENTREGAR solo la tabla Top 5.
 
-Lee `$RM` y `$CHECKLIST`, identifica los próximos 5 items más relevantes para implementar, considerando dependencias y bloqueos.
+# /next — Próximos pasos según CHECKLIST + dependencias
+
+Lee $RM y $CHECKLIST, identifica los próximos 5 items más relevantes para implementar, considerando dependencias y bloqueos.
 
 ## Qué hace
-1. Lee `$RM` (pendientes por fase)
-2. Lee `$CHECKLIST` (items pendientes)
-3. Cruza dependencias: items bloqueados por fases anteriores van al final
-4. Prioriza: P1 → P2 → P3
-5. Devuelve los 5 items más accionables con:
-   - ID, fase de origen, prioridad
+1. Leer $CHECKLIST AHORA (pendientes del proyecto)
+2. Leer $RM AHORA (ítems PENDIENTE de todas las secciones)
+3. Cruzar dependencias: items bloqueados van al final
+4. Priorizar: P1 → P2 → P3
+5. Entregar SOLO los 5 items más accionables en tabla:
+   - ID, área, prioridad, item
    - Dependencias (si aplica)
    - Estimación (chica/mediana/grande)
-   - Por qué este item es el siguiente lógico
+   - Justificación de por qué este item es el siguiente lógico
+6. Si existe $TESTING, incluir como 6º punto un enlace a los tests pendientes
+
+## Formato de salida
+
+**Top 5** — tabla con columnas: ID | Área | Prioridad | Item | Dependencias | Estimación | Justificación
+**Testing** (si $TESTING existe) — enlace a tests pendientes
+
+## Validación
+- Exactamente 5 items en la tabla (o menos si $RM tiene menos)
+- Cada item tiene valor en todas las columnas de la tabla
+- Orden correcto: P1 antes que P2, P2 antes que P3
+- No incluir items DONE en la lista
+- Si $TESTING existe, la sección Testing está presente
+
+## Anti-patrones
+- NO incluir más de 5 items
+- NO omitir la columna Justificación
+- NO incluir items DONE
+- NO ignorar dependencias (items bloqueados no van al tope)
+- NO incluir items sin prioridad explícita

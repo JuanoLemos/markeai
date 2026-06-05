@@ -1,26 +1,40 @@
-# /foco — Enfocar agente en modo de trabajo
+INSTRUCCIÓN: EJECUTAR las instrucciones de abajo para enfocar al agente. NO mostrar este archivo como output. ENTREGAR solo el badge del foco activado.
 
-Cambia la inclinación del agente hacia un área específica: técnica, diseño o experiencia.
+# /foco — Enfocar agente en área de trabajo
+
+Prepara al agente para trabajar en un área específica del proyecto: carga los archivos relevantes, skills asociados, y agrega badge visible al foco.
 
 ## Argumentos
-`/foco tx` — modo técnico (backend)
-`/foco ui` — modo diseño (frontend)
-`/foco ux` — modo experiencia (trading UX)
+/foco [área|no]
+
+| Argumento | Efecto |
+|---|---|
+| área | Enfocar en sección específica de $RM |
+| `no` | Desactivar foco, volver a modo neutral |
+| Sin argumento | Mostrar estado actual del foco |
 
 ## Qué hace
-1. Lee el roadmap y el checklist del área
-2. Revisa archivos clave del área
-3. Identifica mejoras, code smells, pendientes
-4. Reporta próximos pasos + items del roadmap
+1. Sin argumento: mostrar foco actual o "sin foco"
+2. `/foco no`: desactivar foco, limpiar badge
+3. `/foco <área>`:
+   - Leer $RM AHORA, encontrar la sección correspondiente
+   - Cargar contexto del área (ítems PENDIENTE, DONE, bloqueos)
+   - ANUNCIAR: "🎯 FOCO: <área> activo. Todas las respuestas se centran en esta área."
+   - Incluir badge en cada respuesta mientras el foco esté activo
+4. El badge se mantiene hasta que se invoque `/foco no`
 
-### Modo `tx` — Técnico
-- Revisa: `$ENGINE_DIR`, `$ANALYZERS_DIR`, `$DATA_DIR`, `$EXECUTION_DIR`
-- Enfoque: optimizaciones, deuda técnica, rendimiento, tests faltantes
+## Formato de salida
+✅ FOCO: <área> activo
+Ó
+✅ FOCO desactivado
+Ó
+📌 Foco actual: <área> (o "Sin foco activo")
 
-### Modo `ui` — Diseño
-- Revisa: `$TEMPLATES_DIR`, `$STATIC_DIR`, `$DASHBOARD`
-- Enfoque: coherencia visual, temas, responsive, gráficos Plotly, accesibilidad
+## Validación
+- El área especificada existe como sección en $RM
+- /foco no siempre desactiva el badge
 
-### Modo `ux` — Experiencia
-- Revisa: `$GUIAS`, `$ALERTS_DIR`, `$STRATEGIES_DIR`
-- Enfoque: métricas visibles, alertas, flujo de operación, reportes
+## Anti-patrones
+- NO activar foco en áreas que no existen en $RM
+- NO mantener el badge después de /foco no
+- NO leer archivos externos a $RM sin necesidad explícita
