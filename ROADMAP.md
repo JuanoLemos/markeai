@@ -1,186 +1,198 @@
-# MarketAI - Roadmap de Desarrollo
+# MarketAI — Roadmap de Desarrollo v1.3.0
 
-## Hoja de Ruta: Sistema de Trading Multi-Capa
+Sistema de Trading Multi-Capa con DeepSeek AI.
 
 ---
 
 ## FASE 0: Fundación
+
 **Objetivo: Estructura base funcionando**
 
-- [x] Crear estructura de directorios
-- [x] Definir arquitectura de 5 capas
-- [x] Documentar plan y roadmap
-- [x] Instalar dependencias (`pip install -r requirements.txt`)
-- [x] Configurar `.env` con API keys
-- [x] Verificar acceso a datos (Polymarket, Yahoo Finance)
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R01 | Crear estructura de directorios | P1 | ✅ | — |
+| R02 | Definir arquitectura de 5 capas | P1 | ✅ | — |
+| R03 | Documentar plan y roadmap | P1 | ✅ | — |
+| R04 | Instalar dependencias (pip install) | P1 | ✅ | R01 |
+| R05 | Configurar .env con API keys | P1 | ✅ | R01 |
+| R06 | Verificar acceso a datos (Polymarket, Yahoo Finance) | P1 | ✅ | R05 |
 
 ---
 
 ## FASE 1: Recolección de Datos
+
 **Objetivo: Datos fluyendo correctamente**
 
-| Código | Estado | Descripción |
-|--------|--------|-------------|
-| `collector_polymarket.py` | ✅ | Conexión CLOB API + DNS bypass, order book, tickers activos |
-| `collector_yfinance.py` | ✅ | Forex, Acciones, DXY, VIX, fundamentos |
-| `collector_news.py` | ✅ | NewsAPI + CryptoPanic + RSS fallback, rate limit 1/iter |
-| `database.py` | ✅ | SQLite WAL: trades, signals, market_data, strategy_performance |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R07 | collector_polymarket.py — CLOB API + DNS bypass | P1 | ✅ | R06 |
+| R08 | collector_yfinance.py — Forex, Acciones, DXY, VIX | P1 | ✅ | R06 |
+| R09 | collector_news.py — NewsAPI + RSS fallback | P2 | ✅ | R06 |
+| R10 | database.py — SQLite WAL schema | P1 | ✅ | R01 |
 
 **Hito 1:** `tests/test_collectors.py` pasa ✅
 
 ---
 
 ## FASE 2: Analizadores
+
 **Objetivo: Señales de trading desde cada capa**
 
-| Código | Estado | Descripción |
-|--------|--------|-------------|
-| `technical.py` | ✅ | RSI, MACD, Bollinger, EMAs, S/R, ATR, volumen |
-| `onchain.py` | ✅ | Etherscan V2 (USDC inflows/outflows, wallets únicos) |
-| `sentiment.py` | ✅ | Clasificación bullish/bearish por keywords |
-| `orderbook.py` | ✅ | Desbalance bid/ask, profundidad, spread |
-| `fundamental.py` | ✅ | P/E, market cap, beta, dividend yield, earnings date |
-| `macro.py` | ✅ | DXY, VIX tracking |
-| `cross_asset.py` | ✅ | SPY/QQQ divergencia, USD strength patterns |
-| `adx_regime.py` | ✅ | Trend strength filter (ADX > 25) |
-| `ict_smc.py` | ✅ | Order blocks, FVG, liquidity sweep |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R11 | technical.py — RSI, MACD, Bollinger, EMAs | P1 | ✅ | R08 |
+| R12 | onchain.py — Etherscan V2 (USDC flows) | P2 | ✅ | R08 |
+| R13 | sentiment.py — Clasificación bullish/bearish | P2 | ✅ | R09 |
+| R14 | orderbook.py — Bid/ask imbalance, depth | P2 | ✅ | R07 |
+| R15 | fundamental.py — P/E, market cap, beta | P1 | ✅ | R08 |
+| R16 | macro.py — DXY, VIX tracking | P2 | ✅ | R08 |
+| R17 | cross_asset.py — SPY/QQQ divergencia | P2 | ✅ | R08 |
+| R18 | adx_regime.py — Trend strength filter | P2 | ✅ | R08 |
+| R19 | ict_smc.py — Order blocks, FVG, liquidity sweep | P2 | ✅ | R08 |
 
 **Hito 2:** 9 analizadores en formato consistente ✅
 
 ---
 
 ## FASE 3: Motor de Decisión
+
 **Objetivo: DeepSeek tomando decisiones informadas**
 
-| Código | Estado | Descripción |
-|--------|--------|-------------|
-| `fusion.py` | ✅ | Pesos por capa/mercado, threshold 55/45, score=50 excluido |
-| `decider.py` | ✅ | Dual prompts (Normal conservador, Fast agresivo), JSON parsing, fallback WAIT |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R20 | fusion.py — Pesos por capa/mercado, threshold 55/45 | P1 | ✅ | R11-R19 |
+| R21 | decider.py — Dual prompts, JSON parsing, fallback WAIT | P1 | ✅ | R20 |
 
 **Hito 3:** DeepSeek responde con señales coherentes ✅
 
 ---
 
 ## FASE 4: Ejecución
+
 **Objetivo: Operaciones ejecutándose automáticamente**
 
-| Código | Estado | Descripción |
-|--------|--------|-------------|
-| `paper_broker.py` | ✅ | Slippage 0.1%, comisiones, ATR trailing, partial TP, time-exit, break-even |
-| `risk_engine.py` | ✅ | Fractional Kelly (25%), circuit breakers, position sizing ATR |
-| `entry_filters.py` | ✅ | Session hours (Normal 18h, Fast 22h), correlation filter |
-| `executor_polymarket.py` | ~ | Stub listo (requiere keys wallet Polygon) |
-| `executor_traditional.py` | ~ | API Alpaca/OANDA implementadas (requiere keys reales) |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R22 | paper_broker.py — Slippage, trailing, partial TP | P1 | ✅ | R21 |
+| R23 | risk_engine.py — Kelly 25%, circuit breakers | P1 | ✅ | R21 |
+| R24 | entry_filters.py — Session hours, correlation | P1 | ✅ | R21 |
+| R25 | executor_polymarket.py — Stub (requiere keys Polygon) | P2 | ~ | R22 |
+| R26 | executor_traditional.py — Alpaca/OANDA stub | P2 | ~ | R22 |
 
 **Hito 4:** Paper trading funcional con dual profile ✅
 
 ---
 
 ## FASE 5: Auto-Aprendizaje
+
 **Objetivo: Sistema que mejora solo con el uso**
 
-| Código | Estado | Descripción |
-|--------|--------|-------------|
-| `journal.py` | ✅ | Post-mortem automático de cada trade |
-| `strategy_evolver.py` | ✅ | Analiza trades, sugiere ajustes |
-| `backtest.py` | ✅ | Walk-forward con Sharpe, profit factor, max drawdown |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R27 | journal.py — Post-mortem automático de cada trade | P2 | ✅ | R22 |
+| R28 | strategy_evolver.py — Analiza trades, sugiere ajustes | P3 | ✅ | R27 |
+| R29 | backtest.py — Walk-forward con Sharpe, profit factor | P2 | ✅ | R22 |
 
 **Hito 5:** El sistema sugiere mejoras después de cada 10 trades ✅
 
 ---
 
 ## FASE 6: Alertas y Orquestación
+
 **Objetivo: Sistema 24/7 completo**
 
-| Código | Estado | Descripción |
-|--------|--------|-------------|
-| `notifier.py` | ✅ | Telegram + Discord webhook |
-| `orchestrator.py` | ✅ | Loop con dual profile, 9 analizadores, cron, time-exit |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R30 | notifier.py — Telegram + Discord webhook | P2 | ✅ | R09 |
+| R31 | orchestrator.py — Loop dual profile, cron, time-exit | P1 | ✅ | R22-R30 |
 
 **Hito 6:** Sistema corriendo 24/7 con alertas ✅
 
 ---
 
 ## FASE 7: Sistema Completo
+
 **Objetivo: Dashboard, tray app, mejoras de calidad de vida**
 
-| Componente | Estado | Descripción |
-|------------|--------|-------------|
-| Dashboard web | ✅ | Flask + 9 páginas, 6 temas visuales, equity curve, Daily Brief |
-| Tray app | ✅ | VBS launcher, dual PnL tooltip, auto-restart loop, pulse dot |
-| Backtest vía run_replay | ✅ | Full pipeline en vez de RSI/EMA legacy |
-| Dual profile | ✅ | Normal + Fast simultáneos con SL/TP/confianza independientes |
-| On-chain analyzer | ✅ | Etherscan V2, scoring real |
-| News RSS fallback | ✅ | Yahoo Finance RSS + Google News RSS cuando NewsAPI falla |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R32 | Dashboard web — Flask + 9 páginas, 6 temas | P1 | ✅ | R31 |
+| R33 | Tray app — VBS launcher, tooltip, auto-restart | P2 | ✅ | R31 |
+| R34 | Backtest vía run_replay | P2 | ✅ | R29 |
+| R35 | Dual profile — Normal + Fast simultáneos | P1 | ✅ | R31 |
+| R36 | On-chain analyzer — Etherscan V2 scoring | P2 | ✅ | R12 |
+| R37 | News RSS fallback — Yahoo Finance + Google News | P2 | ✅ | R09 |
 
 ---
 
 ## FASE 8: Producción
+
 **Objetivo: Operación real controlada**
 
-| Paso | Estado | Descripción |
-|------|--------|-------------|
-| 8.1 | En progreso | Paper trading 2-4 semanas (validación) |
-| 8.2 | Pendiente | Micro-montos reales ($10-50 por operación) |
-| 8.3 | Pendiente | Monitoreo diario con ajustes manuales |
-| 8.4 | Pendiente | Estrategia madura → capital progresivamente mayor |
-| 8.5 | Pendiente | Modo replay histórico para QA sin APIs live |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R38 | Paper trading 2-4 semanas (validación) | P1 | 🔄 | R31 |
+| R39 | Micro-montos reales ($10-50 por operación) | P1 | ⏳ | R38 |
+| R40 | Monitoreo diario con ajustes manuales | P1 | ⏳ | R39 |
+| R41 | Estrategia madura → capital progresivo | P2 | ⏳ | R40 |
+| R42 | Modo replay histórico para QA sin APIs live | P2 | ⏳ | R38 |
 
 ---
 
 ## FASE 9: Mejoras Continuas
+
 **Objetivo: Refinamiento basado en experiencia real**
 
-| Mejora | Estado | Descripción |
-|--------|--------|-------------|
-| ATR trailing stop | ✅ | Stop dinámico que sigue tendencia |
-| Partial TP (50%) | ✅ | TP1 cierra mitad, resto sigue con SL a BE |
-| Break-even stop | ✅ | SL sube a precio entrada al alcanzar TP1 |
-| Time-exit | ✅ | Cierre por tiempo según mercado + estado |
-| Correlation filter | ✅ | Evita posiciones correlacionadas |
-| Session filter | ✅ | Horas de mercado activo por perfil |
-| Kelly criterion | ✅ | Fracción 25% para position sizing |
-| Circuit breakers | ✅ | Daily loss 10%, max drawdown |
-| Auto-restart loop | ✅ | Tray revive loop si muerto >30s |
-| sessionStorage backtest | ✅ | Persiste estado al cambiar pestañas |
-| Timeout backtest 900s | ✅ | 15 min para pipeline completo |
-| API status vía log time | ✅ | Verifica loop con mtime <60s |
-| Endpoint /api/debug | ✅ | Traza fuentes de datos para depuracion |
-| Pagina /sandbox | ✅ | Controles manuales de broker + debug |
-| Retencion configurable de senales | ✅ | prune_signals() con purga >90d |
-| Tabla backtest_runs | ✅ | Snapshot de config + resultados |
-| POST /api/debug/inject-signal | ✅ | Pruebas sinteticas en vivo |
-| CHANGELOG.md | ✅ | Historial de versiones en raíz |
-| POST /api/debug/reset-broker | ✅ | Resetear perfil a $1000 |
-| POST /api/debug/motors-clear | ✅ | Limpiar heartbeats |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R43 | ATR trailing stop | P1 | ✅ | R22 |
+| R44 | Partial TP (50%) | P1 | ✅ | R22 |
+| R45 | Break-even stop | P1 | ✅ | R22 |
+| R46 | Time-exit por mercado + estado | P1 | ✅ | R24 |
+| R47 | Correlation filter | P1 | ✅ | R24 |
+| R48 | Session filter por perfil | P1 | ✅ | R24 |
+| R49 | Kelly criterion fracción 25% | P1 | ✅ | R23 |
+| R50 | Circuit breakers (daily loss 10%) | P1 | ✅ | R23 |
+| R51 | Auto-restart loop (tray revive >30s) | P1 | ✅ | R33 |
+| R52 | sessionStorage backtest persistence | P2 | ✅ | R34 |
+| R53 | Timeout backtest 900s | P2 | ✅ | R34 |
+| R54 | API status vía log time | P2 | ✅ | R31 |
+| R55 | Endpoint /api/debug | P2 | ✅ | R32 |
+| R56 | Página /sandbox | P2 | ✅ | R32 |
+| R57 | Retención configurable de señales (prune) | P2 | ✅ | R31 |
+| R58 | Tabla backtest_runs en DB | P2 | ✅ | R34 |
+| R59 | POST /api/debug/inject-signal | P2 | ✅ | R32 |
+| R60 | CHANGELOG.md en raíz | P1 | ✅ | — |
+| R61 | POST /api/debug/reset-broker | P2 | ✅ | R32 |
+| R62 | POST /api/debug/motors-clear | P2 | ✅ | R32 |
 
 ---
 
 ## Fase A: Expansión de tickers (ETFs + Index Funds)
 
-**Objetivo: Agregar 8 ETFs de amplio mercado y 2 fondos indexados para diversificar cobertura de mercado.**
+**Objetivo: Agregar 8 ETFs de amplio mercado y 2 fondos indexados.**
 
-| Item | Estado | Descripción |
-|------|--------|-------------|
-| A.1 | ✅ | 8 ETFs (IVV, EEM, IWM, XLK, XLF, GLD, TLT, VTI) + 2 index funds (VFIAX, FXAIX) en config.yaml |
-| A.2 | ✅ | Matriz de correlación expandida con 17 nuevos tickers en entry_filters.py |
-| A.3 | ✅ | 98 tests pasan — sin cambios a brokers/risk/fusion/decider |
-| A.4 | Pendiente | Analizador fundamental con métricas ETF (AUM, expense ratio, YTD return) — Fase B |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R63 | 8 ETFs + 2 index funds en config.yaml | P1 | ✅ | R08 |
+| R64 | Matriz de correlación expandida en entry_filters | P1 | ✅ | R24 |
+| R65 | 98 tests pasan | P1 | ✅ | R63-R64 |
+| R66 | Analizador fundamental con métricas ETF (Fase B) | P2 | ⏳ | R15 |
 
 ---
 
 ## Fase C: CEDEARs Argentina (BYMA)
 
-**Objetivo: Soportar tickers argentinos .BA con conversión USD/ARS y horario BYMA.**
+**Objetivo: Soportar tickers .BA con conversión USD/ARS y horario BYMA.**
 
-| Item | Estado | Descripción |
-|------|--------|-------------|
-| C.1 | ✅ | 7 CEDEARs .BA (KO, AAPL, MSFT, GOOGL, WMT, VIST, GGAL) en config.yaml |
-| C.2 | ✅ | get_usd_ars_rate() en collector_yfinance para tasa USD/ARS |
-| C.3 | ✅ | Precios ARS → pseudo-USD en orchestrator (market_data + check_stops) |
-| C.4 | ✅ | BYMA session hours 12:00-19:00 UTC en entry_filters.py |
-| C.5 | ✅ | Correlación CEDEAR vs subyacente seteada a 0.98 (bloquea posiciones duplicadas) |
-| C.6 | ✅ | _analyze_stocks() pasa todos los 24 tickers a get_stocks() |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R67 | 7 CEDEARs .BA en config.yaml | P1 | ✅ | R08 |
+| R68 | get_usd_ars_rate() en collector_yfinance | P1 | ✅ | R08 |
+| R69 | Precios ARS → pseudo-USD en orchestrator | P1 | ✅ | R68 |
+| R70 | BYMA session hours 12-19 UTC | P1 | ✅ | R24 |
+| R71 | Correlación CEDEAR vs subyacente (0.98) | P1 | ✅ | R24 |
+| R72 | _analyze_stocks() pasa 24 tickers completos | P1 | ✅ | R31 |
 
 ---
 
@@ -188,96 +200,34 @@
 
 **Objetivo: Mantener integridad de la estructura Diligencia durante y después de adaptaciones.**
 
-| Ítem | Estado | Descripción |
-|------|--------|-------------|
-| D.1 | ✅ | Verificar que `$variables` en AGENTS.md resuelvan a paths existentes |
-| D.2 | ✅ | Verificar que comandos usen `$variables` sin paths hardcodeados |
-| D.3 | ✅ | Verificar que OPENCODE.md y metodologia.md reflejen estructura real |
-| D.4 | ✅ | Verificar que ciclos de instancia sean ejecutables con estructura actual |
-| D.5 | ✅ | Verificar que no queden directorios legacy con contenido residual |
-| D.6 | ✅ | Verificar DILIGENCIA.md coincida con estructura real del proyecto |
-| D.7 | ✅ | Verificar dependencias entre archivos de autoridad (RM → CHECKLIST → BITACORA) |
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R73 | Verificar $variables en AGENTS.md | P1 | ✅ | — |
+| R74 | Verificar comandos sin paths hardcodeados | P1 | ✅ | — |
+| R75 | OPENCODE.md y metodología reflejen estructura real | P1 | ✅ | — |
+| R76 | Ciclos de instancia ejecutables | P1 | ✅ | — |
+| R77 | Sin directorios legacy con contenido residual | P1 | ✅ | — |
+| R78 | DILIGENCIA.md coincida con estructura real | P1 | ✅ | — |
+| R79 | Dependencias entre archivos de autoridad | P1 | ✅ | — |
 
 ---
 
 ## Métricas de Éxito
 
-| Indicador | Objetivo | Cómo medirlo |
-|-----------|----------|--------------|
-| Win rate | >55% | `python orchestrator.py --mode report` |
-| Sharpe ratio | >1.0 | Backtest dashboard o `--mode backtest` |
-| Profit factor | >1.5 | Ganancia bruta / pérdida bruta |
-| Max drawdown | <15% | Peak-to-trough máximo en dashboard |
-| Señales por día | 2-5 | Trades ejecutados en paper broker |
-| Tests | 98/98 | `python -m pytest tests/ -v` |
+| ID | Indicador | Objetivo | Cómo medirlo |
+|----|-----------|----------|--------------|
+| M01 | Win rate | >55% | `python orchestrator.py --mode report` |
+| M02 | Sharpe ratio | >1.0 | Backtest dashboard o `--mode backtest` |
+| M03 | Profit factor | >1.5 | Ganancia bruta / pérdida bruta |
+| M04 | Max drawdown | <15% | Peak-to-trough en dashboard |
+| M05 | Señales por día | 2-5 | Trades ejecutados en paper broker |
+| M06 | Tests | 98/98 | `python -m pytest tests/ -v` |
 
 ---
 
-## Apéndice — Especificaciones de Mejoras Implementadas
+## Archivos relacionados
 
-Este apéndice documenta las especificaciones técnicas detalladas de cada mejora de Fase 9, para referencia durante mantenimiento futuro.
-
-### ATR Trailing Stop
-
-**Archivo:** `execution/paper_broker.py` → `check_stops()`
-
-Comportamiento:
-```
-1. Position LONG opened at $100
-2. Price moves to $105 (ATR = $2)
-3. Trailing stop = 105 - (2 x 2.5) = 100 → SL at $100
-4. Price moves to $110 → trailing stop = 110 - 5 = 105 → SL at $105
-5. Price drops to $105 → STOP LOSS at $105 (gain of $5 secured)
-```
-
-### Break-even Stop
-
-**Archivo:** `execution/paper_broker.py` → `check_stops()`
-
-Comportamiento:
-```
-1. Position LONG at $100, original SL at $95
-2. Price reaches $102 (1.5x ATR away) → break-even trigger
-3. SL moved from $95 to $100 (entry price)
-4. If price drops back to $100 → STOP LOSS at $100 (0 loss)
-```
-
-### Session Entry Filter
-
-**Archivo:** `execution/entry_filters.py`
-
-Reglas:
-- Normal profile: 18h/día (sesiones principales London + NY)
-- Fast profile: 22h/día (incluye overlap extendido)
-- Polymarket: sin filtro de sesión (24/7)
-
-### ADX Market Regime Analyzer
-
-**Archivo:** `analyzers/adx_regime.py`
-
-| ADX | Régimen | Señal |
-|---|---|---|
-| > 25 | Trending | Seguir tendencia (LONG/SHORT según dirección) |
-| < 20 | Ranging | Mean reversion, esperar |
-| 20-25 | Transición | WAIT — no operar |
-
-### Correlation Entry Filter
-
-**Archivo:** `execution/entry_filters.py`
-
-Reglas:
-- EUR/USD + GBP/USD correlation ≈ 0.85 → no abrir ambas SHORT
-- EUR/USD SHORT + USD/JPY LONG = USD play en ambas → no permitido
-- Mismo mercado + misma dirección → bloqueado
-- Mercados distintos → siempre permitido
-
-### Partial Take-Profit
-
-**Archivo:** `execution/paper_broker.py` → `check_stops()`
-
-| Perfil | TP1 | TP2 |
-|---|---|---|
-| Normal | 2% → cerrar 50% | 5% → cerrar 50% restante |
-| Fast | 0.8% → cerrar 50% | 1.5% → cerrar 50% restante |
-
-SL ajustado a break-even tras TP1. Si el tamaño de posición es < $10, no aplicar partial TP.
+- `CHECKLIST.md` — Checklist de implementación
+- `CHANGELOG.md` — Historial de versiones
+- `AGENTS.md` — Variables de ruta y comandos
+- `DILIGENCIA.md` — Sello de metodología

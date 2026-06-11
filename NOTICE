@@ -1,0 +1,23 @@
+# NOTICE — MarketAI
+
+Copyright (C) 2026 MarketAI Contributors
+
+---
+
+## Third-Party Dependencies
+
+This product includes software developed by:
+
+- Flask — BSD-3-Clause — Pallets Project
+- yfinance — Apache-2.0 — Ran Aroussi
+- Pandas — BSD-3-Clause — Pandas Project
+- NumPy — BSD-3-Clause — NumPy Project
+- Requests — Apache-2.0 — Kenneth Reitz
+- python-dotenv — BSD-3-Clause — Saurabh Kumar
+
+For a complete list of third-party dependencies and their licenses, see the LICENSE file
+or run the project's license checker tool.
+
+## License
+
+This project is licensed under the terms of the LICENSE file in the root directory.

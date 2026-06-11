@@ -19,7 +19,7 @@ Ejemplos:
 ## Qué hace
 
 1. LEER el concepto del argumento AHORA
-2. BUSCAR en la documentación de Diligencia: AGENTS.md, GUIA_DE_COMANDOS.md, ESTANDAR-COMANDOS.md, GUIA_DE_USO.md, GUIA_DE_ADAPTACION.md, GUIA_DE_REVISION.md, ROADMAP.md, bugs.md, incidentes.md, ADR-001.md, ADR-002.md, ADR-003.md, MECANICA-CBP.md, MECANICA-DOCUMENTAL.md, GUIA_DE_BUENAS_PRACTICAS.md, GUIA_ECOSISTEMAS.md, GUIA_REFERENCIA_RAPIDA.md, ADR_SUMMARY.md, identidad.md, MANDATO.md, status-salud.md
+2. BUSCAR en la documentación de Diligencia: AGENTS.md, GUIA_DE_COMANDOS.md, ESTANDAR-COMANDOS.md, GUIA_DE_USO.md, GUIA_DE_ADAPTACION.md, GUIA_DE_REVISION.md, ROADMAP.md, bugs.md, incidentes.md, ADR-001.md, ADR-002.md, ADR-003.md, MECANICA-CBP.md, MECANICA-DOCUMENTAL.md, MECANICA-ENFORCEMENT.md, GUIA_DE_BUENAS_PRACTICAS.md, GUIA_ECOSISTEMAS.md, GUIA_REFERENCIA_RAPIDA.md, GUIA_DE_CONTRIBUCION.md, ADR_SUMMARY.md, identidad.md, MANDATO.md, status-salud.md, README.md
 3. IDENTIFICAR la definición más clara. Si el concepto no tiene documentación formal pero aparece en ROADMAP.md, CHANGELOG.md, o DILIGENCIA.md como ítem pendiente o planificado, inferir su propósito del contexto del proyecto (nombre, prioridad, ecosistema donde se ubica).
 4. ENTREGAR SOLO la explicación breve (1-3 líneas, lenguaje llano, sin markdown salvo que el concepto requiera tabla o código)
 5. SIEMPRE sugerir caminos óptimos y dependencias (1 línea extra: comandos que dependen del concepto, flujo recomendado, o docs complementarios)

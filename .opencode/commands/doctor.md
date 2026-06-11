@@ -46,6 +46,24 @@ BUSCAR en raíz archivos que NO son core (no ROADMAP, CHECKLIST, CHANGELOG, AGEN
 BUSCAR en `.opencode/commands/` comandos existentes pero NO listados en AGENTS.md
 Listar hallazgos con ruta y tipo.
 
+### 1f — Backup preventivo (diagnóstico, solo lectura)
+LEER $BACKUP_KEEP de AGENTS.md (default: 5)
+VERIFICAR git disponible (`git --version`)
+Si git disponible:
+  - EJECUTAR `git log --oneline -1` para commit actual
+Si no hay git: commit = "sin git"
+LEER versión desde DILIGENCIA.md (línea 1: `# Diligencia vX.Y.Z`)
+CONTAR backups existentes en $BACKUPS (número de filas en la tabla)
+DETECTAR qué workflow invocó al doctor (/CBP doctor, /CBP completo, /CBP updoc, standalone /doctor)
+LISTAR archivos críticos que serían respaldados:
+  - Core: AGENTS.md, ROADMAP.md, CHECKLIST.md, CHANGELOG.md, DILIGENCIA.md, `.markdownlint.json`
+  - Guías: `doc/guias/*.md`
+  - Mecánicas: `doc/mecanicas/*.md`
+  - ADRs: `doc/arch/*.md`
+  - Comandos: `.opencode/commands/*.md`
+CALCULAR: "Se creará backup #<N+1> en `.old/doctor-backups/`. Pruning: se conservan últimos $BACKUP_KEEP backups."
+INCLUIR en tabla consolidada de Fase 2.
+
 ---
 
 ## Fase 2 — Confirmación
@@ -62,8 +80,35 @@ ENTREGAR tabla consolidada:
 
 PREGUNTAR: "¿Ejecutar correcciones? (s/n)"
 
-Si responde "s" o "si": ejecutar Fase 3.
+Si responde "s" o "si": ejecutar Backup, luego Fase 3.
 Si responde "n" o "no": ENTREGAR "Sin correcciones aplicadas" y TERMINAR.
+
+---
+
+## Backup pre-corrección (solo si Fase 2 confirma — antes de Fase 3)
+
+Ejecutar backup de archivos críticos antes de cualquier modificación.
+
+1. LEER $BACKUP_KEEP de AGENTS.md (default: 5)
+2. OBTENER commit actual: `git log --oneline -1` (si git disponible; si no: "sin-git")
+3. LEER versión desde DILIGENCIA.md (línea 1)
+4. DETECTAR workflow: /CBP doctor, /CBP completo, /CBP updoc, o standalone /doctor
+5. CALCULAR número de backup: contar filas de tabla en $BACKUPS + 1
+6. CREAR directorio: `.old/doctor-backups/backup-<N>-<YYYYMMDD-HHMM>/`
+7. COPIAR archivos críticos al directorio de backup:
+   - AGENTS.md, ROADMAP.md, CHECKLIST.md, CHANGELOG.md, DILIGENCIA.md, `.markdownlint.json`, `.opencode/HARNESS.md`
+   - `doc/guias/*.md`, `doc/mecanicas/*.md`, `doc/arch/*.md`
+   - `.opencode/commands/*.md`
+8. AGREGAR entrada en $BACKUPS:
+   ```
+   | <N> | <YYYY-MM-DD HH:MM> | <commit> | <version> | <workflow> | <cantidad archivos> archivos |
+   ```
+9. PRUNING: si total backups en `.old/doctor-backups/` > $BACKUP_KEEP:
+   - IDENTIFICAR los backups más antiguos (por número o timestamp en nombre de directorio)
+   - ELIMINAR directorios de backup excedentes (los N más antiguos que sobran)
+   - ELIMINAR filas correspondientes del log en $BACKUPS
+   - REPORTAR: "🗑️ Pruning: eliminados <X> backups antiguos (se conservan últimos $BACKUP_KEEP)"
+10. REPORTAR: "✅ Backup #<N> creado: `.old/doctor-backups/backup-<N>-<timestamp>/` (<cantidad> archivos)"
 
 ---
 
@@ -110,32 +155,37 @@ Para cada candidato obsoleto:
 ## Formato de salida
 
 **🏥 /doctor — Cuidado integral del proyecto**
-**🔍 Fase 1 — Diagnóstico:** tabla Categoría | Hallazgos | Estado
+**🔍 Fase 1 — Diagnóstico:** tabla Categoría | Hallazgos | Estado (incluye 1f Backup)
 **✋ Fase 2 — Confirmación:** "¿Ejecutar correcciones? (s/n)"
+**💾 Backup pre-corrección:** backup #N creado en `.old/doctor-backups/`, pruning aplicado si > $BACKUP_KEEP
 **🔧 Fase 3 — Correcciones aplicadas:** tabla Archivo | Cambio | Estado
 **Resumen:**
-- Si hubo correcciones → `✅ Alta médica — N correcciones aplicadas`
+- Si hubo correcciones → `✅ Alta médica — N correcciones aplicadas. Backup #N guardado.`
 - Si no hubo correcciones → `👀 Sin novedades — proyecto sano`
 
 ---
 
 ## Validación
-- Las 5 sub-verificaciones (1a-1e) están presentes en el diagnóstico
+- Las 6 sub-verificaciones (1a-1f) están presentes en el diagnóstico
 - /health no aborta /doctor si stack ≠ JS (reporta ⚠️ y continúa)
 - No se modifican archivos sin confirmación en Fase 2
+- El backup se ejecuta después de la confirmación y antes de cualquier corrección
+- Pruning respeta $BACKUP_KEEP (default 5) — nunca elimina más backups de los necesarios
 - Cada ❌ en Fase 1 tiene contraparte en Fase 3
-- Si Fase 2 responde "no": no se ejecuta Fase 3
+- Si Fase 2 responde "no": no se ejecuta backup ni Fase 3
 - Autocierre aplicado: /doctor marcado como ✅/[x] en RM/CHECKLIST si estaba pendiente
 
 
 ## Archivos que lee
 - AGENTS.md, ROADMAP.md, CHECKLIST.md, CHANGELOG.md, DILIGENCIA.md
 - `.markdownlint.json`, `.opencode/HARNESS.md`
-- `doc/arch/*.md`, `doc/guias/*.md`, `doc/mecanicas/*.md`
+- `doc/arch/*.md` (incluye $BACKUPS), `doc/guias/*.md`, `doc/mecanicas/*.md`
 - `.opencode/commands/*.md`
 - Archivos JS/TS del proyecto (solo si stack == JS)
 
 ## Archivos que modifica (solo si usuario confirma)
+- `$BACKUPS` (nueva entrada de backup)
+- `.old/doctor-backups/` (directorio de backups + pruning)
 - `$BUGS` (nuevos bugs)
 - `$INCIDENTS` (nuevos incidentes, si aplica)
 - `$CHECKLIST` (nuevos items tildados)
@@ -153,3 +203,6 @@ Para cada candidato obsoleto:
 - NO registrar bugs sin archivo:línea concreto y error reproducible
 - NO duplicar gaps documentales como bugs en $BUGS (los gaps se corrigen en 3c, no como bugs)
 - NO mostrar el contenido de este archivo como output
+- NO hacer backup si Fase 2 responde "no" (sin correcciones → sin backup)
+- NO eliminar backups manuales o no generados por /doctor durante el pruning
+- NO sobrescribir backups existentes — siempre crear nuevo directorio con número incremental

@@ -391,3 +391,10 @@ Get-Content orchestrator.log -Tail 20
 | D.5 | ✅ | No quedan directorios legacy con contenido residual |
 | D.6 | ✅ | DILIGENCIA.md coincide con estructura real del proyecto |
 | D.7 | Pendiente | Dependencias entre archivos de autoridad verificadas |
+
+## Archivos relacionados
+
+- `ROADMAP.md` — Roadmap del proyecto
+- `CHANGELOG.md` — Historial de versiones
+- `AGENTS.md` — Variables de ruta y comandos
+- `DILIGENCIA.md` — Sello de metodología

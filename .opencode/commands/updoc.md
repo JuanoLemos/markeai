@@ -96,7 +96,7 @@ Para cada gap pendiente (STALE o SIN LABEL):
 
 1. `git log --oneline -20` AHORA para historial reciente
 2. Detectar último commit versionado: `git log --grep "v[0-9]+\.[0-9]+" --oneline -1` — si no existe, usar `git log --oneline -1` (HEAD)
-3. `git diff --name-only <last-version>` AHORA — todos los .md cambiados desde la última versión
+3. `git diff --name-only <last-version>` (si no hay `<last-version>` válido: `git log --oneline --name-only --diff-filter=M HEAD~20..HEAD | findstr "\.md$" | sort -u`) AHORA — todos los .md cambiados desde la última versión
 4. FILTRAR solo archivos `.md`
 5. CRUZAR con INDEX.md: ¿hay .md modificados que NO están registrados en INDEX?
 6. Si sí: CLASIFICAR por carpeta destino (guia, mecanica, adr, referencia)

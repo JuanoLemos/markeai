@@ -1,4 +1,4 @@
-# Diligencia v1.15.0 — Estructura estándar de documentación
+# Diligencia v1.17.2 — Estructura estándar de documentación
 
 Sello de metodología para proyectos OpenCode.
 
@@ -28,12 +28,20 @@ Define dónde vive cada tipo de archivo, cómo se nombran las variables de ruta,
 
 | Proyecto | Fecha | Estado |
 |---|---|---|
-| MarketAI | 2026-06-05 | ✅ v1.15.0 |
+| MarketAI | 2026-06-09 | ✅ v1.17.2 |
 
 ## Historial
 
 | Versión | Fecha | Cambios |
 |---|---|---|
+| v1.17.2 | 2026-06-09 | Upgrade desde v1.15.0 — GitHub readiness (LICENSE, CODE_OF_CONDUCT, CONTRIBUTING), GUIA_ONBOARDING, GUIA_DE_INFORMES, GUIA_LEGAL, GUIA_MULTI_REPO, GUIA_UPDATE_DILIGENCIA, MECANICA-CALIDAD, MECANICA-ENFORCEMENT, NOTICE, SECURITY.md, Provider-agnostic docs, /CBP escalativo, Meta-PLAN 4 workers, /version git-log, $BACKUPS/$BACKUP_KEEP/$MECANICAS_TEMPLATE/$NEWS_FILE |
 | v1.15.0 | 2026-06-05 | Upgrade desde v1.4 — Enforcement documental (check-docs, pre-commit), /circuito, /doctor, /salud, /reanudar, ADR_SUMMARY, identidad, MANDATO, GUIA_DE_BUENAS_PRACTICAS, GUIA_ECOSISTEMAS, CI/CD workflow |
 | v1.4 | 2026-05-31 | $INCIDENTS, doc/arch/incidentes.md, comandos bug/incidente |
 | v1.0 | 2026-05-09 | Adaptación desde estructura legacy (doc/documentos/ → raíz + doc/arch/) |
+
+## Archivos relacionados
+
+- `ROADMAP.md` — Roadmap del proyecto
+- `CHECKLIST.md` — Checklist de implementación
+- `CHANGELOG.md` — Historial de versiones
+- `AGENTS.md` — Variables de ruta y comandos

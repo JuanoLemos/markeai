@@ -26,6 +26,10 @@ Variables que los comandos del proyecto usan para referirse a archivos. Definida
 | $QA | `doc/qa/` | Situaciones QA |
 | $TESTING | `doc/testing/` | Testing pendiente |
 | $MECANICAS | `doc/mecanicas/` | Reglas de negocio / mecánicas del proyecto |
+| $MECANICAS_TEMPLATE | `doc/mecanicas/_template.md` | Plantilla de mecánica |
+| $NEWS_FILE | `news.txt` | Archivo de news a distribuir |
+| $BACKUPS | `data/cache/backups/` | Backups automáticos |
+| $BACKUP_KEEP | `7` | Días a conservar backups |
 | $SKILLS_DIR | `skills/` | Skills cargables |
 | $CONFIG | `config.yaml` | Configuración central |
 | $ENV | `.env` | API keys y secretos |
@@ -73,6 +77,9 @@ Estos comandos viven en `~/.config/opencode/commands/` y funcionan sin configura
 | `/cbp` | Circuito basado en plan — orquestador multi-workflow |
 | `/circuito` | Orquestador de workflows vinculantes |
 | `/doctor` | Cuidado integral del proyecto |
+| `/informe-salud` | Informe de salud inter-proyecto |
+| `/legal` | Verificación legal del proyecto |
+| `/pushgh` | Push a GitHub |
 
 ## Comandos personalizados (.opencode/commands/)
 
@@ -227,3 +234,10 @@ Si la edición modificó comportamiento visible para el usuario (config flags, e
 | Cambio en número de tests | `README.md`, `$CHECKLIST`, `$RM` |
 
 Cargar `skill("actualizar-docs")` para el checklist completo.
+
+## Archivos relacionados
+
+- `DILIGENCIA.md` — Sello de metodología
+- `ROADMAP.md` — Roadmap del proyecto
+- `CHECKLIST.md` — Checklist de implementación
+- `CHANGELOG.md` — Historial de versiones

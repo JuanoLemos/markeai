@@ -97,3 +97,10 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 [1.1.0]: https://github.com/usuario/MarketAI/releases/tag/v1.1.0
 [1.0.0]: https://github.com/usuario/MarketAI/releases/tag/v1.0.0
 -->
+
+## Archivos relacionados
+
+- `ROADMAP.md` — Roadmap del proyecto
+- `CHECKLIST.md` — Checklist de implementación
+- `AGENTS.md` — Variables de ruta y comandos
+- `DILIGENCIA.md` — Sello de metodología
