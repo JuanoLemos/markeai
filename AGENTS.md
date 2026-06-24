@@ -54,6 +54,13 @@ Variables que los comandos del proyecto usan para referirse a archivos. Definida
 
 ---
 
+## Disciplina BUILD
+
+BUILD = aplicar cambios, NO commitear. Solo /commit, /CBP y /version ejecutan git commit.
+Al terminar cualquier BUILD, reportar cambios aplicados y sugerir /CBP.
+
+---
+
 ## Skills disponibles
 
 Skills cargables con `skill("nombre")` para tareas recurrentes:
@@ -79,7 +86,9 @@ Estos comandos viven en `~/.config/opencode/commands/` y funcionan sin configura
 | `/doctor` | Cuidado integral del proyecto |
 | `/informe-salud` | Informe de salud inter-proyecto |
 | `/legal` | Verificación legal del proyecto |
+| `/mutacion` | Absorber mutaciones de un proyecto |
 | `/pushgh` | Push a GitHub |
+| `/revision` | Revisar mutaciones del proyecto |
 
 ## Comandos personalizados (.opencode/commands/)
 

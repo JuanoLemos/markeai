@@ -148,7 +148,7 @@ Para cada candidato obsoleto:
 - AGREGAR entrada en CHANGELOG.md en sección "Changed" o nueva entrada no versionada: "- `/doctor`: <N> correcciones aplicadas"
 - Si hubo cambios en AGENTS.md o estructura: SUGERIR commit message `chore: /doctor — <N> correcciones en estructura, código, tracking`
 - AUTOCIERRE: Si `/doctor` está como `🔴 Pendiente` en RM "Next" → actualizar a `✅ Hecho`. Si está `[ ]` en CHECKLIST → marcar `[x]`.
-- SUGERIR: usar `/CBP doctor` para cerrar el chain completo (incluye /version patch si hay correcciones). Si no hubo correcciones, workflow terminado.
+- Workflow terminado. Si hay cambios documentales en disco: ejecutar `/CBP updoc` para sync, o `/CBP version` para versionar. Si no hubo correcciones: volver a SESSIONWORK.
 
 ---
 

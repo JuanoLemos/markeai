@@ -273,9 +273,11 @@ y produce su diagnóstico de vuelta al orquestador.
    - SI no confirma: DETENER workflow
 
 2. **BUILD (ejecuci�n)**
+   ⚠️ BUILD = aplicar cambios, NO commitear. Solo /commit, /CBP y /version ejecutan git commit.
+      Al terminar: reportar "✅ BUILD completo. Ejecutar /CBP para commitear."
    - /updoc Fase F (BUILD): aplicar correcciones de guías/mecánicas/ADRs, actualizar INDEX
    - /salud BUILD*: generar `doc/arch/status-salud.md`, actualizar INDEX
-   - /version (BUILD*): Steps 6→8 — CHANGELOG, INDEX, DILIGENCIA, template/adaptar (solo minor/major), commit
+   - /version (BUILD*): Steps 6→12 — CHANGELOG + commit + tag
    - /pushgh BUILD*: git push al remoto configurado en $REPO (solo si $REPO definido)
     - /doctor Fase 3 (BUILD): backup pre-corrección + aplicar correcciones si hay (solo si /doctor detectó issues en Meta-PLAN)
 
@@ -295,9 +297,10 @@ y produce su diagnóstico de vuelta al orquestador.
    - SI no confirma: DETENER workflow
 
 2. **BUILD (ejecuci�n)**
-    - /doctor Fase 3 (BUILD): backup pre-corrección + crear archivos, sincronizar tracking, deprecar, limpiar
+   ⚠️ BUILD = aplicar cambios, NO commitear. Solo /commit, /CBP y /version ejecutan git commit.
+   - /doctor Fase 3 (BUILD): backup pre-corrección + crear archivos, sincronizar tracking, deprecar, limpiar
    - /salud BUILD*: generar `doc/arch/status-salud.md`, actualizar INDEX
-   - SI hubo correcciones: /version patch BUILD* — Steps 6→8 con bump patch, commit → /pushgh BUILD*
+   - SI hubo correcciones: /version patch BUILD* — Steps 6→12 (CHANGELOG + commit + tag) → /pushgh BUILD*
    - SI no hubo correcciones: workflow terminado — volver a SESSIONWORK
 
 ---
@@ -307,13 +310,15 @@ y produce su diagnóstico de vuelta al orquestador.
 1. **META-PLAN (razonamiento)**
    - LEER `version.md` del disco
    - EJECUTAR /version Steps 1→5 (PLAN: detectar versión, calcular bump, confirmación)
-   - Safe-path: si INDEX.md ausente o labels stale → preguntar "¿Ejecutar /CBP updoc primero?"
-   - ARMAR tabla (solo /version)
-   - PREGUNTAR: "¿Ejecutar BUILD?"
+    - Safe-path: si INDEX.md ausente o labels stale → preguntar "¿Ejecutar /CBP updoc primero?"
+      Si sí → ABORTAR este workflow. EJECUTAR `/CBP updoc` completo. Al terminar, preguntar "¿Reanudar /CBP version? [sí/no]"
+    - ARMAR tabla (solo /version)
+    - MOSTRAR CHANGELOG auto-generado + resultado pre-flight
+    - PREGUNTAR UNA SOLA VEZ: "¿Versionar con estos cambios? [sí/no]"
    - SI no confirma: DETENER workflow
 
 2. **BUILD (ejecuci�n)**
-   - /version Steps 6→8: CHANGELOG, INDEX, DILIGENCIA, template/adaptar (solo minor/major), commit
+   - /version BUILD* Steps 6→12 (CHANGELOG + commit + tag. No preguntar — ya confirmado en Meta-PLAN)
    - /pushgh BUILD*: git push al remoto configurado en $REPO (solo si $REPO definido)
 
 3. **SUGERIR /doctor**
@@ -328,15 +333,13 @@ y produce su diagnóstico de vuelta al orquestador.
 Para sesiones de código puro donde ningún documento cambió.
 
 1. **EJECUCIÓN DIRECTA** (sin Meta-PLAN)
-   - `git add -A`
-   - Preguntar al usuario mensaje de commit (tipo: `feat|fix|chore|refactor|test`)
+   - EJECUTAR `/commit` (el comando authenticado valida Conventional Commits y muestra diff)
+   - Si `/commit` falla: DETENER y mostrar error. NO continuar.
    - Si no hay cambios: "No hay cambios para commitear" — DETENER
-   - `git commit -m "<tipo>: <descripción>"`
-   - Si commit falla: mostrar error, NO continuar
 
 2. **PUSH**
-   - Si $REPO definido: `/pushgh BUILD*`
-   - Si no: workflow terminado — el usuario deberá pushear manualmente
+   - Si $REPO definido: `git push origin $(git branch --show-current)` (push directo post-commit, sin BUILD*)
+   - Si no: "Commiteado localmente. Ejecutá `git push <remote> <branch>` manualmente."
 
 ---
 
@@ -344,12 +347,20 @@ Para sesiones de código puro donde ningún documento cambió.
 
 Para sesiones donde se tocaron 1-5 docs sin nuevas guías/mecánicas.
 
-1. **EJECUCIÓN SECUENCIAL** (sin Meta-PLAN, sin paralelismo)
-   - /updoc Fases A→F (PLAN→BUILD completo: leer INDEX, stale, gaps, cross-refs, aplicar correcciones)
-   - /version BUILD*: Steps 6→8 con bump patch (CHANGELOG, INDEX, DILIGENCIA, commit)
-   - /pushgh BUILD*: git push
+1. **META-PLAN (ligero)**
+   - /updoc Fases A→E+H (PLAN: solo auditoría — INDEX, stale, gaps, cross-refs. NO modificar archivos.)
+   - /version Steps 1→5 (PLAN: detectar versión, colectar commits, pre-flight 6 checks)
+   - Calcular bump: patch (por definición del workflow ligero)
+   - ARMAR tabla consolidada (solo /updoc + /version)
+   - PREGUNTAR UNA SOLA VEZ: "¿Ejecutar BUILD parcial? [sí/no]"
+   - SI no confirma: DETENER workflow
 
-2. **NO SUGERIR /doctor**
+2. **BUILD (ejecución)**
+   - /updoc Fase F (BUILD: aplicar correcciones de la auditoría PLAN)
+   - /version BUILD* Steps 6→12 (CHANGELOG + commit + tag + push)
+   - /pushgh BUILD* git push
+
+3. **NO SUGERIR /doctor**
    - Sin /salud, sin /doctor, sin agentes — el camino parcial es deliberadamente liviano
 
 ---
@@ -433,10 +444,11 @@ El meta-orquestador analiza el working tree y sugiere agentes/skills antes del B
    - SI no confirma: DETENER workflow
 
 2. **BUILD (ejecuci�n)**
+   ⚠️ BUILD = aplicar cambios, NO commitear. Solo /commit, /CBP y /version ejecutan git commit.
    - Agentes aceptados: ejecutar en orden (reviewer → architect → verify)
    - /updoc Fase F (BUILD): aplicar correcciones documentales
    - /salud BUILD*: generar status-salud.md
-   - /version BUILD*: Steps 6→8 — CHANGELOG, INDEX, template, commit
+   - /version BUILD*: Steps 6→12 (CHANGELOG + commit + tag)
    - /pushgh BUILD*: git push al remoto configurado en $REPO (solo si $REPO definido)
     - /doctor Fase 3 (BUILD): backup pre-corrección + aplicar correcciones si hay
 
@@ -464,6 +476,7 @@ El meta-orquestador analiza el working tree y sugiere agentes/skills antes del B
 16. Si se edita un comando global (CBP.md, adaptar.md, etc.) que introduce cambios metodológicos, se DEBE inmediatamente: bump versión en adaptar.md, agregar entrada en tabla Migración, actualizar DILIGENCIA.md y CHANGELOG.md del proyecto Diligencia, y commitear para que los proyectos lo detecten vía pre-flight.
 17. Solo `/commit`, `/CBP` y `/version` pueden ejecutar git commit. Ningún otro comando (incluyendo BUILD de /plan, /adaptar, /updoc standalone) debe commitear. Los cambios se acumulan en el working tree y el usuario decide cuándo commitear usando uno de los tres comandos autorizados.
 18. Si un comando en BUILD encuentra un estado ambiguo (más de una acción posible, no hay un camino obvio), DEBE pausar, presentar opciones de forma simple y directa (con impacto estimado de cada una), y esperar confirmación del usuario antes de ejecutar. No se asume nada.
+19. En cualquier proyecto que NO sea Diligencia, el agente DEBE pausar antes de modificar estado del repositorio (git add, commit, push, tag). Debe mostrar los cambios preparados y preguntar explícitamente: "¿Ejecutar [acción] en [nombre del proyecto]? [sí/no]". Diligencia es la única excepción: como proyecto auto-referencial, puede recibir acciones automáticas dentro del flujo acordado por el usuario.
 
 ## Validación
 
