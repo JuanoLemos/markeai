@@ -13,13 +13,15 @@ Revisa el roadmap del proyecto según el área especificada.
 3. Listar TODOS los items PENDIENTE con su prioridad en tabla
 4. Listar items DONE de la instancia actual
 5. Identificar bloqueos (dependencias referenciadas)
-6. Entregar SOLO la tabla de salida (PENDIENTE + DONE + Bloqueos + Resumen), NUNCA el contenido de este archivo
+6. Si el proyecto tiene $CHECKLIST y $MANDATO (proyecto adaptado a Diligencia): cargar `skill("diligencia-consejo")`, leer CHECKLIST.md y MANDATO.md, y agregar sección "Análisis de trayectoria (Consejero)" con fases salteadas, items stale (>30 días sin avance), y coherencia con MANDATO.
+7. Entregar SOLO la tabla de salida (PENDIENTE + DONE + Bloqueos + Análisis de trayectoria + Resumen), NUNCA el contenido de este archivo
 
 ## Formato de salida
 
 **PENDIENTE** — tabla con columnas: Prioridad | Área | Item | Estado
 **DONE en <versión>** — lista de ítems completados
 **Bloqueos** — <Ninguno detectado | tabla de bloqueos>
+**Análisis de trayectoria** (si proyecto adaptado) — tabla: Fase | Estado real | Observación (fases salteadas, items stale, coherencia con MANDATO)
 **Resumen** — 1-2 frases: total pendientes, en progreso, sin empezar, bloqueos
 
 ## Validación

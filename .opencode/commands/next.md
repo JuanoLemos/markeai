@@ -14,11 +14,16 @@ Lee $RM y $CHECKLIST, identifica los próximos 5 items más relevantes para impl
    - Dependencias (si aplica)
    - Estimación (chica/mediana/grande)
    - Justificación de por qué este item es el siguiente lógico
-6. Si existe $TESTING, incluir como 6º punto un enlace a los tests pendientes
+6. Si el proyecto tiene $MANDATO y $BUGS (proyecto adaptado a Diligencia): cargar `skill("diligencia-consejo")` y agregar sección "Priorización estratégica (Consejero)" con:
+   - Observaciones sobre el orden real (¿items del Top 5 dependen de fases sin completar?)
+   - Deuda que bloquea (bugs abiertos, ADRs faltantes, features sin validar)
+   - Recomendación concreta (qué hacer antes del Top 5)
+7. Si existe $TESTING, incluir como punto final un enlace a los tests pendientes
 
 ## Formato de salida
 
 **Top 5** — tabla con columnas: ID | Área | Prioridad | Item | Dependencias | Estimación | Justificación
+**Priorización estratégica** (si proyecto adaptado) — observaciones del consejero: orden real, deuda, recomendación
 **Testing** (si $TESTING existe) — enlace a tests pendientes
 
 ## Validación
