@@ -1,1 +1,1 @@
-# Diligencia v2.2.0 — MarketAI
+# Diligencia v2.6.1 â€” MarketAI

@@ -250,3 +250,9 @@ Cargar `skill("actualizar-docs")` para el checklist completo.
 - `ROADMAP.md` — Roadmap del proyecto
 - `CHECKLIST.md` — Checklist de implementación
 - `CHANGELOG.md` — Historial de versiones
+
+---
+
+## SELLO DILIGENCIA
+
+Proyecto adaptado a Diligencia v2.6.1.

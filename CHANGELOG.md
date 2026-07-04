@@ -8,6 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
+- Diligencia v2.2.0 → v2.6.1: upgrade + comandos sincronizados
 ### Changed
 ### Deprecated
 ### Removed
