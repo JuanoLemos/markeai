@@ -28,6 +28,7 @@ strategies/trade_journal.md
 nppBackup/
 *.bak
 *.bak_*
+.bak_*/
 
 # Logs
 *.log
