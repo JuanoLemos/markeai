@@ -358,8 +358,13 @@ def create_app():
     @app.route("/api/loop/start")
     def api_loop_start():
         global loop_process
+        stop_file = BASE_DIR / "STOP"
+        if stop_file.exists():
+            stop_file.unlink()
         if loop_process is not None and loop_process.poll() is None:
             return jsonify({"ok": False, "error": "Loop already running"})
+        if os.environ.get("DOCKER_MODE") == "1":
+            return jsonify({"ok": True, "info": "Orchestrator runs as separate container. Use 'docker compose restart orchestrator' to restart."})
         loop_process = subprocess.Popen(
             [sys.executable, str(BASE_DIR / "orchestrator.py"), "--mode", "loop"],
             cwd=str(BASE_DIR),
@@ -376,8 +381,6 @@ def create_app():
         if loop_process and loop_process.poll() is None:
             loop_process.wait(timeout=10)
         loop_process = None
-        if stop_file.exists():
-            stop_file.unlink()
         return jsonify({"ok": True})
 
     @app.route("/api/portfolio/history")
@@ -1074,4 +1077,4 @@ def _performance_by_ticker() -> list:
 if __name__ == "__main__":
     app = create_app()
     print("MarketAI Dashboard at http://localhost:8050")
-    app.run(host="127.0.0.1", port=8050, debug=False)
+    app.run(host="0.0.0.0", port=8050, debug=False)

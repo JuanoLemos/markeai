@@ -1,0 +1,47 @@
+services:
+  orchestrator:
+    build: .
+    container_name: marketai-orch
+    command: python orchestrator.py --mode loop
+    restart: unless-stopped
+    volumes:
+      - marketai_data:/app/data
+      - ./config.yaml:/app/config.yaml:ro
+      - ./.env:/app/.env:ro
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py", "--orchestrator"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+
+  dashboard:
+    build: .
+    container_name: marketai-dash
+    command: python dashboard.py
+    restart: unless-stopped
+    ports:
+      - "8050:8050"
+    volumes:
+      - marketai_data:/app/data
+      - ./config.yaml:/app/config.yaml:ro
+      - ./.env:/app/.env:ro
+    depends_on:
+      orchestrator:
+        condition: service_started
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+      - DOCKER_MODE=1
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py", "--dashboard"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+
+volumes:
+  marketai_data:
