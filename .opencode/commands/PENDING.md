@@ -7,4 +7,5 @@ Cuando se ejecuta un bump, este archivo se limpia automáticamente.
 
 | Fecha | Comando | Cambio |
 |---|---|---|
-| 2026-06-23 | config | opencode.jsonc +instrucción emojis. AGENTS.md +política emojis. templates AGENTS.md +política emojis. |
+
+*(vacío — último bump v1.20.0 procesó todas las entradas pendientes)*

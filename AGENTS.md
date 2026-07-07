@@ -28,6 +28,7 @@ Variables que los comandos del proyecto usan para referirse a archivos. Definida
 | $MECANICAS | `doc/mecanicas/` | Reglas de negocio / mecánicas del proyecto |
 | $MECANICAS_TEMPLATE | `doc/mecanicas/_template.md` | Plantilla de mecánica |
 | $NEWS_FILE | `news.txt` | Archivo de news a distribuir |
+| $PALOMA_MAIN_PLAN | `doc/arch/palomas.md` | Plan de palomas activas |
 | $BACKUPS | `data/cache/backups/` | Backups automáticos |
 | $BACKUP_KEEP | `7` | Días a conservar backups |
 | $SKILLS_DIR | `skills/` | Skills cargables |

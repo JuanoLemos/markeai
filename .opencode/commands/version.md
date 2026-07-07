@@ -73,6 +73,11 @@ Versiona el proyecto con CHANGELOG auto-generado desde commits Conventional Comm
 
 9. ACTUALIZAR INDEX.md: versión CHANGELOG + DILIGENCIA, fechas
 
+9.5. ACTUALIZAR DILIGENCIA.md: reemplazar versión en línea 1
+   - LEER DILIGENCIA.md — extraer línea 1
+   - REEMPLAZAR: `v\d+\.\d+\.\d+` → vX.Y.Z (la nueva versión)
+   - GUARDAR archivo
+
 10. `git add -A` → `git commit -m "chore(release): vX.Y.Z"` → `git tag vX.Y.Z`
 
 11. `git status --porcelain` → DEBE estar vacío. Si no: ERROR FATAL.

@@ -8,8 +8,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
-- Diligencia v2.2.0 → v2.6.1: upgrade + comandos sincronizados
+- Diligencia v1.18.1 → v2.6.3: comandos sincronizados (45 activos), $PALOMA_MAIN_PLAN en AGENTS.md, DILIGENCIA.md actualizado
+- Search GitHub AI trading repos: investigación de técnicas IA trading (100+ repos analizados)
+- R80: Informe repos trading — investigación de técnicas AI en GitHub (FASE 8)
+
 ### Changed
+- ROADMAP.md: +R80 en FASE 8
 ### Deprecated
 ### Removed
 ### Fixed

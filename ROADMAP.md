@@ -136,6 +136,7 @@ Sistema de Trading Multi-Capa con DeepSeek AI.
 | R40 | Monitoreo diario con ajustes manuales | P1 | ⏳ | R39 |
 | R41 | Estrategia madura → capital progresivo | P2 | ⏳ | R40 |
 | R42 | Modo replay histórico para QA sin APIs live | P2 | ⏳ | R38 |
+| R80 | Informe repos trading — investigación de técnicas AI en GitHub | P2 | ⏳ | — |
 
 ---
 
