@@ -19,7 +19,7 @@ Guía para ejecutar MarketAI 24/7 en una notebook (Windows) o VPS (Linux) usando
 
 ```powershell
 cd C:\
-git clone https://github.com/tu-usuario/MarketAI.git
+git clone https://github.com/JuanoLemos/markeai.git
 cd MarketAI
 ```
 

@@ -13,7 +13,7 @@ Guia de inicio rapido para nuevos desarrolladores de MarketAI.
 
 1. Clonar el repositorio:
    ```powershell
-   git clone https://github.com/tu-usuario/MarketAI.git
+    git clone https://github.com/JuanoLemos/markeai.git
    cd MarketAI
    ```
 
