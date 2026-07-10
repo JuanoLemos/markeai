@@ -1,9 +1,12 @@
-class OnChainAnalyzer:
+from ._base import BaseAnalyzer
+
+
+class OnChainAnalyzer(BaseAnalyzer):
     WHALE_THRESHOLD_USD = 10000
 
     def analyze(self, polymarket_data: dict = None) -> dict:
         if not polymarket_data:
-            return self._empty_result()
+            return self.empty_result()
 
         signals = []
         scores = []
@@ -116,5 +119,3 @@ class OnChainAnalyzer:
             },
         }
 
-    def _empty_result(self):
-        return {"signal": "WAIT", "score": 50, "reasoning": "no_onchain_data", "details": {}}

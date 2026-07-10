@@ -1,12 +1,14 @@
 import pandas as pd
 import numpy as np
 
+from ._base import BaseAnalyzer
 
-class TechnicalAnalyzer:
+
+class TechnicalAnalyzer(BaseAnalyzer):
     def analyze(self, data: pd.DataFrame) -> dict:
         if data.empty or len(data) < 26:
-            return self._empty_result()
-        df = self._ensure_columns(data)
+            return self.empty_result()
+        df = self.ensure_cols(data)
         rsi = self._calc_rsi(df["close"], 14)
         macd_line, macd_signal, macd_hist = self._calc_macd(df["close"])
         bb_upper, bb_middle, bb_lower, bb_pct = self._calc_bollinger(df["close"])
@@ -87,17 +89,6 @@ class TechnicalAnalyzer:
                 "volume_trend": volume_trend,
             },
         }
-
-    def _empty_result(self):
-        return {"signal": "WAIT", "score": 50, "reasoning": "insufficient_data", "details": {}}
-
-    def _ensure_columns(self, data: pd.DataFrame) -> pd.DataFrame:
-        df = data.copy()
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = [c[0].lower() for c in df.columns]
-        else:
-            df.columns = [c.lower() for c in df.columns]
-        return df
 
     def _calc_rsi(self, prices: pd.Series, period: int = 14) -> float:
         if len(prices) < period + 1:

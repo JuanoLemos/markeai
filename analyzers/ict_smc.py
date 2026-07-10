@@ -1,27 +1,18 @@
-import io
-import sys
 import numpy as np
 import pandas as pd
 
-
-def _silent_import():
-    old_stdout, old_stderr = sys.stdout, sys.stderr
-    sys.stdout = sys.stderr = io.StringIO()
-    try:
-        from smartmoneyconcepts import smc
-        return smc
-    finally:
-        sys.stdout, sys.stderr = old_stdout, old_stderr
+from ._base import BaseAnalyzer
+from ._utils import silent_import
 
 
-_smc = _silent_import()
+_smc = silent_import()
 
 
-class ICTAnalyzer:
+class ICTAnalyzer(BaseAnalyzer):
     def analyze(self, data: pd.DataFrame) -> dict:
         if data.empty or len(data) < 50:
-            return self._empty_result()
-        df = self._ensure_cols(data)
+            return self.empty_result()
+        df = self.ensure_cols(data, fill_volume=True)
         signals = []
         scores = []
 
@@ -99,7 +90,7 @@ class ICTAnalyzer:
                 scores.append(45)
 
         if not scores:
-            return self._empty_result()
+            return self.empty_result()
 
         avg_score = sum(scores) / len(scores)
         signal = "LONG" if avg_score >= 55 else "SHORT" if avg_score <= 45 else "WAIT"
@@ -111,19 +102,7 @@ class ICTAnalyzer:
                 "fvg_count": int(recent_fvg.shape[0]) if not recent_fvg.empty else 0,
                 "ob_count": int(recent_ob.shape[0]) if not recent_ob.empty else 0,
                 "liquidity_sweeps": int(recent_liq.shape[0]) if not recent_liq.empty else 0,
-                "bos_count": int(recent_bos.shape[0]) if not recent_bos.empty else 0,
+                "bos_count": int(recent_bos.shape[0]) if not recent_bos.shape[0] else 0,
             },
         }
 
-    def _ensure_cols(self, data: pd.DataFrame) -> pd.DataFrame:
-        df = data.copy()
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = [c[0].lower() for c in df.columns]
-        else:
-            df.columns = [c.lower() for c in df.columns]
-        if "volume" not in df.columns:
-            df["volume"] = 0
-        return df
-
-    def _empty_result(self):
-        return {"signal": "WAIT", "score": 50, "reasoning": "insufficient_data", "details": {}}

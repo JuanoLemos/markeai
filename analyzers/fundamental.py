@@ -1,14 +1,16 @@
 from datetime import datetime, timezone
 
+from ._base import BaseAnalyzer
 
-class FundamentalAnalyzer:
+
+class FundamentalAnalyzer(BaseAnalyzer):
     def analyze(self, ticker: str = "", price_data: dict = None, fund_data: dict = None) -> dict:
         if fund_data:
             if self._is_etf(fund_data):
                 return self._analyze_etf(ticker, price_data, fund_data)
             return self._analyze_fundamentals(ticker, price_data, fund_data)
         if not price_data:
-            return self._empty_result()
+            return self.empty_result()
         return self._analyze_volume_only(price_data)
 
     def _is_etf(self, fund_data: dict) -> bool:
@@ -117,7 +119,7 @@ class FundamentalAnalyzer:
                 pass
 
         if not adjustments:
-            return self._empty_result()
+            return self.empty_result()
 
         raw_score = 50 + sum(adjustments)
         final_score = max(0, min(100, raw_score))
@@ -231,7 +233,7 @@ class FundamentalAnalyzer:
                 adjustments.append(-3)
 
         if not adjustments:
-            return self._empty_result()
+            return self.empty_result()
 
         raw_score = 50 + sum(adjustments)
         final_score = max(0, min(100, raw_score))
@@ -288,5 +290,3 @@ class FundamentalAnalyzer:
             },
         }
 
-    def _empty_result(self):
-        return {"signal": "WAIT", "score": 50, "reasoning": "no_fundamental_data", "details": {}}

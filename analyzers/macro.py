@@ -1,4 +1,7 @@
-class MacroAnalyzer:
+from ._base import BaseAnalyzer
+
+
+class MacroAnalyzer(BaseAnalyzer):
     def analyze(self, dxy: float = None, vix: float = None, market_type: str = "forex") -> dict:
         signals = []
         scores = []

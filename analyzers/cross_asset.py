@@ -1,10 +1,12 @@
 import numpy as np
 
+from ._base import BaseAnalyzer
 
-class CrossAssetAnalyzer:
+
+class CrossAssetAnalyzer(BaseAnalyzer):
     def analyze(self, market_data: dict = None) -> dict:
         if not market_data:
-            return self._empty_result()
+            return self.empty_result()
         stocks = market_data.get("stocks", {})
         forex = market_data.get("forex", {})
         signals = []
@@ -41,5 +43,3 @@ class CrossAssetAnalyzer:
             },
         }
 
-    def _empty_result(self):
-        return {"signal": "WAIT", "score": 50, "reasoning": "no_cross_asset_data", "details": {}}

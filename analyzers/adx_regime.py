@@ -1,30 +1,27 @@
-import sys
-import io
+"""
+ADX Regime analyzer — trend strength filter.
+B-25: inherits _empty_result from BaseAnalyzer.
+B-24: inherits _ensure_cols from BaseAnalyzer.
+B-23: uses silent_import from analyzers._utils.
+"""
 import numpy as np
 import pandas as pd
 
-
-def _silent_import():
-    old_out, old_err = sys.stdout, sys.stderr
-    sys.stdout = sys.stderr = io.StringIO()
-    try:
-        from smartmoneyconcepts import smc
-        return smc
-    finally:
-        sys.stdout, sys.stderr = old_out, old_err
+from ._base import BaseAnalyzer
+from ._utils import silent_import
 
 
-_smc = _silent_import()
+_smc = silent_import()
 
 
-class ADXRegimeAnalyzer:
+class ADXRegimeAnalyzer(BaseAnalyzer):
     def analyze(self, data: pd.DataFrame) -> dict:
         if data.empty or len(data) < 30:
-            return self._empty_result()
-        df = self._ensure_cols(data)
+            return self.empty_result()
+        df = self.ensure_cols(data)
         adx, pos_di, neg_di = self._calc_adx(df)
         if adx is None:
-            return self._empty_result()
+            return self.empty_result()
 
         signals = []
         scores = []
@@ -80,14 +77,3 @@ class ADXRegimeAnalyzer:
         for i in range(period + 1, len(values)):
             result[i] = (result[i - 1] * (period - 1) + values[i]) / period
         return result
-
-    def _ensure_cols(self, data: pd.DataFrame) -> pd.DataFrame:
-        df = data.copy()
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = [c[0].lower() for c in df.columns]
-        else:
-            df.columns = [c.lower() for c in df.columns]
-        return df
-
-    def _empty_result(self):
-        return {"signal": "WAIT", "score": 50, "reasoning": "insufficient_data", "details": {}}

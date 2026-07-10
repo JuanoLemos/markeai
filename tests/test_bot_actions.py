@@ -358,18 +358,20 @@ class TestDeepSeekFallback:
 # ═══════════════════════════════════════════════════════════════════
 
 class TestProfiles:
-    def test_normal_profile_sl_tp(self):
+    def test_normal_profile_sl_tp(self, tmp_path):
         from execution.paper_broker import PaperBroker
-        pb = PaperBroker(1000, state_path=str(Path(__file__).parent.parent / "data" / "cache" / "pb_test.json"))
+        # B-27: use tmp_path instead of real data/cache/ paths
+        pb = PaperBroker(1000, state_path=str(tmp_path / "pb_test.json"))
         pb.max_total_exposure_pct = 1.0
         trade = pb.open_position("forex", "EURUSD=X", "LONG", 1.10, 50, 2, 5)
         assert "error" not in trade
         assert trade["stop_loss_pct"] == 2
         assert trade["take_profit_pct"] == 5
 
-    def test_fast_profile_sl_tp(self):
+    def test_fast_profile_sl_tp(self, tmp_path):
         from execution.paper_broker import PaperBroker
-        pb = PaperBroker(1000, state_path=str(Path(__file__).parent.parent / "data" / "cache" / "pb_fast_test.json"))
+        # B-27: use tmp_path instead of real data/cache/ paths
+        pb = PaperBroker(1000, state_path=str(tmp_path / "pb_fast_test.json"))
         pb.max_total_exposure_pct = 1.0
         trade = pb.open_position("forex", "EURUSD=X", "LONG", 1.10, 50, 0.5, 1.5)
         assert "error" not in trade

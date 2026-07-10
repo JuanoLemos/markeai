@@ -64,10 +64,15 @@ class MarketAIOrchestrator:
     def setup_logging(self):
         log_level = getattr(logging, self.orchestrator_cfg.get("log_level", "INFO"))
         log_file = self.orchestrator_cfg.get("log_file", "orchestrator.log")
+        err_file = self.orchestrator_cfg.get("err_file", "orchestrator.err.log")
+        # B-Day4: separate ERROR+ handler to err_file for easier debugging
+        err_handler = logging.FileHandler(err_file)
+        err_handler.setLevel(logging.ERROR)
+        err_handler.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s"))
         logging.basicConfig(
             level=log_level,
             format="%(asctime)s [%(levelname)s] %(message)s",
-            handlers=[logging.FileHandler(log_file), logging.StreamHandler()],
+            handlers=[logging.FileHandler(log_file), err_handler, logging.StreamHandler()],
         )
         self.log = logging.getLogger(__name__)
 

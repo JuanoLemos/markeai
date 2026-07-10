@@ -1,16 +1,19 @@
-class OrderBookAnalyzer:
+from ._base import BaseAnalyzer
+
+
+class OrderBookAnalyzer(BaseAnalyzer):
     def analyze(self, order_book: dict) -> dict:
         if not order_book or "error" in order_book:
-            return self._empty_result()
+            return self.empty_result()
         bids = order_book.get("bids", [])
         asks = order_book.get("asks", [])
         if not bids or not asks:
-            return self._empty_result()
+            return self.empty_result()
         bid_volume = sum(float(b.get("size", 0)) for b in bids)
         ask_volume = sum(float(a.get("size", 0)) for a in asks)
         total_volume = bid_volume + ask_volume
         if total_volume == 0:
-            return self._empty_result()
+            return self.empty_result()
         imbalance = bid_volume / ask_volume if ask_volume > 0 else 999
         best_bid = float(bids[0].get("price", 0))
         best_ask = float(asks[0].get("price", 0))
@@ -65,5 +68,3 @@ class OrderBookAnalyzer:
             },
         }
 
-    def _empty_result(self):
-        return {"signal": "WAIT", "score": 50, "reasoning": "no_orderbook_data", "details": {}}

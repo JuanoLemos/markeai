@@ -1,7 +1,10 @@
-class SentimentAnalyzer:
+from ._base import BaseAnalyzer
+
+
+class SentimentAnalyzer(BaseAnalyzer):
     def analyze(self, news_data: dict, deepseek_analyze: bool = False) -> dict:
         if not news_data or news_data.get("count", 0) == 0:
-            return self._empty_result()
+            return self.empty_result()
         bullish_pct = news_data.get("bullish_pct", 0)
         bearish_pct = news_data.get("bearish_pct", 0)
         net_sentiment = bullish_pct - bearish_pct
@@ -35,5 +38,3 @@ class SentimentAnalyzer:
             },
         }
 
-    def _empty_result(self):
-        return {"signal": "WAIT", "score": 50, "reasoning": "no_news_data", "details": {}}

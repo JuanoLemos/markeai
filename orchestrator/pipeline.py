@@ -4,6 +4,7 @@ Iteration pipeline — run_iteration, _process_market, _analyze_*, _get_tickers,
 _snapshot_portfolio, check_stops_and_evolve. Extracted from orchestrator.py to
 keep the main class lean. All functions take the orchestrator instance as first arg.
 """
+import uuid
 from datetime import datetime, timezone
 from execution.entry_filters import session_hours, correlation_check
 
@@ -11,8 +12,10 @@ from execution.entry_filters import session_hours, correlation_check
 def run_iteration(orch):
     """One full iteration: process all enabled markets, snapshot portfolio."""
     orch._news_cache = {}
-    orch.log.info("=== Starting iteration ===")
-    orch._hb("loop", "ok", "Iniciando iteracion")
+    # B-Day4: request_id for tracing this iteration across logs
+    orch.request_id = f"iter-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
+    orch.log.info(f"=== Starting iteration [req_id={orch.request_id}] ===")
+    orch._hb("loop", "ok", f"Iteracion {orch.request_id}")
     try:
         for market, market_cfg in orch.markets_cfg.items():
             if not market_cfg.get("enabled", False):
