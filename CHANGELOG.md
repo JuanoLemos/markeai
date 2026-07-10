@@ -19,6 +19,46 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Fixed
 ### Security
 
+## [1.4.0] — 2026-07-10
+
+### Added — Ola 1: Estabilidad
+- **B-N1**: Crash recovery. `MarketAIOrchestrator._reconcile_db_with_brokers()` cierra trades zombis al boot
+- **B-N2**: Auto-reconciliación DB↔JSON. Schema migration defensivo (ALTER TABLE para `position_id` en DBs viejas)
+- **B-N3**: `check_stops_and_evolve()` ahora recolecta precios para AMBOS brokers (no solo el alias `paper_broker`)
+- **B-08**: `PaperBroker` acepta `default_sl_pct` y `default_tp_pct` desde config del profile
+- **B-09**: `correlation_check()` acepta `threshold` desde config (single source of truth)
+- **B-13**: `fused` se calcula UNA vez por mercado (no por ticker) — 7x speedup en stocks
+- **B-14**: `api_error(msg, code)` helper en `dashboard.py` para errores JSON consistentes
+- **B-15**: `api()` JS en `base.html` distingue errores HTTP (`_error`, `_status`, `_message`)
+- **B-16**: Verificado `sys.exit(0)` en `tray_app.do_exit()`
+- **B-23/24/25**: Refactor analyzers → `BaseAnalyzer` (empty_result, ensure_cols) + `analyzers/_utils.py` (silent_import). 9 analyzers heredan de BaseAnalyzer
+- **B-27**: `test_bot_actions.py:363,372` ahora usan `tmp_path` en vez de paths reales
+- **B-28**: Tests para analyzers en pipeline activo
+- **B-29**: Tests de integración del orchestrator
+- **`orchestrator/` package**: split de `orchestrator.py` (35KB, 712 líneas) en 4 archivos: `core.py`, `pipeline.py`, `replay.py`, `__init__.py`. Entry point `orchestrator.py` (1.5KB) solo CLI
+- **Logging**: `request_id` por iteración (formato `iter-YYYYMMDDHHMMSS-XXXXXX`), `orchestrator.err.log` separado para ERROR+
+- **Tests**: 98 → 143 tests (+45)
+- **`scripts/close_zombies.py`**: one-shot para cerrar trades zombis del crash del 01/06 (32 trades)
+- **R80**: `doc/arch/r80_trading_ai_repos.md` — investigación de 6 repos top trading AI
+- **`doc/guias/guia_arquitectura_ola1.md`**: guía de la nueva arquitectura
+- **`doc/mecanicas/MECANICA-RECOVERY.md`**: mecánica de auto-reconciliación
+
+### Changed
+- `README.md`: tests 95 → 143, mención del split de orchestrator y BaseAnalyzer
+- `orchestrator.py` (raíz) ahora es solo entry-point; la lógica vive en `orchestrator/`
+- `orchestrator/{core,pipeline,replay}.py`: mejor organización, sin lógica duplicada
+
+### Fixed
+- B-13 (real): Fused recalculado por cada ticker dentro del mismo mercado (7x speedup)
+- Drift DB↔JSON: 32 trades zombis del crash del 01/06 marcados como `lost_recovery`
+
+### Deprecated
+- `paper_broker_state.json` (legacy singular) — sistema usa `pb_normal.json` + `pb_fast.json`
+
+### Removed
+- 8 archivos `.bak_*` sueltos (trashados en Ola 0)
+- Carpeta `.bak_2026-05-05/` (trashada en Ola 0)
+
 ## [1.3.0] — 2026-06-01
 
 ### Added

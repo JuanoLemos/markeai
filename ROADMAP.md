@@ -132,6 +132,11 @@ Sistema de Trading Multi-Capa con DeepSeek AI.
 | ID | Item | Prioridad | Estado | Depende de |
 |----|------|-----------|--------|------------|
 | R38 | Paper trading 2-4 semanas (validación) | P1 | 🔄 | R31 |
+| R80 | Informe repos trading — investigación de técnicas AI en GitHub | P2 | ✅ | — |
+| R81 | Split orchestrator.py → orchestrator/ package (core/pipeline/replay) | P1 | ✅ | — |
+| R82 | Crash recovery auto-reconciliación DB↔JSON al boot (B-N1/N2/N3) | P1 | ✅ | — |
+| R83 | Refactor analyzers → BaseAnalyzer + _utils (B-23/24/25) | P2 | ✅ | — |
+| R84 | request_id por iteración + orchestrator.err.log separado | P2 | ✅ | — |
 | R39 | Micro-montos reales ($10-50 por operación) | P1 | ⏳ | R38 |
 | R40 | Monitoreo diario con ajustes manuales | P1 | ⏳ | R39 |
 | R41 | Estrategia madura → capital progresivo | P2 | ⏳ | R40 |
