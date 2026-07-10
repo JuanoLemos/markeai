@@ -21,6 +21,14 @@ class Database:
 
     def _init_db(self):
         conn = self._get_conn()
+        # B-N2: defensive ALTER for existing DBs that predate position_id column
+        cols = [r[1] for r in conn.execute("PRAGMA table_info(trades)").fetchall()]
+        if "position_id" not in cols:
+            try:
+                conn.execute("ALTER TABLE trades ADD COLUMN position_id TEXT")
+                conn.execute("CREATE INDEX IF NOT EXISTS idx_trades_position_id ON trades(position_id)")
+            except Exception:
+                pass
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS trades (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,8 +48,10 @@ class Database:
                 pnl_pct REAL,
                 status TEXT NOT NULL DEFAULT 'open' CHECK(status IN ('open','closed','cancelled')),
                 confidence INTEGER,
-                strategy_used TEXT
+                strategy_used TEXT,
+                position_id TEXT
             );
+            CREATE INDEX IF NOT EXISTS idx_trades_position_id ON trades(position_id);
 
             CREATE TABLE IF NOT EXISTS signals (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,17 +131,29 @@ class Database:
         conn = self._get_conn()
         cursor = conn.execute("""
             INSERT INTO trades (market, ticker, signal, entry_price, position_size_usd,
-                                stop_loss, take_profit, take_profit2, confidence, strategy_used)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                stop_loss, take_profit, take_profit2, confidence, strategy_used, position_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             trade["market"], trade["ticker"], trade["signal"], trade["entry_price"],
             trade["position_size_usd"], trade.get("stop_loss"), trade.get("take_profit"),
             trade.get("take_profit2"), trade.get("confidence"), trade.get("strategy_used"),
+            trade.get("position_id"),
         ))
         conn.commit()
         trade_id = cursor.lastrowid
         conn.close()
         return trade_id
+
+    def mark_lost_recovery(self, trade_id: int, exit_time_iso: str):
+        """B-N2: mark a trade as 'lost_recovery' (closed but PnL unknown)."""
+        conn = self._get_conn()
+        conn.execute("""
+            UPDATE trades SET status='closed', exit_time=?, exit_reason='lost_recovery',
+                              pnl_usd=NULL, pnl_pct=NULL
+            WHERE id=?
+        """, (exit_time_iso, trade_id))
+        conn.commit()
+        conn.close()
 
     def close_trade(self, trade_id: int, exit_price: float, exit_reason: str, pnl_usd: float, pnl_pct: float):
         conn = self._get_conn()
