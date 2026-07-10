@@ -83,15 +83,16 @@ def session_hours(market: str, utc_hour: int = None, profile: str = "normal", ti
     return True
 
 
-def correlation_check(open_positions: list, new_market: str, new_ticker: str, new_signal: str) -> bool:
+def correlation_check(open_positions: list, new_market: str, new_ticker: str, new_signal: str, threshold: float = 0.80) -> bool:
     """Verifica que la nueva posición no esté correlacionada con posiciones abiertas.
-    
+
     Args:
         open_positions: lista de dicts con market, ticker, signal
         new_market: mercado de la nueva posición
         new_ticker: ticker de la nueva posición
         new_signal: 'LONG' o 'SHORT'
-    
+        threshold: B-09: correlation threshold (default 0.80; pass config.risk.correlation_threshold)
+
     Returns:
         True si la nueva posición es aceptable (pasa el filtro)
         False si está bloqueada por correlación
@@ -106,6 +107,6 @@ def correlation_check(open_positions: list, new_market: str, new_ticker: str, ne
         if pos["ticker"] == new_ticker:
             continue
         pair_corr = corr_map.get(pos["ticker"], {}).get(new_ticker, 0)
-        if abs(pair_corr) >= 0.80:
+        if abs(pair_corr) >= threshold:
             return False
     return True

@@ -156,12 +156,13 @@
 
 | Campo | Detalle |
 |-------|---------|
-| **Archivo** | `orchestrator.py:174` |
+| **Archivo** | `orchestrator.py:174` → `orchestrator/pipeline.py` |
 | **Severidad** | P2 — Rendimiento |
 | **Descripción** | `fused = self.fusion.fuse(layer_results, market)` se ejecuta dentro del loop `for ticker in target_tickers`. La fusión solo depende de `layer_results` y `market`, constantes dentro del loop. Para 7 tickers de stocks, se recalcula 7 veces idéntico. |
 | **Causa** | `fused` debería calcularse una vez antes del loop de tickers. |
 | **Impacto** | 7x llamadas innecesarias a `FusionEngine.fuse()` por iteración del mercado stocks. |
-| **Estado** | Abierto |
+| **Estado** | Resuelto (Ola 1 split) |
+| **Fix** | `orchestrator/pipeline.py` — `fused = orch.fusion_engine.fuse(layer_results, market)` movido fuera del loop de tickers en `_process_market()`. Se calcula una vez por mercado. |
 
 ### B-14 — Formatos de error inconsistentes entre endpoints
 
@@ -192,7 +193,8 @@
 | **Descripción** | `os._exit(0)` mata el proceso sin ejecutar `atexit`, `__del__`, o `finally`. Archivos sin flush, DB sin cerrar correctamente. |
 | **Causa** | Debería usar `sys.exit(0)` después de detener servicios limpiamente. |
 | **Impacto** | Posible corrupción de SQLite WAL o pérdida de últimas escrituras al salir. |
-| **Estado** | Abierto |
+| **Estado** | Resuelto (verificado en Ola 1 — ya usa `sys.exit(0)`) |
+| **Fix** | `tray_app.py:110` — `do_exit()` ya usa `sys.exit(0)` (anteriormente el bug era `os._exit(0)`). CHANGELOG v1.3.0 documentó el fix; tracker quedó stale. |
 
 ---
 

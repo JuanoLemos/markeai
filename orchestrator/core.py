@@ -96,9 +96,12 @@ class MarketAIOrchestrator:
         self.paper_brokers = {}
         self.profiles_config = self.config.get("profiles", {"normal": {"label":"Normal","sl_min_pct":1,"sl_max_pct":5,"tp_min_pct":2,"tp_max_pct":10}})
         for prof_name, prof_cfg in self.profiles_config.items():
+            # B-08: pull SL/TP defaults from this profile's config
             pb = PaperBroker(
                 initial_balance=1000,
                 state_path=str(Path(__file__).parent.parent / "data" / "cache" / f"pb_{prof_name}.json"),
+                default_sl_pct=prof_cfg.get("sl_default", 5.0),
+                default_tp_pct=prof_cfg.get("tp_default", 10.0),
             )
             pb.set_time_exit_config(self.config.get("risk", {}).get("time_exit", {}))
             pb.max_total_exposure_pct = self.config["risk"].get("max_total_exposure_pct", 0.40)

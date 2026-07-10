@@ -75,6 +75,12 @@ def create_app():
 
     # ─── API routes ──────────────────────────────────────
 
+    def api_error(msg: str, code: int = 400):
+        """B-14: standardized JSON error response. Replaces inconsistent formats."""
+        resp = jsonify({"ok": False, "error": msg})
+        resp.status_code = code
+        return resp
+
     @app.route("/api/status")
     def api_status():
         try:

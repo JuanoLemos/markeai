@@ -58,10 +58,10 @@ def _process_market(orch, market: str, market_cfg: dict):
     target_tickers = _get_tickers(market, market_cfg)
     if market == "polymarket" and market_data.get("slug"):
         target_tickers = [market_data["slug"]]
+    # B-13 fix: fuse once per market, not per ticker
+    fused = orch.fusion_engine.fuse(layer_results, market)
     for ticker in target_tickers:
         orch.log.info(f"  Analyzing {ticker}...")
-        # B-13 fix: fuse once per market, not per ticker
-        fused = orch.fusion_engine.fuse(layer_results, market)
         orch._hb("fusion", "ok", f"{market} {ticker}: {fused['signal']} score={fused['score']}")
         layers_with_score = {**fused.get("layer_scores", {}), "_fused_score": fused.get("score", 50)}
         orch.db.insert_signal({
@@ -106,7 +106,8 @@ def _process_market(orch, market: str, market_cfg: dict):
                     orch.log.info(f"  {prof_name} session blocked at hour {hour}")
                     continue
                 if prof_cfg.get("correlation_filter") and pb and pb.get_positions():
-                    if not correlation_check(pb.get_positions(), market, ticker, decision.get("signal", "LONG")):
+                    if not correlation_check(pb.get_positions(), market, ticker, decision.get("signal", "LONG"),
+                                            threshold=orch.config.get("risk", {}).get("correlation_threshold", 0.80)):
                         orch.log.info(f"  {prof_name} correlation blocked")
                         continue
                 if kelly <= 0 and orch.risk_engine.trade_history:

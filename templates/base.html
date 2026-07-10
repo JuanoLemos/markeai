@@ -71,9 +71,16 @@
 async function api(url, opts) {
   try {
     const r = await fetch(url, opts);
-    if (!r.ok) return {};
+    if (!r.ok) {
+      // B-15: distinguish HTTP errors from empty data
+      let body = null;
+      try { body = await r.json(); } catch (_) {}
+      return { _error: true, _status: r.status, _message: body?.error || r.statusText || 'HTTP error' };
+    }
     return r.json();
-  } catch { return {}; }
+  } catch (e) {
+    return { _error: true, _status: 0, _message: e?.message || 'network error' };
+  }
 }
 
 /* ── Layer labels ── */

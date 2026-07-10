@@ -7,13 +7,17 @@ import numpy as np
 
 
 class PaperBroker:
-    def __init__(self, initial_balance: float = 1000.0, slippage_pct: float = 0.001, commission_pct: float = 0.001, state_path: str = None):
+    def __init__(self, initial_balance: float = 1000.0, slippage_pct: float = 0.001, commission_pct: float = 0.001, state_path: str = None,
+                 default_sl_pct: float = 5.0, default_tp_pct: float = 10.0):
         self.initial_balance = initial_balance
         self.balance = initial_balance
         self.slippage_pct = slippage_pct
         self.commission_pct = commission_pct
         self.max_total_exposure_pct = 0.40
         self.time_exit_config = None
+        # B-08: configurable defaults from config.yaml profiles
+        self.default_sl_pct = default_sl_pct
+        self.default_tp_pct = default_tp_pct
         self.positions = {}
         self.trade_log = []
         self.daily_pnl = 0.0
@@ -65,8 +69,13 @@ class PaperBroker:
         return True, "ok"
 
     def open_position(self, market: str, ticker: str, signal: str, entry_price: float, size_usd: float,
-                      stop_loss_pct: float = 5.0, take_profit_pct: float = 10.0, confidence: int = 50,
+                      stop_loss_pct: float = None, take_profit_pct: float = None, confidence: int = 50,
                       strategy_used: str = "") -> Optional[dict]:
+        # B-08: use configurable defaults if not provided
+        if stop_loss_pct is None:
+            stop_loss_pct = self.default_sl_pct
+        if take_profit_pct is None:
+            take_profit_pct = self.default_tp_pct
         can_open, reason = self.can_open_position()
         if not can_open:
             return {"error": reason}
