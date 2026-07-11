@@ -37,6 +37,7 @@ from learning.journal import TradeJournal
 from learning.strategy_evolver import StrategyEvolver
 from alerts.notifier import Notifier
 from execution.risk_engine import RiskEngine
+from execution.risk_gates import RiskGateManager
 
 # Local pipeline/replay modules
 from . import pipeline as _pipeline
@@ -49,6 +50,32 @@ CONFIG_PATH = Path(__file__).parent.parent / "config.yaml"
 def load_config() -> dict:
     with open(CONFIG_PATH, encoding="utf-8") as f:
         return yaml.safe_load(f)
+
+
+def _load_sectors_file(path: str) -> dict:
+    """Load config/sectors.yaml and return a flat {symbol -> sector_name} map."""
+    p = Path(path)
+    if not p.is_absolute():
+        p = Path(__file__).parent.parent / path
+    if not p.exists():
+        return {}
+    with open(p, encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+    out = {}
+    for sector, symbols in data.items():
+        if not isinstance(symbols, list):
+            continue
+        for s in symbols:
+            if isinstance(s, str):
+                out[s] = sector
+    return out
+
+
+def _build_sector_caps(sector_cfg: dict) -> dict:
+    """Return {sector_name -> cap_pct} from config risk_gates.sector_cap."""
+    if not sector_cfg or not sector_cfg.get("enabled", False):
+        return {}
+    return dict(sector_cfg.get("sector_overrides", {}) or {})
 
 
 class MarketAIOrchestrator:
@@ -124,8 +151,72 @@ class MarketAIOrchestrator:
         self.adx_analyzer = ADXRegimeAnalyzer()
         self._news_cache = {}
 
+        # Issue 2: pre-trade risk gates (5 hard rules, cascade)
+        # Sector map loaded from config/sectors.yaml; sector caps from risk_gates.sector_cap.
+        # Correlation matrix is empty at boot — populated lazily by
+        # compute_correlation_matrix() once per cycle (T-1 data, no look-ahead).
+        rg_cfg = self.config.get("risk_gates", {})
+        self._sector_map = _load_sectors_file(rg_cfg.get("sectors_file", "config/sectors.yaml"))
+        self._sector_caps = _build_sector_caps(rg_cfg.get("sector_cap", {}))
+        self._correlation_matrix = {}
+        self.risk_gate_manager = RiskGateManager(
+            config=rg_cfg,
+            sector_map=self._sector_map,
+            sector_caps=self._sector_caps,
+            correlation_matrix=self._correlation_matrix,
+            log=self.log,
+        )
+
         # B-N2: reconcile DB with broker JSON state at boot
         self._reconcile_db_with_brokers()
+
+    def compute_correlation_matrix(self) -> dict:
+        """
+        Compute the (sym_a, sym_b) -> correlation matrix for the universe
+        using T-1 daily returns (no look-ahead). Persists in-memory; the
+        caller decides when to refresh (typically once per cycle, before
+        the cascade is invoked).
+
+        Returns: dict {(sym_a, sym_b): float in [-1, 1]}, symmetric.
+        """
+        rg_cfg = self.config.get("risk_gates", {})
+        lookback = int(rg_cfg.get("correlation", {}).get("matrix_lookback_days", 60))
+        universe = set()
+        for m, cfg in self.markets_cfg.items():
+            if m == "polymarket":
+                continue
+            for t in cfg.get("tickers", []) + cfg.get("pairs", []):
+                universe.add(t)
+        if not universe:
+            self._correlation_matrix = {}
+            self.risk_gate_manager.set_correlation_matrix({})
+            return {}
+        # Pull daily closes
+        try:
+            closes = {}
+            for sym in universe:
+                df = self.yf_collector.get_historical(sym, f"{lookback}d", "1d")
+                if df is None or df.empty or "close" not in df.columns:
+                    continue
+                closes[sym] = df["close"].pct_change().dropna()
+        except Exception as e:
+            self.log.warning(f"compute_correlation_matrix: yfinance pull failed: {e}")
+            return self._correlation_matrix or {}
+        # Build matrix
+        symbols = list(closes.keys())
+        matrix = {}
+        for i, a in enumerate(symbols):
+            for b in symbols[i + 1:]:
+                s1, s2 = closes[a], closes[b]
+                joined = s1.align(s2, join="inner")
+                if len(joined) < 20:  # need at least 20 aligned obs
+                    continue
+                corr = float(joined.corr())
+                matrix[(a, b)] = corr
+                matrix[(b, a)] = corr
+        self._correlation_matrix = matrix
+        self.risk_gate_manager.set_correlation_matrix(matrix)
+        return matrix
 
     def _reconcile_db_with_brokers(self):
         """

@@ -1,0 +1,71 @@
+# MarketAI — Sector Mapping (manual)
+#
+# Each ticker is mapped to ONE sector. This is the SINGLE SOURCE OF TRUTH
+# for the Sector Cap gate (R1). Edit this file (no code change needed)
+# when adding tickers to the universe.
+#
+# Sectors and their cap percentages (used by R1) live in config.yaml
+# under risk_gates.sector_cap.sector_overrides.
+#
+# Spec: scratchpad v1.1 — section 1 (R1), section 4 (YAML), section 7 (decision #4).
+
+us_mega_cap_tech:
+  - AAPL
+  - MSFT
+  - GOOGL
+  - AMZN
+  - NVDA
+  - META
+  - TSLA
+
+us_broad_market:
+  - SPY
+  - IVV
+  - QQQ
+  - IWM
+  - VTI
+  - VFIAX
+  - FXAIX
+
+us_sector_etf:
+  - XLK
+  - XLF
+  - XLE
+  - XLV
+  - XLY
+  - XLP
+  - XLI
+  - XLU
+  - XLB
+  - XLRE
+  - XLC
+
+emerging_markets:
+  - EEM
+  - VWO
+  - IEMG
+
+cash_equivalent:
+  - SHY
+  - BIL
+  - SHV
+  - SGOV
+
+# CEDEARs (Argentine brokers) — classified by their underlying sector.
+ar_mega_cap_tech:
+  - AAPL.BA
+  - MSFT.BA
+  - GOOGL.BA
+  - AMZN.BA
+
+ar_consumer:
+  - KO.BA
+  - WMT.BA
+
+ar_financial:
+  - GGAL.BA
+  - VIST.BA
+
+# Tickers NOT in any list above fall to the "unknown_sector_threshold_pct"
+# in config.yaml (default 15% — conservative). They are flagged for
+# manual review but the bot does not refuse to trade them outright.

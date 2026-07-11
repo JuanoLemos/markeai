@@ -6,7 +6,7 @@ keep the main class lean. All functions take the orchestrator instance as first 
 """
 import uuid
 from datetime import datetime, timezone
-from execution.entry_filters import session_hours, correlation_check
+from execution.entry_filters import session_hours
 
 
 def run_iteration(orch):
@@ -16,6 +16,13 @@ def run_iteration(orch):
     orch.request_id = f"iter-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:6]}"
     orch.log.info(f"=== Starting iteration [req_id={orch.request_id}] ===")
     orch._hb("loop", "ok", f"Iteracion {orch.request_id}")
+    # Issue 2: refresh correlation matrix once per iteration (T-1 data).
+    # If yfinance is down or the universe is empty, the matrix stays empty
+    # and R2 will return PASS (no positions to correlate against) — safe.
+    try:
+        orch.compute_correlation_matrix()
+    except Exception as e:
+        orch.log.warning(f"compute_correlation_matrix failed: {e} — R2 will use empty matrix")
     try:
         for market, market_cfg in orch.markets_cfg.items():
             if not market_cfg.get("enabled", False):
@@ -143,13 +150,39 @@ def _process_market(orch, market: str, market_cfg: dict):
                     orch.log.info(f"  {prof_name} session blocked at hour {hour}")
                     continue
                 if prof_cfg.get("correlation_filter") and pb and pb.get_positions():
-                    if not correlation_check(pb.get_positions(), market, ticker, decision.get("signal", "LONG"),
-                                            threshold=orch.config.get("risk", {}).get("correlation_threshold", 0.80)):
-                        orch.log.info(f"  {prof_name} correlation blocked")
-                        continue
+                    # Note: the old inline correlation_check is REMOVED.
+                    # The new R2 pre-trade correlation gate (in
+                    # orch.risk_gate_manager) absorbs this logic and adds
+                    # cluster detection. See execution/risk_gates/correlation.py
+                    # and the spec in scratchpad v1.1 (sección 1 R2, sección 7 #3).
+                    pass
                 if kelly <= 0 and orch.risk_engine.trade_history:
                     orch.log.info(f"  {prof_name} blocked: Kelly={kelly:.2f}")
                     continue
+
+                # --- Issue 2: 5-gate pre-trade risk cascade (R4 -> R5 -> R1 -> R2 -> R3) ---
+                # Runs AFTER all profile-level filters (confidence, confluence,
+                # ADX, session, kelly, circuit_breakers) but BEFORE the order
+                # is sent to the broker. If any gate REJECTs, the trade is skipped.
+                candidate_size = decision.get("position_size_usd") or market_cfg.get("max_position_usd", 50)
+                gate_candidate = {
+                    "symbol": ticker,
+                    "market": market,
+                    "signal": decision.get("signal", "LONG"),
+                    "size_usd": float(candidate_size),
+                }
+                gate_context = {
+                    "positions": {p.get("id") or p.get("ticker"): p for p in pb.get_positions()},
+                    "equity": float(pb.balance),
+                }
+                gate_result = orch.risk_gate_manager.evaluate(gate_candidate, gate_context)
+                if not gate_result.passed:
+                    orch.log.warning(
+                        f"  {prof_name} REJECTED by {gate_result.gate_id}: {gate_result.reason} "
+                        f"symbol={ticker} (see details in [RISK.GATE] log above)"
+                    )
+                    continue
+                # --- end 5-gate cascade ---
                 trade = None
                 sp, tp = 5.0, 10.0  # fallback SL/TP if not set later
                 if exec_mode == "real":

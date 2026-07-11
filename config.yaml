@@ -169,6 +169,40 @@ profiles:
 risk:
   correlation_threshold: 0.85
   max_daily_loss_pct: 0.1
+risk_gates:
+  # Pre-trade risk gates (Issue 2 spec v1.1). The 5 gates are evaluated
+  # in cascade (R4 -> R5 -> R1 -> R2 -> R3) before every order. If any
+  # gate REJECTs, the order is NOT sent to the broker.
+  max_open_positions:
+    enabled: true
+    threshold: 12
+  max_position_size:
+    enabled: true
+    threshold_pct: 0.08
+  sector_cap:
+    enabled: true
+    default_threshold_pct: 0.30
+    # Per-sector caps. Tickers in config/sectors.yaml map to these sectors.
+    sector_overrides:
+      us_mega_cap_tech: 0.30
+      us_broad_market: 0.30
+      us_sector_etf: 0.20
+      emerging_markets: 0.15
+      cash_equivalent: 1.00   # sin cap (es caja)
+      ar_mega_cap_tech: 0.30
+      ar_consumer: 0.20
+      ar_financial: 0.20
+    unknown_sector_threshold_pct: 0.15   # conservador para tickers no clasificados
+  correlation:
+    enabled: true
+    threshold: 0.70
+    cluster_threshold: 0.60
+    cluster_min_count: 3
+    matrix_lookback_days: 60
+  effective_n:
+    enabled: true   # GATE desde fase 1 (decision del usuario)
+    min_effective_n: 4
+  sectors_file: config/sectors.yaml
 time_exit:
   default:
     base_hours: 72
