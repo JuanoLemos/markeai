@@ -2,665 +2,279 @@
 {% block title %}Inicio{% endblock %}
 {% block content %}
 
-<!-- Page header -->
-<div class="ph">
-  <div class="ph-left">
-    <div class="ph-title">🏠 ¿Cómo está tu bot hoy?</div>
-    <div class="ph-sub">Resumen en tiempo real de tus operaciones automáticas</div>
+<!-- ─── P&L del día (HOY) ─────────────────────────────── -->
+<div class="card" id="card-hoy">
+  <div class="card-label">
+    <span>Hoy</span>
+    <span class="since" id="hoy-range">—</span>
   </div>
-  <div class="ph-actions">
-    <span class="since-stamp" id="since-stamp" data-tip="Fecha del primer trade o señal — desde entonces se calcula todo el P&L">
-      <span>desde</span><strong id="since-date">—</strong>
-    </span>
-    <div class="flex gap-1" style="font-size:13px;color:var(--ink-2)">
-      <span class="sb-dot" id="page-dot"></span>
-      <span id="page-status-txt">Verificando…</span>
+  <div class="pnl-big" id="pnl-hoy">—</div>
+  <div class="pnl-disclaimer">incluye no realizado · no es plata cerrada</div>
+
+  <div class="metrics-row">
+    <div class="metric">
+      <div class="k">Realizado</div>
+      <div class="v" id="pnl-realizado">—</div>
+    </div>
+    <div class="metric">
+      <div class="k">No realizado</div>
+      <div class="v" id="pnl-unrealized">—</div>
     </div>
   </div>
-</div>
 
-<!-- Daily brief -->
-<div id="brief-box"></div>
+  <div class="spark">
+    <svg id="spark-hoy" viewBox="0 0 320 48" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="gHoy" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#8a9b6a" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#8a9b6a" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </div>
 
-<!-- P&L TRIO (Fase 1) — Hoy / Realizado / No realizado -->
-<div class="pnl-trio" id="pnl-trio">
-  <div class="pnl-card">
-    <div class="pnl-icon">📅</div>
-    <div class="pnl-label">Hoy</div>
-    <div class="pnl-value neut" id="pnl-hoy">—</div>
-    <div class="pnl-sub" id="pnl-hoy-sub">Cargando…</div>
-  </div>
-  <div class="pnl-card featured">
-    <div class="pnl-icon">🏆</div>
-    <div class="pnl-label">Realizado</div>
-    <div class="pnl-value" id="pnl-realizado">—</div>
-    <div class="pnl-sub" id="pnl-realizado-sub">Cargando…</div>
-  </div>
-  <div class="pnl-card">
-    <div class="pnl-icon">⏳</div>
-    <div class="pnl-label">No realizado</div>
-    <div class="pnl-value neut" id="pnl-unrealized">—</div>
-    <div class="pnl-sub" id="pnl-unrealized-sub">Cargando…</div>
+  <div class="tap" onclick="window.location='/trades'">
+    <span>Ver operaciones abiertas</span>
+    <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
   </div>
 </div>
 
-<!-- Motors -->
-<div class="section">
-  <div class="section-h"><h2>🔧 StatusMarketAi</h2></div>
-  <div class="motor-grid" id="motor-grid">
-    <div class="load-center"><div class="spinner"></div></div>
+<!-- ─── Posición destacada ─────────────────────────────── -->
+<div class="card" id="card-position">
+  <div class="card-label">
+    <span id="pos-counter">Posición abierta</span>
+    <span class="since" id="pos-page">—</span>
+  </div>
+  <div id="pos-body">
+    <div class="pos-empty">Cargando…</div>
+  </div>
+  <div class="tap" onclick="window.location='/trades'">
+    <span id="pos-cta">Ver todas las posiciones</span>
+    <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
   </div>
 </div>
 
-<!-- Hero KPIs -->
-<div class="kpi-grid" id="hero-kpis"></div>
-
-<!-- Equity curve -->
-<div class="section">
-  <div class="section-h">
-    <div>
-      <h2>📉 Curva de capital</h2>
-      <div class="section-desc">Cómo evoluciona tu dinero con el tiempo</div>
-    </div>
-    <div class="flex gap-1">
-      <button class="chip" onclick="setP('1d',this)">1 día</button>
-      <button class="chip" onclick="setP('7d',this)">7 días</button>
-      <button class="chip" onclick="setP('30d',this)">30 días</button>
-      <button class="chip on" onclick="setP('all',this)">Todo</button>
-      <span id="eq-chg" style="font-size:14px;font-weight:700;margin-left:8px"></span>
-    </div>
+<!-- ─── Gates mini ─────────────────────────────────────── -->
+<div class="card" id="card-gates">
+  <div class="card-label">
+    <span>Gates</span>
+    <span class="since">5 activos</span>
   </div>
-  <div class="panel" style="padding:16px;min-height:280px;position:relative">
-    <div class="chart-tip" id="eq-tip"></div>
-    <div id="eq-inner" class="load-center"><div class="spinner"></div></div>
+  <div class="gates-row" id="gates-row">
+    <div class="chip green"><span class="dot"></span>R1</div>
+    <div class="chip green"><span class="dot"></span>R2</div>
+    <div class="chip green"><span class="dot"></span>R3</div>
+    <div class="chip green"><span class="dot"></span>R4</div>
+    <div class="chip green"><span class="dot"></span>R5</div>
   </div>
-</div>
-
-<!-- Two-col: Normal/Fast -->
-<div class="section grid-2" id="profiles-grid">
-  <!-- filled by JS -->
-</div>
-
-<!-- Metrics row -->
-<div class="section">
-  <div class="section-h">
-    <div>
-      <h2>📊 Métricas del bot</h2>
-      <div class="section-desc">Indicadores para evaluar si el bot está funcionando bien</div>
-    </div>
+  <div class="gates-meta">
+    <span>Últimas 24h</span>
+    <span><span id="gates-count">0</span> rechazos <span class="badge" id="gates-badge-inline" style="display:none">0</span></span>
   </div>
-  <div class="kpi-grid" id="ext-kpis"></div>
-</div>
-
-<!-- Two-col: Funnel + Risk -->
-<div class="section grid-2">
-  <div>
-    <div class="section-h"><h2>🔽 Embudo de decisión</h2></div>
-    <div class="explain">De cada señal analizada, solo algunas pasan el filtro y se ejecutan como operación real.</div>
-    <div class="funnel" id="funnel"></div>
-  </div>
-  <div>
-    <div class="section-h"><h2>⚠️ Riesgo actual</h2></div>
-    <div class="explain">Si todos los <strong>stop-loss</strong> se activan ahora, ¿cuánto perderías?</div>
-    <div id="risk-box"></div>
+  <div class="tap" onclick="window.location='/gates'">
+    <span>Ver feed de rechazos</span>
+    <svg class="arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
   </div>
 </div>
 
-<!-- Projection -->
-<div class="section">
-  <div class="section-h">
-    <div>
-      <h2>🚀 Proyección & rachas</h2>
-      <div class="section-desc">Al ritmo actual, ¿qué tan lejos puede llegar?</div>
-    </div>
+<!-- ─── Equity total ───────────────────────────────────── -->
+<div class="card" id="card-equity">
+  <div class="card-label">
+    <span>Equity total</span>
   </div>
-  <div class="kpi-grid" id="proj-kpis"></div>
-  <div id="proj-bars" style="margin-top:10px"></div>
-</div>
-
-<!-- By market -->
-<div class="section">
-  <div class="section-h">
-    <h2>🌐 Resultados por mercado</h2>
-  </div>
-  <div class="panel">
-    <table id="mkt-table"><tr><td colspan="5"><div class="load-center"><div class="spinner"></div></div></td></tr></table>
-  </div>
-</div>
-
-<!-- APIs + Positions -->
-<div class="section grid-2">
-  <div>
-    <div class="section-h"><h2>🔌 Estado de conexiones</h2></div>
-    <div class="panel">
-      <div class="panel-body" id="health-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:10px"></div>
-    </div>
-  </div>
-  <div>
-    <div class="section-h">
-      <h2>📂 Operaciones abiertas</h2>
-      <a href="/trades" class="see-all">Ver todas →</a>
-    </div>
-    <div class="panel">
-      <table id="pos-table"><tr><td colspan="6"><div class="load-center"><div class="spinner"></div></div></td></tr></table>
-    </div>
-  </div>
-</div>
-
-<!-- Last signals -->
-<div class="section">
-  <div class="section-h">
-    <h2>⚡ Últimas señales</h2>
-    <a href="/signals" class="see-all">Ver todas →</a>
-  </div>
-  <div class="panel">
-    <table id="sig-table"><tr><td colspan="5"><div class="load-center"><div class="spinner"></div></div></td></tr></table>
+  <div class="equity-num"><span id="equity-num">—</span><span class="since" id="equity-since">—</span></div>
+  <div class="spark">
+    <svg id="spark-equity" viewBox="0 0 320 48" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="gEq" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#8b9dc3" stop-opacity="0.30"/>
+          <stop offset="100%" stop-color="#8b9dc3" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+    </svg>
   </div>
 </div>
 
 {% endblock %}
 {% block scripts %}
 <script>
-/* ─ helpers ─ */
-function kpiCard(label, value, sub, mod, tip) {
-  const tipAttr = tip ? `data-tip="${tip}"` : '';
-  return `<div class="kpi kpi-${mod||'info'}" ${tipAttr}>
-    <div class="kpi-label">${label} ${tip?'<span class="hint">?</span>':''}</div>
-    <div class="kpi-value ${mod==='pos'?'pos':mod==='neg'?'neg':mod==='warn'?'warn':''}">${value}</div>
-    ${sub?`<div class="kpi-sub">${sub}</div>`:''}
-  </div>`;
-}
+const _fmt = (v) => `${v >= 0 ? '+' : '−'}$${Math.abs(v).toFixed(2)}`;
+const _cls = (v) => v > 0 ? 'profit' : v < 0 ? 'loss' : '';
+const _fmtUSD = (v) => `$${(v || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-/* ─ Status ─ */
-async function loadStatus() {
-  const s = await api('/api/status');
-  const on = s && s.running;
-  document.getElementById('page-dot').className = 'sb-dot' + (on?' on':'');
-  document.getElementById('page-status-txt').textContent = on ? 'Bot activo' : 'Bot detenido';
-  document.getElementById('page-status-txt').style.color = on ? 'var(--teal)' : 'var(--ink-2)';
-}
-
-/* ─ Brief ─ */
-async function loadBrief() {
-  const b = await api('/api/daily-brief');
-  if (!b.brief) return;
-  document.getElementById('brief-box').innerHTML = `
-    <div class="explain" style="margin-bottom:20px;border-left:3px solid var(--blue)">
-      <strong>📝 Resumen del día:</strong> ${b.brief}
-    </div>`;
-}
-
-/* ─ Motors ─ */
-async function loadMotors() {
-  const m = await api('/api/motors');
-  if (!m || !m.length) return;
-  const chips = m.map(mt => {
-    const st = mt.last_status || 'warn';
-    const icons = { ok:'🟢', warn:'⚠️', error:'🔴' };
-    const ago = mt.last_run ? timeAgo(mt.last_run) : 'nunca';
-    return `<div class="motor-chip motor-${st}" data-tip="${mt.last_message||''}">
-      <span class="motor-icon">${icons[st]||'⚪'}</span>
-      <div>
-        <div class="motor-name">${mt.label}</div>
-        <div class="motor-ago">${ago}</div>
-      </div>
-    </div>`;
-  }).join('');
-  document.getElementById('motor-grid').innerHTML = chips;
-}
-
-function timeAgo(iso) {
-  const sec = (Date.now() - new Date(iso+'Z').getTime()) / 1000;
-  if (sec < 60) return 'hace unos segundos';
-  if (sec < 3600) return `hace ${Math.floor(sec/60)}min`;
-  if (sec < 86400) return `hace ${Math.floor(sec/3600)}h`;
-  return `hace ${Math.floor(sec/86400)}d`;
-}
-
-/* ─ P&L TRIO (Fase 1) — Hoy / Realizado / No realizado ─ */
-async function loadPnlTrio() {
+/* ─── HOY: P&L del día + Realizado + No realizado ─── */
+async function loadHoy() {
   const d = await api('/api/overview/pnl');
-  if (d._error) {
-    document.getElementById('pnl-hoy').textContent = '—';
-    document.getElementById('pnl-realizado').textContent = '—';
-    document.getElementById('pnl-unrealized').textContent = '—';
-    return;
-  }
-  const sign = v => v >= 0 ? '+' : '−';
-  const cls = v => v > 0 ? 'pos' : v < 0 ? 'neg' : 'neut';
-  const fmt = v => `${sign(v)}$${Math.abs(v).toFixed(2)}`;
+  if (d._error) return;
 
-  // Hoy
+  // HOY (suma realizado_hoy + no_realizado)
+  const hoy = d.hoy + (d.no_realizado || 0);
   const elHoy = document.getElementById('pnl-hoy');
-  elHoy.textContent = fmt(d.hoy);
-  elHoy.className = 'pnl-value ' + cls(d.hoy);
-  document.getElementById('pnl-hoy-sub').textContent =
-    d.hoy_count > 0
-      ? `${d.hoy_count} trade${d.hoy_count===1?'':'s'} cerrado${d.hoy_count===1?'':'s'} hoy`
-      : 'Sin cierres hoy';
+  elHoy.textContent = _fmt(hoy);
+  elHoy.className = 'pnl-big ' + _cls(hoy);
 
-  // Realizado (featured, central)
-  const elReal = document.getElementById('pnl-realizado');
-  elReal.textContent = fmt(d.realizado);
-  elReal.className = 'pnl-value ' + cls(d.realizado);
-  document.getElementById('pnl-realizado-sub').textContent =
-    `${d.total_trades} operación${d.total_trades===1?'':'es'} cerrada${d.total_trades===1?'':'s'} en total`;
+  // date range
+  const today = new Date();
+  const yyyy = today.getFullYear();
+  const mm = String(today.getMonth() + 1).padStart(2, '0');
+  const dd = String(today.getDate()).padStart(2, '0');
+  const start = new Date(today); start.setHours(9, 0, 0, 0);
+  const hh = String(start.getHours()).padStart(2, '0');
+  const min = String(start.getMinutes()).padStart(2, '0');
+  document.getElementById('hoy-range').textContent = `${yyyy}-${mm}-${dd} ${hh}:${min} → ahora`;
+
+  // Realizado
+  const elR = document.getElementById('pnl-realizado');
+  elR.textContent = _fmt(d.realizado || 0);
+  elR.className = 'v ' + _cls(d.realizado || 0);
 
   // No realizado
-  const elUnr = document.getElementById('pnl-unrealized');
-  elUnr.textContent = fmt(d.no_realizado);
-  elUnr.className = 'pnl-value ' + cls(d.no_realizado);
-  const openCnt = d.open_positions || 0;
-  document.getElementById('pnl-unrealized-sub').textContent =
-    openCnt > 0
-      ? `Mark-to-market de ${openCnt} posición${openCnt===1?'':'es'} abierta${openCnt===1?'':'s'}`
-      : 'Sin posiciones abiertas';
+  const elU = document.getElementById('pnl-unrealized');
+  elU.textContent = _fmt(d.no_realizado || 0);
+  elU.className = 'v ' + _cls(d.no_realizado || 0);
+
+  // Equity total (bal + unrealized)
+  document.getElementById('equity-num').textContent = _fmtUSD(d.equity);
+
+  // "desde" del equity
+  if (d.since) {
+    const dt = new Date(d.since.endsWith('Z') ? d.since : d.since + 'Z');
+    const sy = dt.getFullYear();
+    const sm = String(dt.getMonth() + 1).padStart(2, '0');
+    const sd = String(dt.getDate()).padStart(2, '0');
+    const sh = String(dt.getHours()).padStart(2, '0');
+    const smi = String(dt.getMinutes()).padStart(2, '0');
+    document.getElementById('equity-since').textContent = `desde ${sy}-${sm}-${sd} ${sh}:${smi}`;
+  } else {
+    document.getElementById('equity-since').textContent = '';
+  }
 }
 
-/* ─ "DESDE" TIMESTAMP (Fase 1) ─ */
-async function loadSinceStamp() {
-  const d = await api('/api/overview/pnl');
-  if (d._error || !d.since) {
-    document.getElementById('since-date').textContent = '—';
+/* ─── Posición destacada (la primera con mejor P&L) ─── */
+async function loadFeaturedPosition() {
+  const list = await api('/api/positions');
+  const counter = document.getElementById('pos-counter');
+  const body = document.getElementById('pos-body');
+  const cta = document.getElementById('pos-cta');
+  if (!list || !list.length) {
+    counter.textContent = 'Sin posiciones abiertas';
+    body.innerHTML = '<div class="pos-empty">No hay operaciones activas ahora mismo</div>';
+    cta.textContent = 'Ver historial';
     return;
   }
-  // Format: "15 jun 2026" (corto, en español)
-  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
-  const dt = new Date(d.since.endsWith('Z') ? d.since : d.since + 'Z');
-  const dd = String(dt.getDate()).padStart(2, '0');
-  const mm = meses[dt.getMonth()];
-  const yyyy = dt.getFullYear();
-  document.getElementById('since-date').textContent = `${dd} ${mm} ${yyyy}`;
-}
-
-/* ─ Hero KPIs ─ */
-async function loadHeroKpis() {
-  // Fase 1: el "P&L total" ya no vive en los hero KPIs — vive en el trio.
-  // El capital ahora usa "equity" (balance + no_realizado) para reflejar
-  // el valor real de la cuenta si cierro todo ahora.
-  const [s, p] = await Promise.all([api('/api/summary'), api('/api/overview/pnl')]);
-  let bal=0, equity=0, open=0, trades=0, wins=0, wr=0;
-  ['normal','fast'].forEach(n=>{
-    const d = s[n]||{};
-    bal   += d.balance||0;
-    open  += d.open_positions||0;
-    trades+= d.total_trades||0;
-    wins  += d.winning_trades||0;
-  });
-  if (trades) wr = (wins/trades*100).toFixed(1);
-  equity = p.equity || bal;
-  const pnl = equity - 2000; // vs 2x$1000 initial
-  const pnlPct = (pnl/2000*100).toFixed(1);
-  const pnlSign = pnl>=0?'+':'';
-  const posMark = p.no_realizado && Math.abs(p.no_realizado) > 0.01
-    ? `<span class="badge-change ${p.no_realizado>=0?'up':'down'}" data-tip="P&L no realizado de posiciones abiertas">${p.no_realizado>=0?'+':'−'}$${Math.abs(p.no_realizado).toFixed(2)} sin cerrar</span>`
-    : '';
-
-  document.getElementById('hero-kpis').innerHTML =
-    kpiCard('💰 Tu capital total', `$${equity.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`,
-      `<span class="badge-change ${pnl>=0?'up':'down'}">${pnlSign}${pnlPct}%</span> vs inicio ${posMark}`,
-      pnl>=0?'pos':'neg',
-      'Capital actual si cerrás todas las posiciones ahora (balance + no realizado)') +
-    kpiCard('🏆 Porcentaje de aciertos', `${wr}%`,
-      `${wins} éxitos de ${trades} operaciones`,
-      parseFloat(wr)>=50?'pos':'neg',
-      'De cada 10 operaciones, cuántas terminaron en ganancia') +
-    kpiCard('📂 Operaciones activas', `${open}`,
-      'El bot las está siguiendo ahora',
-      'info',
-      'Operaciones que el bot tiene abiertas en este momento');
-}
-
-/* ─ Profiles ─ */
-async function loadProfiles() {
-  const s = await api('/api/summary');
-  const cols = ['normal','fast'].map(n=>{
-    const d = s[n]||{};
-    const pnl = d.total_pnl||0;
-    const wr  = d.win_rate||0;
-    const colors = n==='normal' ? 'var(--teal)' : 'var(--blue)';
-    const icons  = n==='normal' ? '🟢' : '🔵';
-    return `<div class="panel">
-      <div class="panel-header">
-        <div class="panel-title">
-          <span>${icons}</span>
-          Perfil ${n==='normal'?'Normal':'Rápido'}
-          <span style="font-size:11px;font-weight:400;color:var(--ink-3);text-transform:uppercase;letter-spacing:.5px">${(d.mode||'paper').toUpperCase()}</span>
-        </div>
-      </div>
-      <div class="panel-body" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-        <div>
-          <div style="font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Capital</div>
-          <div style="font-size:24px;font-weight:700">$${(d.balance||1000).toLocaleString()}</div>
-          <div style="font-size:12px;color:var(--ink-3)">Base: $1,000</div>
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Ganancia</div>
-          <div style="font-size:24px;font-weight:700;color:${pnl>=0?'var(--teal)':'var(--rose)'}">${pnl>=0?'+':''}$${Math.abs(pnl).toFixed(2)}</div>
-          <div style="font-size:12px;color:var(--ink-3)">${d.total_pnl_pct>=0?'+':''}${(d.total_pnl_pct||0).toFixed(1)}%</div>
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Aciertos</div>
-          <div style="font-size:20px;font-weight:700;color:${wr>=50?'var(--teal)':'var(--rose)'}">${wr}%</div>
-          <div style="font-size:12px;color:var(--ink-3)">${d.winning_trades||0}/${d.total_trades||0} ops.</div>
-        </div>
-        <div>
-          <div style="font-size:11px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Abiertas</div>
-          <div style="font-size:20px;font-weight:700;color:var(--blue)">${d.open_positions||0}</div>
-          <div style="font-size:12px;color:var(--ink-3)">Exp. $${(d.exposure_usd||0).toFixed(0)}</div>
-        </div>
-      </div>
-    </div>`;
-  });
-  document.getElementById('profiles-grid').innerHTML = cols.join('');
-}
-
-/* ─ Extended KPIs ─ */
-async function loadExtKpis() {
-  const m = await api('/api/metrics/extended');
-  const sh = parseFloat(m.sharpe)||0;
-  const pf = parseFloat(m.profit_factor)||0;
-  document.getElementById('ext-kpis').innerHTML =
-    kpiCard('🎯 Sharpe Ratio', m.sharpe,
-      sh>1?'Excelente relación riesgo/ganancia':sh>0?'Aceptable':'Mejorar gestión de riesgo',
-      sh>1?'pos':sh>0?'warn':'neg',
-      'Mide si el bot gana dinero en proporción al riesgo que toma. Más de 1 es bueno, más de 2 es excelente') +
-    kpiCard('⚖️ Factor de ganancia', m.profit_factor,
-      pf>1.5?'Cada $1 perdido genera $'+m.profit_factor+' ganados':pf>1?'Levemente positivo':'En negativo',
-      pf>1.5?'pos':pf>1?'warn':'neg',
-      'Ganancias totales dividido pérdidas totales. Más de 1.5 significa que ganas más de lo que pierdes') +
-    kpiCard('📉 Peor caída', `$${m.max_drawdown}`,
-      'La mayor pérdida acumulada hasta ahora',
-      'neg',
-      'Cuánto bajó el capital desde su punto más alto. Menor es mejor') +
-    kpiCard('✅ Ganancia promedio', `+$${m.avg_win}`,
-      'Por operación ganadora',
-      'pos',
-      'Cuánto gana el bot en promedio cuando acierta') +
-    kpiCard('❌ Pérdida promedio', `$${m.avg_loss}`,
-      'Por operación perdedora',
-      'neg',
-      'Cuánto pierde el bot en promedio cuando falla');
-}
-
-/* ─ Funnel ─ */
-async function loadFunnel() {
-  const f = await api('/api/metrics/funnel');
-  const tot = f.total_signals||0, act = f.actionable||0, exc = f.executed||0;
-  const pA = tot ? (act/tot*100).toFixed(0) : 0;
-  const pE = act ? (exc/act*100).toFixed(0) : 0;
-  document.getElementById('funnel').innerHTML = `
-    <div class="funnel-step">
-      <div class="funnel-num">${tot}</div>
-      <div class="funnel-lbl">Analizadas</div>
-      <div class="funnel-pct">100%</div>
+  // elegir la primera (o la de mayor unrealized)
+  const sorted = list.slice().sort((a, b) => Math.abs(b.unrealized || 0) - Math.abs(a.unrealized || 0));
+  const pos = sorted[0];
+  const total = list.length;
+  counter.textContent = `Posición abierta · 1 de ${total}`;
+  document.getElementById('pos-page').textContent = pos.ticker || '—';
+  const direction = (pos.signal || 'LONG').toUpperCase();
+  const delta = pos.delta_pct;
+  const entry = pos.entry_price || 0;
+  const size = pos.size_usd || 0;
+  // P&L no realizado aproximado: pct * size
+  const unreal = (delta != null && size) ? (delta / 100) * size : 0;
+  const sign = unreal >= 0 ? '+' : '−';
+  body.innerHTML = `
+    <div class="pos-head">
+      <span class="pos-sym">${pos.ticker || '—'}</span>
+      <span class="pos-side ${direction === 'LONG' ? 'long' : 'short'}">${direction}</span>
     </div>
-    <div class="funnel-arrow">▶</div>
-    <div class="funnel-step">
-      <div class="funnel-num">${act}</div>
-      <div class="funnel-lbl">Pasan filtro</div>
-      <div class="funnel-pct">${pA}% del total</div>
+    <div class="pos-price">$${entry.toFixed(entry < 1 ? 6 : entry < 100 ? 4 : 2)}
+      ${delta != null ? `<span class="delta ${delta >= 0 ? 'up' : 'down'}">${delta >= 0 ? '↑' : '↓'} ${delta >= 0 ? '+' : ''}${delta.toFixed(2)}%</span>` : ''}
     </div>
-    <div class="funnel-arrow">▶</div>
-    <div class="funnel-step">
-      <div class="funnel-num">${exc}</div>
-      <div class="funnel-lbl">Ejecutadas</div>
-      <div class="funnel-pct">${pE}% confirmadas</div>
-    </div>`;
-}
-
-/* ─ Risk ─ */
-async function loadRisk() {
-  const r = await api('/api/risk-snapshot');
-  const el = document.getElementById('risk-box');
-  if (!r.positions||!r.positions.length) {
-    el.innerHTML = `<div class="panel"><div class="empty"><div class="empty-icon">🛡️</div><div class="empty-title">Sin riesgo activo</div><div class="empty-desc">No hay operaciones abiertas ahora mismo</div></div></div>`;
-    return;
-  }
-  const rColor = r.pct_at_risk>10?'neg':r.pct_at_risk>5?'warn':'pos';
-  el.innerHTML = `
-    <div class="kpi-grid" style="grid-template-columns:1fr 1fr;margin-bottom:12px">
-      <div class="kpi kpi-${rColor}" data-tip="Porcentaje del capital total que podrías perder si todos los stop-loss se disparan">
-        <div class="kpi-label">Capital en riesgo <span class="hint">?</span></div>
-        <div class="kpi-value ${rColor}">${r.pct_at_risk}%</div>
-        <div class="kpi-sub">de $${(r.balance||0).toFixed(0)}</div>
+    <div class="pos-pnl ${unreal >= 0 ? 'profit' : 'loss'}">${sign}$${Math.abs(unreal).toFixed(2)}</div>
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="k">Tamaño</div>
+        <div class="v">$${size.toFixed(0)}</div>
       </div>
-      <div class="kpi kpi-neg">
-        <div class="kpi-label">Peor escenario</div>
-        <div class="kpi-value neg">−$${(r.total_max_loss_usd||0).toFixed(2)}</div>
-        <div class="kpi-sub">si todos los SL ejecutan</div>
+      <div class="metric">
+        <div class="k">SL</div>
+        <div class="v">${pos.stop_loss_pct || 0}%</div>
       </div>
     </div>
-    <div class="panel">
-      <table style="font-size:12px">
-        <tr><th>Activo</th><th>Dirección</th><th>Stop-loss</th><th>Pérd. máx.</th></tr>
-        ${r.positions.map(p=>`<tr>
-          <td><strong>${MKT_ICON[p.market]||''} ${p.ticker}</strong></td>
-          <td class="${p.signal==='LONG'?'c-long':'c-short'}">${p.signal==='LONG'?'▲ Sube':'▼ Baja'}</td>
-          <td class="c-neg">${p.stop_loss_pct}%</td>
-          <td class="c-neg mono">−$${p.max_loss_usd.toFixed(2)}</td>
-        </tr>`).join('')}
-      </table>
-    </div>`;
+  `;
+  cta.textContent = `Ver las ${total} posiciones`;
 }
 
-/* ─ Projection ─ */
-async function loadProjection() {
-  const p = await api('/api/projection');
-  let dblTxt='—', dblMod='warn';
-  const avg = p.avg_daily_pnl||0;
-  if (p.days_to_double&&avg>0) {
-    const m=Math.ceil(p.days_to_double/30);
-    dblTxt=p.days_to_double<30?`~${p.days_to_double} días`:`~${m} ${m===1?'mes':'meses'}`;
-    dblMod='pos';
-  } else if (avg<=0) { dblTxt='En pérdida'; dblMod='neg'; }
-
-  document.getElementById('proj-kpis').innerHTML =
-    kpiCard('📅 Ritmo diario promedio', `${avg>=0?'+':''}$${Math.abs(avg).toFixed(2)}`,
-      'Ganancia/pérdida promedio cada día (últimos 30 días)',
-      avg>=0?'pos':'neg',
-      'Si este ritmo se mantiene, cuánto ganarías/perderías por día') +
-    kpiCard('⏱ Para duplicar capital', dblTxt,
-      'Al ritmo actual de ganancias',
-      dblMod,
-      'Estimación de cuánto tardaría en doblar el capital inicial') +
-    kpiCard('📊 Tasa de aciertos', `${(p.win_rate||0).toFixed(1)}%`,
-      `${p.best_streak||0} victorias seguidas en mejor racha`,
-      (p.win_rate||0)>=50?'pos':'neg') +
-    (p.badge ? `<div class="kpi kpi-info"><div class="kpi-label">🏅 Mejor racha</div><div class="kpi-value" style="font-size:32px">${p.badge.icon}</div><div class="kpi-sub">${p.badge.label}</div></div>`
-      : kpiCard('🏅 Mejor racha', `${p.best_streak||0}`, 'victorias consecutivas','info'));
-
-  // Daily bars
-  const hist = p.daily_history||[];
-  if (!hist.length) return;
-  const maxAbs = Math.max(...hist.map(d=>Math.abs(d.daily_pnl)),1);
-  document.getElementById('proj-bars').innerHTML = `
-    <div style="display:flex;align-items:flex-end;gap:5px;height:80px;padding:0 2px;overflow-x:auto">
-      ${hist.map(d=>{
-        const h=Math.max(Math.round(Math.abs(d.daily_pnl)/maxAbs*70),3);
-        const c=d.daily_pnl>=0?'var(--teal)':'var(--rose)';
-        const s=d.daily_pnl>=0?'+':'';
-        return `<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;min-width:22px" data-tip="${d.day}: ${s}$${d.daily_pnl.toFixed(2)}">
-          <span style="font-size:9px;color:var(--ink-3)">${s}$${Math.abs(d.daily_pnl).toFixed(0)}</span>
-          <div style="width:100%;height:${h}px;background:${c};border-radius:3px 3px 0 0;opacity:.85"></div>
-        </div>`;
-      }).join('')}
-    </div>
-    <div style="display:flex;justify-content:space-between;padding:4px 2px;font-size:10px;color:var(--ink-3)">
-      <span>${hist[0]?.day?.slice(5)||''}</span><span>Últimos ${hist.length} días</span><span>${hist[hist.length-1]?.day?.slice(5)||''}</span>
-    </div>`;
-}
-
-/* ─ By Market ─ */
-async function loadMarket() {
-  const rows = await api('/api/metrics/by-market');
-  const t = document.getElementById('mkt-table');
-  if (!rows.length) {
-    t.innerHTML='<tr><td colspan="5"><div class="empty"><div class="empty-icon">📊</div><div class="empty-title">Sin operaciones aún</div></div></td></tr>';
-    return;
+/* ─── Gates chips ─── */
+async function loadGates() {
+  const d = await api('/api/gates/recent');
+  if (d._error) return;
+  const row = document.getElementById('gates-row');
+  if (d.chips && d.chips.length) {
+    row.innerHTML = d.chips.map(c =>
+      `<div class="chip ${c.state}"><span class="dot"></span>${c.id}</div>`
+    ).join('');
   }
-  t.innerHTML=`<tr><th>Mercado</th><th>Operaciones</th><th>Abiertas</th><th>Aciertos</th><th>Ganancia/Pérdida</th></tr>`+
-    rows.map(r=>`<tr>
-      <td><strong>${MKT_ICON[r.market]||''} ${r.market}</strong></td>
-      <td>${r.trades}</td><td>${r.open_count}</td>
-      <td class="${r.wr>=50?'c-pos':'c-neg'}" style="font-weight:600">${r.wr}%</td>
-      <td class="${r.pnl>=0?'c-pos':'c-neg'}" style="font-weight:600">${r.pnl>=0?'+':''}$${r.pnl}</td>
-    </tr>`).join('');
-}
-
-/* ─ Health ─ */
-async function loadHealth() {
-  const h = await api('/api/health');
-  const labels = {deepseek:'🤖 IA (DeepSeek)', polyscan:'📡 Polymarket', yfinance:'📊 Yahoo Finance'};
-  document.getElementById('health-grid').innerHTML = Object.entries(h).map(([k,v])=>`
-    <div class="kpi kpi-${v?'pos':'neg'}" style="padding:14px">
-      <div class="kpi-label">${labels[k]||k}</div>
-      <div style="font-size:24px;margin-top:4px">${v?'🟢':'🔴'}</div>
-      <div class="kpi-sub" style="margin-top:6px;color:${v?'var(--teal)':'var(--rose)'}">${v?'Conectado':'Sin conexión'}</div>
-    </div>`).join('');
-}
-
-/* ─ Positions ─ */
-async function loadPositions() {
-  const pos = await api('/api/positions');
-  const t = document.getElementById('pos-table');
-  if (!pos.length) {
-    t.innerHTML='<tr><td colspan="6"><div class="empty" style="padding:24px"><div class="empty-icon">💤</div><div class="empty-title">Sin operaciones abiertas</div></div></td></tr>';
-    return;
+  const n = d.recent_24h || 0;
+  document.getElementById('gates-count').textContent = n;
+  const badge = document.getElementById('gates-badge-inline');
+  if (n > 0) {
+    badge.textContent = n;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
   }
-  t.innerHTML=`<tr><th>Activo</th><th>Dirección</th><th>Precio entrada</th><th>Cambio</th><th>Riesgo</th><th></th></tr>`+
-    pos.map(p=>{
-      const e=p.entry_price||0;
-      const delta=p.delta_pct;
-      const dCell=delta==null?'—':`<span class="${delta>=0?'c-pos':'c-neg'}" style="font-weight:700">${delta>=0?'+':''}${delta.toFixed(2)}%</span>`;
-      return `<tr>
-        <td>${MKT_ICON[p.market]||''} <a href="/ticker/${p.ticker}" style="color:var(--ink);font-weight:700">${p.ticker}</a></td>
-        <td><span class="tag tag-${p.signal==='LONG'?'long':'short'}">${p.signal==='LONG'?'▲ LARGO':'▼ CORTO'}</span></td>
-        <td class="mono" style="font-size:12px">$${e.toFixed(e<1?6:e<100?4:2)}</td>
-        <td>${dCell}</td>
-        <td class="c-neg" style="font-size:12px">${p.stop_loss_pct||0}% SL</td>
-        <td><button class="btn btn-sm btn-danger" onclick="closePOS('${p.id||p.ticker}',this)">✕ Cerrar</button></td>
-      </tr>`;
-    }).join('');
-}
-async function closePOS(id,btn) {
-  if (!confirm('¿Cerrar la operación '+id+'?')) return;
-  btn.disabled=true;
-  const r=await api('/api/positions/'+encodeURIComponent(id)+'/close',{method:'POST'});
-  if (r.ok) loadPositions(); else { btn.disabled=false; alert('Error: '+(r.error||'?')); }
 }
 
-/* ─ Signals ─ */
-async function loadSignals() {
-  const sig = await api('/api/signals');
-  const t = document.getElementById('sig-table');
-  if (!sig.length) {
-    t.innerHTML='<tr><td colspan="5"><div class="empty" style="padding:24px"><div class="empty-icon">⚡</div><div class="empty-title">Sin señales generadas</div></div></td></tr>';
-    return;
+/* ─── Sparklines ─── */
+async function loadSparkline() {
+  const d = await api('/api/portfolio/history?period=7d');
+  const h = d.history || [];
+  if (!h.length) return;
+  const data = h.map(p => p.balance_usd);
+  const labels = h.map(p => p.timestamp);
+  const first = data[0], last = data[data.length - 1];
+  const W = 320, H = 48;
+  const minV = Math.min(...data) * 0.997;
+  const maxV = Math.max(...data) * 1.003;
+  const xOf = i => (i / Math.max(1, data.length - 1)) * W;
+  const yOf = v => 4 + (maxV - v) / (maxV - minV || 1) * (H - 8);
+  const xs = data.map((_, i) => xOf(i));
+  const ys = data.map(v => yOf(v));
+  const col = last >= first ? '#8a9b6a' : '#c18672';
+  const lp = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  const ap = lp + ` L${xs[xs.length - 1].toFixed(1)},${H} L${xs[0].toFixed(1)},${H} Z`;
+  const target = last >= first ? 'spark-equity' : 'spark-hoy';
+  // equity total
+  const eqSvg = document.getElementById('spark-equity');
+  const eqCol = last >= first ? '#8b9dc3' : '#c18672';
+  const eqGrad = last >= first ? 'gEq' : 'gEqR';
+  if (!document.getElementById('gEqR')) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const defs = eqSvg.querySelector('defs');
+    const grad = document.createElementNS(ns, 'linearGradient');
+    grad.setAttribute('id', 'gEqR');
+    grad.setAttribute('x1', '0'); grad.setAttribute('x2', '0');
+    grad.setAttribute('y1', '0'); grad.setAttribute('y2', '1');
+    const s1 = document.createElementNS(ns, 'stop');
+    s1.setAttribute('offset', '0%'); s1.setAttribute('stop-color', '#c18672'); s1.setAttribute('stop-opacity', '0.30');
+    const s2 = document.createElementNS(ns, 'stop');
+    s2.setAttribute('offset', '100%'); s2.setAttribute('stop-color', '#c18672'); s2.setAttribute('stop-opacity', '0');
+    grad.appendChild(s1); grad.appendChild(s2);
+    defs.appendChild(grad);
   }
-  const SLBL={LONG:'▲ Comprar',SHORT:'▼ Vender',WAIT:'— Esperar'};
-  t.innerHTML=`<tr><th>Hora</th><th>Mercado</th><th>Activo</th><th>Señal</th><th>Confianza</th></tr>`+
-    sig.slice(0,8).map(s=>`<tr>
-      <td class="mono text-faint" style="font-size:12px">${s.timestamp.slice(11,19)}</td>
-      <td>${MKT_ICON[s.market]||''} ${s.market}</td>
-      <td><strong>${s.ticker}</strong></td>
-      <td><span class="tag tag-${s.decision.toLowerCase()}">${SLBL[s.decision]||s.decision}</span></td>
-      <td>${confPill(s.confidence)}</td>
-    </tr>`).join('');
+  const refY = yOf(first).toFixed(1);
+  eqSvg.innerHTML = `
+    ${document.querySelector('#gEq')?.outerHTML || ''}
+    ${document.querySelector('#gEqR')?.outerHTML || ''}
+    <line x1="0" y1="${refY}" x2="${W}" y2="${refY}" stroke="#9a9388" stroke-width="0.5" stroke-dasharray="3 3"/>
+    <path d="${ap}" fill="url(#${last >= first ? 'gEq' : 'gEqR'})"/>
+    <path d="${lp}" fill="none" stroke="${eqCol}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  `;
 }
 
-/* ─ Equity chart ─ */
-let _eqPeriod='all';
-function setP(p,btn) {
-  _eqPeriod=p;
-  document.querySelectorAll('.section-h .chip').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on'); loadEquity();
-}
-async function loadEquity() {
-  const inner=document.getElementById('eq-inner');
-  const tip=document.getElementById('eq-tip');
-  const chgEl=document.getElementById('eq-chg');
-  inner.innerHTML='<div class="load-center"><div class="spinner"></div></div>';
-  const resp=await api('/api/portfolio/history?period='+_eqPeriod);
-  const h=resp.history||resp||[], trades=resp.trades||[];
-  if (!h.length) {
-    inner.innerHTML='<div class="empty"><div class="empty-icon">📉</div><div class="empty-title">Sin datos de capital aún</div><div class="empty-desc">Activa el bot para empezar a registrar el historial</div></div>';
-    chgEl.textContent=''; return;
-  }
-  const data=h.map(p=>p.balance_usd), labels=h.map(p=>p.timestamp);
-  const first=data[0],last=data[data.length-1];
-  const cp=first!==0?((last-first)/first*100).toFixed(2):"0.00";
-  chgEl.textContent=(cp>=0?'+':'')+cp+'%';
-  chgEl.style.color=cp>=0?'var(--teal)':'var(--rose)';
-
-  const container=inner.parentElement;
-  const W=container.clientWidth-32||740,H=240,pad={t:24,r:24,b:32,l:64};
-  const cW=W-pad.l-pad.r,cH=H-pad.t-pad.b;
-  const minV=Math.min(...data)*.997,maxV=Math.max(...data)*1.003;
-  const xOf=i=>pad.l+i/Math.max(1,data.length-1)*cW;
-  const yOf=v=>pad.t+(maxV-v)/(maxV-minV||1)*cH;
-  const xs=data.map((_,i)=>xOf(i)),ys=data.map(v=>yOf(v));
-  const col=last>=first?'var(--teal)':'var(--rose)';
-  const fid='ef'+Date.now();
-  const lp=xs.map((x,i)=>`${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
-  const ap=lp+` L${xs[xs.length-1].toFixed(1)},${pad.t+cH} L${xs[0].toFixed(1)},${pad.t+cH} Z`;
-
-  const marks=(trades||[]).slice(0,60).map(t=>{
-    const ts=new Date(t.closed_at).getTime();
-    let ci=0,md=Infinity;
-    h.forEach((p,i)=>{const d=Math.abs(new Date(p.timestamp).getTime()-ts);if(d<md){md=d;ci=i;}});
-    const w=t.pnl_usd>0;
-    return `<circle cx="${xs[ci].toFixed(1)}" cy="${ys[ci].toFixed(1)}" r="3" fill="${w?'var(--teal)':'var(--rose)'}" opacity=".8"/>`;
-  }).join('');
-
-  const yT=[minV,(minV+maxV)/2,maxV].map(v=>`
-    <line x1="${pad.l}" y1="${yOf(v).toFixed(1)}" x2="${pad.l+cW}" y2="${yOf(v).toFixed(1)}" stroke="var(--line)" stroke-dasharray="3,4" stroke-width="1"/>
-    <text x="${pad.l-8}" y="${(yOf(v)+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--ink-3)">$${(v/1000).toFixed(1)}K</text>`).join('');
-  const xI=[0,Math.floor(data.length/2),data.length-1];
-  const xT=xI.map(i=>`<text x="${xs[i].toFixed(1)}" y="${H-5}" text-anchor="middle" font-size="10" fill="var(--ink-3)">${(labels[i]||'').slice(5,16)}</text>`).join('');
-
-  inner.innerHTML=`<svg width="${W}" height="${H}" style="display:block;overflow:visible">
-    <defs><linearGradient id="${fid}" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="${col}" stop-opacity=".22"/>
-      <stop offset="100%" stop-color="${col}" stop-opacity="0"/>
-    </linearGradient></defs>
-    ${yT}
-    <path d="${ap}" fill="url(#${fid})"/>
-    <path d="${lp}" fill="none" stroke="${col}" stroke-width="2.5"/>
-    ${marks}
-    <circle cx="${xs[xs.length-1].toFixed(1)}" cy="${ys[ys.length-1].toFixed(1)}" r="5" fill="${col}" stroke="var(--bg-2)" stroke-width="2"/>
-    ${xT}
-    <rect id="ehz" x="${pad.l}" y="${pad.t}" width="${cW}" height="${cH}" fill="transparent" style="cursor:crosshair"/>
-    <line id="ehc" x1="0" y1="${pad.t}" x2="0" y2="${pad.t+cH}" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="4,3" style="display:none"/>
-  </svg>`;
-  inner.style.padding='0';
-
-  document.getElementById('ehz').addEventListener('mousemove',e=>{
-    const rect=e.target.getBoundingClientRect();
-    const idx=Math.max(0,Math.min(data.length-1,Math.round((e.clientX-rect.left)/cW*(data.length-1))));
-    document.getElementById('ehc').setAttribute('x1',xs[idx].toFixed(1));
-    document.getElementById('ehc').setAttribute('x2',xs[idx].toFixed(1));
-    document.getElementById('ehc').style.display='';
-    const chg=first!==0?((data[idx]-first)/first*100).toFixed(2):"0.00";
-    tip.innerHTML=`<strong>$${data[idx].toLocaleString(undefined,{minimumFractionDigits:2})}</strong> <span style="color:${chg>=0?'var(--teal)':'var(--rose)'}">${chg>=0?'+':''}${chg}%</span><br><span style="color:var(--ink-3)">${(labels[idx]||'').slice(0,16).replace('T',' ')}</span>`;
-    tip.style.display='block';
-    tip.style.left=(xs[idx]+145>W?xs[idx]-160:xs[idx]+14)+'px';
-    tip.style.top=(ys[idx]-10)+'px';
-  });
-  document.getElementById('ehz').addEventListener('mouseleave',()=>{
-    document.getElementById('ehc').style.display='none'; tip.style.display='none';
-  });
-}
-
-/* ─ Init ─ */
+/* ─── Init ─── */
 function refresh() {
-  loadPnlTrio(); loadSinceStamp();
-  loadBrief(); loadMotors(); loadHeroKpis(); loadProfiles(); loadExtKpis();
-  loadFunnel(); loadRisk(); loadProjection(); loadMarket();
-  loadHealth(); loadPositions(); loadSignals(); loadEquity();
+  loadHoy();
+  loadFeaturedPosition();
+  loadGates();
+  loadSparkline();
+  _lastUpdated = Date.now();
 }
-refresh(); loadStatus();
-setInterval(refresh, 10000);
-setInterval(loadStatus, 5000);
+refresh();
+setInterval(refresh, 15000);
 </script>
 {% endblock %}

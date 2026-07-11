@@ -1,7 +1,7 @@
 <!DOCTYPE html><html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>MarketAI — {% block title %}Dashboard{% endblock %}</title>
   <link rel="stylesheet" href="/static/style.css">
   <script>document.documentElement.setAttribute('data-theme',localStorage.getItem('mai-theme')||'dark');</script>
@@ -12,7 +12,7 @@
 <button class="menu-toggle" id="mob-btn" data-tip="Menú">☰</button>
 <div class="mob-overlay" id="mob-overlay"></div>
 
-<!-- Sidebar -->
+<!-- Sidebar (solo desktop >= 961px) -->
 <nav class="sidebar" id="sidebar">
 
   <div class="sb-brand">
@@ -41,17 +41,15 @@
     <a href="/logs"      class="sb-link {% if page=='logs' %}active{% endif %}"><span class="sb-icon">📋</span> Registros</a>
   </div>
 
-  <!-- Bot status -->
   <div class="sb-status" id="sb-status">
     <div class="sb-dot" id="sb-dot"></div>
     <span class="sb-status-text" id="sb-status-txt">Verificando…</span>
   </div>
 
-  <!-- Theme picker -->
   <div class="sb-themes">
     <div class="sb-themes-label">Tema</div>
     <div class="theme-dots">
-      <div class="theme-dot active" data-theme="dark"      style="background:#1a1814;border-color:#7d9b6e" data-tip="Oscuro cálido"></div>
+      <div class="theme-dot active" data-theme="dark"      style="background:#1a1814;border-color:#8a9b6a" data-tip="Oscuro cálido"></div>
       <div class="theme-dot" data-theme="light"     style="background:#f4f6fb;border-color:#9ba3be" data-tip="Claro"></div>
       <div class="theme-dot" data-theme="bloomberg" style="background:#0d0d0d;border-color:#ff8c00" data-tip="Bloomberg"></div>
       <div class="theme-dot" data-theme="mint"      style="background:#0f2218;border-color:#00e5a0" data-tip="Mint"></div>
@@ -61,13 +59,22 @@
   </div>
 </nav>
 
-<!-- PAPER MODE BANNER — persistente, no dismissable. Visible en todas las páginas. -->
+<!-- App header sticky (mobile only) -->
+<header class="app-header">
+  <div class="app-title">
+    <span class="dot"></span>
+    <h1>MarketAI</h1>
+  </div>
+  <div class="app-meta">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+    <span id="app-updated">hace —</span>
+  </div>
+</header>
+
+<!-- PAPER MODE banner — persistente, no dismissable. Visible en todas las páginas. -->
 <div class="paper-banner" role="status" aria-live="polite">
-  <span class="paper-tag">🧪 PAPER MODE</span>
-  <span class="paper-text">
-    <strong>Dinero simulado</strong> — ningún trade toca el mercado real.
-    <span class="paper-soft">Operás con $2.000 virtuales para validar la estrategia antes de invertir capital real.</span>
-  </span>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+  <span>{% block paper_mode %}PAPER MODE · SIN CAPITAL REAL{% endblock %}</span>
 </div>
 
 <!-- Content -->
@@ -75,13 +82,37 @@
   {% block content %}{% endblock %}
 </main>
 
+<!-- Bottom nav (mobile only) -->
+<nav class="bottom-nav">
+  <a class="nav-item {% if page=='overview' %}active{% endif %}" href="/">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>Inicio</span>
+  </a>
+  <a class="nav-item {% if page=='positions' %}active{% endif %}" href="/trades">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M3 9h18M9 21V9"/></svg>
+    <span>Posiciones</span>
+  </a>
+  <a class="nav-item {% if page=='gates' %}active{% endif %}" href="/gates">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    <span>Gates</span>
+    <span class="badge badge-mini" id="gates-badge" style="display:none">0</span>
+  </a>
+  <a class="nav-item {% if page=='history' %}active{% endif %}" href="/trades">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+    <span>Historial</span>
+  </a>
+  <a class="nav-item {% if page=='settings' %}active{% endif %}" href="/config">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span>Ajustes</span>
+  </a>
+</nav>
+
 <script>
 /* ── Global API helper ── */
 async function api(url, opts) {
   try {
     const r = await fetch(url, opts);
     if (!r.ok) {
-      // B-15: distinguish HTTP errors from empty data
       let body = null;
       try { body = await r.json(); } catch (_) {}
       return { _error: true, _status: r.status, _message: body?.error || r.statusText || 'HTTP error' };
@@ -92,43 +123,8 @@ async function api(url, opts) {
   }
 }
 
-/* ── Layer labels ── */
-const L_EMOJI = {
-  technical:'📊',onchain:'⛓️',on_chain:'⛓️',sentiment:'💬',
-  orderbook:'📋',order_book:'📋',fundamental:'🏢',macro:'🌍',
-  cross_asset:'🔗',crossasset:'🔗',ict:'📐',ict_smc:'📐',
-};
-function layerLabel(name) {
-  const k = (name||'').toLowerCase().replace(/[^a-z_]/g,'');
-  return (L_EMOJI[k]||'🔹') + ' ' + name;
-}
+const MKT_ICON = {forex:'📈',stocks:'💹',polymarket:'🎲',crypto:'₿'};
 
-/* ── Friendly number helpers ── */
-function fmtPnl(v) {
-  const sign = v >= 0 ? '+' : '';
-  return `${sign}$${Math.abs(v).toFixed(2)}`;
-}
-function pnlClass(v) { return v > 0 ? 'c-pos' : v < 0 ? 'c-neg' : 'text-muted'; }
-function confPill(c) {
-  const cls = c >= 70 ? 'hi' : c >= 50 ? 'mid' : 'lo';
-  const lbl = c >= 70 ? '🔥 Alta' : c >= 50 ? '👍 Media' : '⚠️ Baja';
-  return `<span class="conf-pill ${cls}">${c}% ${lbl}</span>`;
-}
-function friendlyTicker(t) {
-  const slugs = {
-    'will-the-fdv-of-openseas-token-1-week-after-launch-be-above-blurs-fdv': 'OpenSea > Blur? (1sem)',
-    'will-the-fdv-of-openseas-token-be-a-b5': 'OpenSea FDV > $5b?',
-    'will-the-fdv-of-openseas-token-be-a-10b': 'OpenSea FDV > $10b?',
-    'will-the-fdv-of-openseas-token-be-a-15b': 'OpenSea FDV > $15b?',
-    'will-gpt-4-have-500b-parameters': 'GPT-4 > 500B params?',
-    'will-julie-su-be-the-next-us-secret': 'Julie Su labor secretary?',
-    'will-tim-ryan-be-the-next-secretary': 'Tim Ryan labor secretary?',
-    'will-the-fed-cut-rates-in-2023': 'Fed cut rates 2023?',
-    'will-there-be-a-senate-vacancy-in-p': 'PA Senate vacancy?',
-    'will-trump-win-the-2024-iowa-caucus': 'Trump wins Iowa 2024?',
-  };
-  return slugs[t] || t;
-}
 function timeAgo(iso) {
   if (!iso) return '—';
   const s = Math.floor((Date.now() - new Date(iso)) / 1000);
@@ -137,7 +133,11 @@ function timeAgo(iso) {
   if (s < 86400) return Math.floor(s/3600) + 'h';
   return Math.floor(s/86400) + 'd';
 }
-const MKT_ICON = {forex:'📈',stocks:'💹',polymarket:'🎲',crypto:'₿'};
+function fmtPnl(v) {
+  const sign = v >= 0 ? '+' : '−';
+  return `${sign}$${Math.abs(v).toFixed(2)}`;
+}
+function pnlClass(v) { return v > 0 ? 'profit' : v < 0 ? 'loss' : ''; }
 
 /* ── Theme ── */
 (function(){
@@ -157,9 +157,40 @@ document.querySelectorAll('.theme-dot').forEach(d=>{
 /* ── Mobile sidebar ── */
 function openSidebar()  { document.getElementById('sidebar').classList.add('open'); document.getElementById('mob-overlay').classList.add('open'); }
 function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('mob-overlay').classList.remove('open'); }
-document.getElementById('mob-btn').addEventListener('click', openSidebar);
-document.getElementById('mob-overlay').addEventListener('click', closeSidebar);
+document.getElementById('mob-btn')?.addEventListener('click', openSidebar);
+document.getElementById('mob-overlay')?.addEventListener('click', closeSidebar);
 document.querySelectorAll('.sb-link').forEach(a=>a.addEventListener('click',closeSidebar));
+
+/* ── App updated indicator (mobile) ── */
+let _lastUpdated = Date.now();
+function refreshAppUpdated() {
+  const el = document.getElementById('app-updated');
+  if (!el) return;
+  const sec = Math.floor((Date.now() - _lastUpdated) / 1000);
+  if (sec < 5) el.textContent = 'ahora';
+  else if (sec < 60) el.textContent = `hace ${sec}s`;
+  else if (sec < 3600) el.textContent = `hace ${Math.floor(sec/60)}m`;
+  else el.textContent = `hace ${Math.floor(sec/3600)}h`;
+}
+setInterval(refreshAppUpdated, 5000);
+refreshAppUpdated();
+
+/* ── Gates badge (mobile bottom nav) ── */
+async function refreshGatesBadge() {
+  const el = document.getElementById('gates-badge');
+  if (!el) return;
+  try {
+    const d = await api('/api/gates/recent');
+    if (d && d.recent_24h != null && d.recent_24h > 0) {
+      el.textContent = d.recent_24h;
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  } catch (_) { el.style.display = 'none'; }
+}
+refreshGatesBadge();
+setInterval(refreshGatesBadge, 30000);
 
 /* ── Sidebar bot status ── */
 async function refreshSbStatus() {
@@ -175,4 +206,5 @@ refreshSbStatus();
 setInterval(refreshSbStatus, 12000);
 </script>
 {% block scripts %}{% endblock %}
-</body></html>
+</body>
+</html>

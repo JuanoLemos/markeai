@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Gates{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-label">
+    <span>Risk gates (R1-R5)</span>
+    <span class="since">últimas 24h</span>
+  </div>
+  <div class="gates-row" id="gates-row-page" style="margin-top:8px">
+    <div class="chip green"><span class="dot"></span>R1</div>
+    <div class="chip green"><span class="dot"></span>R2</div>
+    <div class="chip green"><span class="dot"></span>R3</div>
+    <div class="chip green"><span class="dot"></span>R4</div>
+    <div class="chip green"><span class="dot"></span>R5</div>
+  </div>
+  <div class="gates-meta">
+    <span>Rechazos totales</span>
+    <span id="gates-total">0</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-label">
+    <span>Rechazos recientes</span>
+    <span class="since" id="rej-since">—</span>
+  </div>
+  <div id="rej-list" style="margin-top:8px">
+    <div class="pos-empty">Cargando…</div>
+  </div>
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script>
+async function loadGatesPage() {
+  const d = await api('/api/gates/recent');
+  if (d._error) return;
+  const row = document.getElementById('gates-row-page');
+  if (d.chips && d.chips.length) {
+    row.innerHTML = d.chips.map(c =>
+      `<div class="chip ${c.state}"><span class="dot"></span>${c.id} ${c.count_24h ? '('+c.count_24h+')' : ''}</div>`
+    ).join('');
+  }
+  document.getElementById('gates-total').textContent = d.recent_24h || 0;
+  if (d.last_24h_ts) {
+    const dt = new Date(d.last_24h_ts);
+    document.getElementById('rej-since').textContent = `último: ${timeAgo(d.last_24h_ts)}`;
+  }
+  // lista plana de rechazos
+  const all = [];
+  for (const [gid, lst] of Object.entries(d.by_gate || {})) {
+    for (const line of lst) all.push({ gate: gid, line });
+  }
+  const el = document.getElementById('rej-list');
+  if (!all.length) {
+    el.innerHTML = '<div class="pos-empty">Sin rechazos en las últimas 24h. Todo verde ✓</div>';
+    return;
+  }
+  el.innerHTML = all.map(r => `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border-soft);font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-2)">
+      <span class="chip ${r.gate === 'R1' ? 'green' : r.gate === 'R2' ? 'green' : 'yellow'}" style="font-size:10px;padding:2px 8px;min-height:0;margin-right:8px">${r.gate}</span>
+      ${r.line}
+    </div>
+  `).join('');
+}
+loadGatesPage();
+setInterval(loadGatesPage, 20000);
+</script>
+{% endblock %}
