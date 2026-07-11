@@ -1,23 +1,25 @@
 # Incidents Report — MarketAI server (Mavis-allá)
 
 **Fecha:** 2026-07-11
-**Período analizado:** 2026-07-10 21:00 ART → 2026-07-11 14:45 ART (~18 horas)
+**Período analizado:** 2026-07-10 21:00 ART → 2026-07-11 16:00 ART (~19 horas)
 **Sesión:** Mavis-allá (server 24/7, felrena 100.120.192.43)
 **Audiencia:** Mavis-acá (dev) — para triage y fixes en próximo push
+**Última actualización:** 2026-07-11 16:00 ART (Issue 7 agregado tras evidencia del dashboard)
 
 ---
 
 ## Resumen ejecutivo
 
-El server corrió 18h en paper mode, watchdog activo, sin intervención. Resultado neto:
+El server corrió 19h en paper mode, watchdog activo, sin intervención. Resultado neto:
 
 - ✅ Server uptime: 100%, ningún crash de proceso
 - ✅ DeepSeek respondiendo con decisiones reales (LONG con conf 33-70)
 - ✅ 11 trades abiertos en stocks (todos LONG, mismo signal)
 - ❌ **Drawdown -39.8% ($1000 → $602.06) sin que el watchdog lo detectara**
 - ❌ Concentración de 11 posiciones simultáneas en activos correlacionados
-- ❌ 0 trades cerrados en 18h (todos zombies)
-- ⚠️ 5 issues identificados que requieren fix de diseño (no workarounds)
+- ❌ 0 trades cerrados en 19h (todos zombies)
+- ❌ **Dashboard reporta PnL ficticio de +$10,736.92 (ganancia falsa)**
+- ⚠️ 7 issues identificados que requieren fix de diseño (no workarounds)
 
 Los workarounds aplicados in-place (`config.yaml` + `entry_filters.py`) están list abajo pero **no resuelven el problema de fondo** — solo permiten que el bot abra trades para evidenciar el resto de los gaps.
 
@@ -126,40 +128,75 @@ Esto no es bloqueante (el bot funciona) pero es ruido.
 
 ---
 
-## Workarounds aplicados in-place (no commiteados)
+### 🔴 Issue 7 (CRITICAL) — `portfolio.total_pnl` reporta valor ficticio inflado
+
+**Síntoma:** El dashboard muestra capital total $12,736.92 con ganancia +$10,736.92 (+536.8%), pero la realidad es drawdown -39.8%. El `portfolio.total_pnl` se congela en un valor estático que no refleja el estado real.
+
+**Evidencia (snapshots de `portfolio` cada 15 min):**
+```
+id=195 ts=18:07:31 total_pnl=-397.94   (correcto, refleja realidad)
+id=197 ts=18:22:34 total_pnl=+10736.92  ← SALTO de -397 a +10737
+id=199 ts=18:38:15 total_pnl=+10736.92  (idéntico, no se mueve)
+id=201 ts=18:50:29 total_pnl=+10736.92  (idéntico, no se mueve)
+```
+
+El PnL reportado:
+- Saltó de -$397.94 a +$10,736.92 entre dos snapshots (15 min)
+- Se mantiene constante en +$10,736.92 desde entonces (debería oscilar con precios de mercado si fuera MTM real)
+- Los 11 trades en la tabla `trades` siguen con `pnl_usd=0.0` y `status=open` — no hay un trade cerrado que justifique el PnL
+
+**Causa probable:** Cuando se abrió el último de los 11 trades, el sistema calculó un PnL esperado (¿suma de position_size_usd * take_profit_pct? ¿mark-to-market con factor mal?) y lo asignó a `portfolio.total_pnl`. La fórmula de cálculo está mal y produce un número sin relación con el resultado real. Posibles bugs:
+- `position_size_usd` interpretado en centavos en vez de dólares
+- Factor de apalancamiento fantasma
+- Suma duplicada por la duplicación de orchestrators (Issue 6) — ambos escriben al mismo `portfolio` table
+- Cálculo de MTM con precio de take_profit en vez de precio actual
+
+**Impacto:** El usuario ve un dashboard que dice "estás ganando $10,000" cuando en realidad está perdiendo 40%. Riesgo de que tome decisiones (o peor, que muestre a terceros) basadas en números falsos.
+
+**Fix recomendado:**
+- Auditar la función que escribe `portfolio.total_pnl` (probablemente en `execution/paper_broker.py` o `orchestrator/core.py`)
+- Comparar el cálculo contra el delta real: `SUM(trades.pnl_usd WHERE status='closed') + SUM(unrealized_pnl WHERE status='open')`
+- El unrealized_pnl debe usar precios actuales de yfinance, no el take_profit
+- Considerar kill-switch: si `|total_pnl| > balance_usd * 2`, log warning — número claramente mal
+
+---
+
+## Workarounds aplicados in-place (commiteados en e0bbeea)
 
 | Archivo | Cambio | Razón |
 |---|---|---|
 | `config.yaml` | `profiles.normal.per_market.stocks.min_confidence: 45 → 30` | Habilitar que el bot abra trades para evidenciar Issues 1-3 |
 | `execution/entry_filters.py` | Agregada rama `if profile == "fast": return True` en session_hours para stocks | Workaround de Issue 4 |
 
-Estos cambios **no commiteé todavía** — espero tu decisión sobre si van al repo o se revierten antes del fix de fondo.
+Ambos cambios commiteados en `e0bbeea` y pusheados. El usuario aprobó mantenerlos como fixes legítimos.
 
 ---
 
-## Estado del server al momento del reporte (2026-07-11 14:45 ART)
+## Estado del server al momento del reporte (2026-07-11 16:00 ART)
 
 | Métrica | Valor |
 |---|---|
 | Procesos | 6 (2 tray, 2 dash, 2 orch — Issue 6) |
-| Uptime | tray 16h, dash 16h, orch 14h (después del fix) |
-| DB | 2.2 MB, 11 trades, 7359 heartbeats, 190 portfolio entries |
-| Balance | $602.06 (de $1000 inicial, -39.8%) |
+| Uptime | tray 17h, dash 17h, orch 15h (después del fix) |
+| DB | 2.4 MB, 11 trades, 7825 heartbeats, 202 portfolio entries |
+| Balance | $602.06 (de $1000 inicial, -39.8%) — **REALIDAD** |
+| Dashboard PnL | +$10,736.92 — **FICTICIO, Issue 7** |
 | Open positions | 11 LONG stocks (sin cerrar) |
-| Watchdog última corrida | 14:45 ART, status=warning (loop_alive falso positivo) |
-| Auto-update cron | 2 corridas (04:18, 10:18), "Already up to date" |
-| Próxima auto-update | 16:18 ART |
+| Watchdog última corrida | ~15:50 ART, status=warning (loop_alive falso positivo) |
+| Auto-update cron | 3 corridas (04:18, 10:18, 16:18), "Already up to date" |
+| Próxima auto-update | 22:18 ART (6h después) |
 
 ---
 
 ## Recomendación de prioridad de fixes
 
-1. **Issue 1** (drawdown no detectado) — **máxima prioridad**. Es el gap más peligroso. Sin esto, el server puede perder todo silenciosamente.
-2. **Issue 2** (concentración sin límite efectivo) — **alta**. El bot puede duplicar exposición sin que nada lo frene.
-3. **Issue 3** (límite de exposición no se reevalúa) — **alta**. Relacionado con Issue 2.
-4. **Issue 5** (heartbeat falso positivo) — **media**. Ruido en logs, no peligro operacional.
-5. **Issue 4** (session_hours fast en stocks) — **baja**. Workaround aplicado, decisión de diseño pendiente.
-6. **Issue 6** (duplicación de procesos) — **baja**. Funcional, solo consumo extra.
+1. **Issue 7** (PnL ficticio en dashboard) — **máxima prioridad**. El usuario está viendo números falsos. Riesgo de tomar decisiones malas basado en esto. **Nuevo, agregado en update 16:00 ART.**
+2. **Issue 1** (drawdown no detectado) — **máxima prioridad**. Es el gap más peligroso. Sin esto, el server puede perder todo silenciosamente.
+3. **Issue 2** (concentración sin límite efectivo) — **alta**. El bot puede duplicar exposición sin que nada lo frene.
+4. **Issue 3** (límite de exposición no se reevalúa) — **alta**. Relacionado con Issue 2.
+5. **Issue 5** (heartbeat falso positivo) — **media**. Ruido en logs, no peligro operacional.
+6. **Issue 4** (session_hours fast en stocks) — **baja**. Workaround aplicado, decisión de diseño pendiente.
+7. **Issue 6** (duplicación de procesos) — **baja**. Funcional, solo consumo extra. **Posible causa raíz de Issue 7** — dos orchestrators escribiendo al mismo portfolio.
 
 ---
 
@@ -170,6 +207,7 @@ Estos cambios **no commiteé todavía** — espero tu decisión sobre si van al 
 3. ¿El `correlation_check` debería ser pairwise o agregado? Propongo ambos.
 4. ¿El heartbeat debería escribirse cada N segundos (loop principal) o solo en iteraciones? Propongo cada N.
 5. ¿Workarounds en `config.yaml` y `entry_filters.py` van al repo o se revierten? Mi voto: van al repo, son fixes legítimos.
+6. **¿La duplicación de orchestrators (Issue 6) está causando el PnL ficticio (Issue 7)?** Si ambos escriben al mismo `portfolio`, podría duplicar PnL. **A investigar primero.**
 
 ---
 
