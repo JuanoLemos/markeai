@@ -9,6 +9,9 @@
     <div class="ph-sub">Resumen en tiempo real de tus operaciones automáticas</div>
   </div>
   <div class="ph-actions">
+    <span class="since-stamp" id="since-stamp" data-tip="Fecha del primer trade o señal — desde entonces se calcula todo el P&L">
+      <span>desde</span><strong id="since-date">—</strong>
+    </span>
     <div class="flex gap-1" style="font-size:13px;color:var(--ink-2)">
       <span class="sb-dot" id="page-dot"></span>
       <span id="page-status-txt">Verificando…</span>
@@ -18,6 +21,28 @@
 
 <!-- Daily brief -->
 <div id="brief-box"></div>
+
+<!-- P&L TRIO (Fase 1) — Hoy / Realizado / No realizado -->
+<div class="pnl-trio" id="pnl-trio">
+  <div class="pnl-card">
+    <div class="pnl-icon">📅</div>
+    <div class="pnl-label">Hoy</div>
+    <div class="pnl-value neut" id="pnl-hoy">—</div>
+    <div class="pnl-sub" id="pnl-hoy-sub">Cargando…</div>
+  </div>
+  <div class="pnl-card featured">
+    <div class="pnl-icon">🏆</div>
+    <div class="pnl-label">Realizado</div>
+    <div class="pnl-value" id="pnl-realizado">—</div>
+    <div class="pnl-sub" id="pnl-realizado-sub">Cargando…</div>
+  </div>
+  <div class="pnl-card">
+    <div class="pnl-icon">⏳</div>
+    <div class="pnl-label">No realizado</div>
+    <div class="pnl-value neut" id="pnl-unrealized">—</div>
+    <div class="pnl-sub" id="pnl-unrealized-sub">Cargando…</div>
+  </div>
+</div>
 
 <!-- Motors -->
 <div class="section">
@@ -192,32 +217,90 @@ function timeAgo(iso) {
   return `hace ${Math.floor(sec/86400)}d`;
 }
 
+/* ─ P&L TRIO (Fase 1) — Hoy / Realizado / No realizado ─ */
+async function loadPnlTrio() {
+  const d = await api('/api/overview/pnl');
+  if (d._error) {
+    document.getElementById('pnl-hoy').textContent = '—';
+    document.getElementById('pnl-realizado').textContent = '—';
+    document.getElementById('pnl-unrealized').textContent = '—';
+    return;
+  }
+  const sign = v => v >= 0 ? '+' : '−';
+  const cls = v => v > 0 ? 'pos' : v < 0 ? 'neg' : 'neut';
+  const fmt = v => `${sign(v)}$${Math.abs(v).toFixed(2)}`;
+
+  // Hoy
+  const elHoy = document.getElementById('pnl-hoy');
+  elHoy.textContent = fmt(d.hoy);
+  elHoy.className = 'pnl-value ' + cls(d.hoy);
+  document.getElementById('pnl-hoy-sub').textContent =
+    d.hoy_count > 0
+      ? `${d.hoy_count} trade${d.hoy_count===1?'':'s'} cerrado${d.hoy_count===1?'':'s'} hoy`
+      : 'Sin cierres hoy';
+
+  // Realizado (featured, central)
+  const elReal = document.getElementById('pnl-realizado');
+  elReal.textContent = fmt(d.realizado);
+  elReal.className = 'pnl-value ' + cls(d.realizado);
+  document.getElementById('pnl-realizado-sub').textContent =
+    `${d.total_trades} operación${d.total_trades===1?'':'es'} cerrada${d.total_trades===1?'':'s'} en total`;
+
+  // No realizado
+  const elUnr = document.getElementById('pnl-unrealized');
+  elUnr.textContent = fmt(d.no_realizado);
+  elUnr.className = 'pnl-value ' + cls(d.no_realizado);
+  const openCnt = d.open_positions || 0;
+  document.getElementById('pnl-unrealized-sub').textContent =
+    openCnt > 0
+      ? `Mark-to-market de ${openCnt} posición${openCnt===1?'':'es'} abierta${openCnt===1?'':'s'}`
+      : 'Sin posiciones abiertas';
+}
+
+/* ─ "DESDE" TIMESTAMP (Fase 1) ─ */
+async function loadSinceStamp() {
+  const d = await api('/api/overview/pnl');
+  if (d._error || !d.since) {
+    document.getElementById('since-date').textContent = '—';
+    return;
+  }
+  // Format: "15 jun 2026" (corto, en español)
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const dt = new Date(d.since.endsWith('Z') ? d.since : d.since + 'Z');
+  const dd = String(dt.getDate()).padStart(2, '0');
+  const mm = meses[dt.getMonth()];
+  const yyyy = dt.getFullYear();
+  document.getElementById('since-date').textContent = `${dd} ${mm} ${yyyy}`;
+}
+
 /* ─ Hero KPIs ─ */
 async function loadHeroKpis() {
-  const s = await api('/api/summary');
-  // Aggregate across profiles
-  let bal=0, pnl=0, open=0, trades=0, wins=0, wr=0;
+  // Fase 1: el "P&L total" ya no vive en los hero KPIs — vive en el trio.
+  // El capital ahora usa "equity" (balance + no_realizado) para reflejar
+  // el valor real de la cuenta si cierro todo ahora.
+  const [s, p] = await Promise.all([api('/api/summary'), api('/api/overview/pnl')]);
+  let bal=0, equity=0, open=0, trades=0, wins=0, wr=0;
   ['normal','fast'].forEach(n=>{
     const d = s[n]||{};
     bal   += d.balance||0;
-    pnl   += d.total_pnl||0;
     open  += d.open_positions||0;
     trades+= d.total_trades||0;
     wins  += d.winning_trades||0;
   });
   if (trades) wr = (wins/trades*100).toFixed(1);
-  const pnlPct = ((pnl/2000)*100).toFixed(1); // vs 2x$1000 initial
+  equity = p.equity || bal;
+  const pnl = equity - 2000; // vs 2x$1000 initial
+  const pnlPct = (pnl/2000*100).toFixed(1);
   const pnlSign = pnl>=0?'+':'';
+  const posMark = p.no_realizado && Math.abs(p.no_realizado) > 0.01
+    ? `<span class="badge-change ${p.no_realizado>=0?'up':'down'}" data-tip="P&L no realizado de posiciones abiertas">${p.no_realizado>=0?'+':'−'}$${Math.abs(p.no_realizado).toFixed(2)} sin cerrar</span>`
+    : '';
 
   document.getElementById('hero-kpis').innerHTML =
-    kpiCard('💰 Tu capital total', `$${bal.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`,
-      `<span class="badge-change ${pnl>=0?'up':'down'}">${pnlSign}${pnlPct}%</span> vs inicio`,
+    kpiCard('💰 Tu capital total', `$${equity.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}`,
+      `<span class="badge-change ${pnl>=0?'up':'down'}">${pnlSign}${pnlPct}%</span> vs inicio ${posMark}`,
       pnl>=0?'pos':'neg',
-      'Suma del capital disponible en todos los perfiles de trading') +
-    kpiCard('📈 Ganancia/Pérdida total', `${pnlSign}$${Math.abs(pnl).toFixed(2)}`,
-      pnl>=0?'Vas en ganancias 🎉':'Vas en pérdida 😟',
-      pnl>=0?'pos':'neg',
-      'Diferencia entre lo que ganaste y perdiste desde el inicio') +
+      'Capital actual si cerrás todas las posiciones ahora (balance + no realizado)') +
     kpiCard('🏆 Porcentaje de aciertos', `${wr}%`,
       `${wins} éxitos de ${trades} operaciones`,
       parseFloat(wr)>=50?'pos':'neg',
@@ -571,6 +654,7 @@ async function loadEquity() {
 
 /* ─ Init ─ */
 function refresh() {
+  loadPnlTrio(); loadSinceStamp();
   loadBrief(); loadMotors(); loadHeroKpis(); loadProfiles(); loadExtKpis();
   loadFunnel(); loadRisk(); loadProjection(); loadMarket();
   loadHealth(); loadPositions(); loadSignals(); loadEquity();

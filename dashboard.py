@@ -389,6 +389,131 @@ def create_app():
         loop_process = None
         return jsonify({"ok": True})
 
+    @app.route("/api/overview/pnl")
+    def api_overview_pnl():
+        """
+        P&L honesto en 3 partes (Fase 1 — Issue: PnL ficticio).
+
+        Devuelve:
+        - hoy          : P&L cerrado HOY (trades con exit_time hoy)
+        - realizado    : P&L acumulado de TODOS los trades cerrados
+        - no_realizado : P&L no realizado de posiciones abiertas
+                         (mark-to-market: (current - entry) * size * sign)
+        - desde        : fecha del primer trade cerrado o señal generada
+        - balance      : balance actual del paper broker (no incluye unrealized)
+        - equity       : balance + no_realizado (lo que tendrías si cerrás ahora)
+
+        Todo viene de la DB o del paper broker state (files). Cero cálculos
+        ficticios — si no hay datos, devuelve 0.
+
+        Nota: la tabla `trades` usa `exit_time` (no `closed_at`). La columna
+        `closed_at` que aparece en otros endpoints es de un esquema viejo y
+        falla silenciosamente; acá usamos la columna real.
+        """
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(DB_PATH))
+            conn.row_factory = sqlite3.Row
+            cur = conn.cursor()
+
+            # hoy: P&L de trades cerrados hoy
+            today = datetime.now(timezone.utc).date().isoformat()
+            row = cur.execute(
+                "SELECT COALESCE(SUM(pnl_usd), 0) AS pnl, "
+                "COUNT(*) AS cnt FROM trades "
+                "WHERE date(exit_time) = ? AND exit_time IS NOT NULL AND pnl_usd IS NOT NULL",
+                (today,),
+            ).fetchone()
+            hoy = float(row["pnl"] or 0)
+            hoy_count = int(row["cnt"] or 0)
+
+            # realizado: acumulado total de trades cerrados
+            row = cur.execute(
+                "SELECT COALESCE(SUM(pnl_usd), 0) AS pnl, "
+                "COUNT(*) AS cnt FROM trades "
+                "WHERE exit_time IS NOT NULL AND pnl_usd IS NOT NULL"
+            ).fetchone()
+            realizado = float(row["pnl"] or 0)
+            total_trades = int(row["cnt"] or 0)
+
+            # desde: timestamp del primer trade cerrado o primera señal (lo más temprano)
+            row = cur.execute(
+                "SELECT MIN(ts) AS since FROM ("
+                "  SELECT MIN(exit_time) AS ts FROM trades WHERE exit_time IS NOT NULL"
+                "  UNION ALL"
+                "  SELECT MIN(timestamp) AS ts FROM signals"
+                ")"
+            ).fetchone()
+            since = row["since"] if row else None
+            conn.close()
+
+            # no_realizado: mark-to-market de posiciones abiertas
+            unrealized = 0.0
+            tickers_seen = set()
+            for name in ("normal", "fast"):
+                prof = _profile_from_file(name)
+                for pid, pos in prof.get("positions", {}).items():
+                    ticker = pos.get("ticker")
+                    if not ticker:
+                        continue
+                    tickers_seen.add(ticker)
+            price_map = {}
+            if tickers_seen:
+                try:
+                    conn2 = sqlite3.connect(str(DB_PATH))
+                    conn2.row_factory = sqlite3.Row
+                    placeholders = ",".join("?" * len(tickers_seen))
+                    rows = conn2.execute(
+                        f"SELECT ticker, price FROM market_data "
+                        f"WHERE ticker IN ({placeholders}) "
+                        f"GROUP BY ticker HAVING MAX(timestamp)",
+                        list(tickers_seen),
+                    ).fetchall()
+                    conn2.close()
+                    price_map = {r["ticker"]: r["price"] for r in rows}
+                except Exception:
+                    price_map = {}
+            for name in ("normal", "fast"):
+                prof = _profile_from_file(name)
+                for pid, pos in prof.get("positions", {}).items():
+                    entry = pos.get("entry_price") or 0
+                    size = pos.get("size_usd") or 0
+                    signal = pos.get("signal")
+                    ticker = pos.get("ticker")
+                    current = price_map.get(ticker)
+                    if not (entry and size and current):
+                        continue
+                    if signal == "LONG":
+                        pct = (current - entry) / entry
+                    elif signal == "SHORT":
+                        pct = (entry - current) / entry
+                    else:
+                        pct = 0
+                    unrealized += pct * size
+
+            # balance (suma de los 2 profiles)
+            balance = sum(
+                (_profile_from_file(n).get("balance") or 0)
+                for n in ("normal", "fast")
+            )
+
+            return jsonify({
+                "hoy": round(hoy, 2),
+                "hoy_count": hoy_count,
+                "realizado": round(realizado, 2),
+                "no_realizado": round(unrealized, 2),
+                "balance": round(balance, 2),
+                "equity": round(balance + unrealized, 2),
+                "total_trades": total_trades,
+                "since": since,
+                "open_positions": sum(
+                    len(_profile_from_file(n).get("positions", {}))
+                    for n in ("normal", "fast")
+                ),
+            })
+        except Exception as e:
+            return jsonify({"error": str(e), "hoy": 0, "realizado": 0, "no_realizado": 0, "balance": 0, "equity": 0, "since": None, "open_positions": 0, "total_trades": 0, "hoy_count": 0}), 500
+
     @app.route("/api/portfolio/history")
     def api_portfolio_history():
         try:

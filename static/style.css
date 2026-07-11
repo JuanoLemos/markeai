@@ -1,43 +1,46 @@
 /* ═══════════════════════════════════════════════════════════
-   MarketAI — Friendly Fintech Design System v3
+   MarketAI — Friendly Fintech Design System v3 (warm dark)
    Fuente: DM Sans (Google Fonts, cargada via @import)
-   Paleta: Warm dark con acentos teal/amber
-═══════════════════════════════════════════════════════════ */
+   Paleta default: warm dark cremosa — sage / terracotta / mustard
+   (Fase 1 — sobre fondo #1a1814, estilo Linear/Notion,
+   no Bloomberg terminal. Temas alternate siguen disponibles
+   en el picker del sidebar.)
+   ═══════════════════════════════════════════════════════════ */
 
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
 
 /* ── Tokens ─────────────────────────────────────────────── */
 :root {
-  /* Surfaces */
-  --bg:          #0f1117;
-  --bg-2:        #171b26;
-  --bg-3:        #1e2333;
-  --bg-4:        #252c3f;
-  --overlay:     rgba(15,17,23,0.85);
+  /* Surfaces — warm dark */
+  --bg:          #1a1814;
+  --bg-2:        #24221c;
+  --bg-3:        #2d2a23;
+  --bg-4:        #38342b;
+  --overlay:     rgba(26,24,20,0.85);
 
   /* Borders */
-  --line:        #2a3147;
-  --line-soft:   #1e2538;
+  --line:        #3a352c;
+  --line-soft:   #2c2820;
 
-  /* Text */
-  --ink:         #eef0f6;
-  --ink-2:       #9ba3be;
-  --ink-3:       #5a6380;
+  /* Text — warm */
+  --ink:         #e8e4dc;
+  --ink-2:       #9a9388;
+  --ink-3:       #6b6558;
 
-  /* Brand */
-  --teal:        #2dd4a8;
-  --teal-dim:    rgba(45,212,168,0.12);
-  --teal-glow:   rgba(45,212,168,0.25);
-  --amber:       #f59e0b;
-  --amber-dim:   rgba(245,158,11,0.12);
-  --rose:        #f43f5e;
-  --rose-dim:    rgba(244,63,94,0.12);
-  --blue:        #60a5fa;
-  --blue-dim:    rgba(96,165,250,0.12);
+  /* Brand — sage / terracotta / mustard / info-cool */
+  --teal:        #7d9b6e;   /* sage — positivo */
+  --teal-dim:    rgba(125,155,110,0.14);
+  --teal-glow:   rgba(125,155,110,0.25);
+  --amber:       #c9a26b;   /* mustard — advertencia */
+  --amber-dim:   rgba(201,162,107,0.14);
+  --rose:        #c18672;   /* terracotta — negativo */
+  --rose-dim:    rgba(193,134,114,0.14);
+  --blue:        #7a8fa3;   /* info azul desaturado */
+  --blue-dim:    rgba(122,143,163,0.14);
   --violet:      #a78bfa;
-  --violet-dim:  rgba(167,139,250,0.12);
+  --violet-dim:  rgba(167,139,250,0.14);
 
-  /* Semantic */
+  /* Semantic — mapeo a los nombres de arriba */
   --positive:    var(--teal);
   --negative:    var(--rose);
   --warning:     var(--amber);
@@ -49,12 +52,12 @@
   --r-lg:  16px;
   --r-xl:  22px;
 
-  /* Shadows */
-  --s-sm:  0 1px 4px rgba(0,0,0,.35);
-  --s-md:  0 4px 16px rgba(0,0,0,.45);
-  --s-lg:  0 8px 32px rgba(0,0,0,.55);
-  --s-teal: 0 0 24px rgba(45,212,168,.15);
-  --s-rose: 0 0 20px rgba(244,63,94,.12);
+  /* Shadows — un poco más cálidas */
+  --s-sm:  0 1px 4px rgba(0,0,0,.4);
+  --s-md:  0 4px 16px rgba(0,0,0,.5);
+  --s-lg:  0 8px 32px rgba(0,0,0,.6);
+  --s-teal: 0 0 24px rgba(125,155,110,.18);
+  --s-rose: 0 0 20px rgba(193,134,114,.18);
 
   /* Sidebar */
   --sidebar-w: 224px;
@@ -596,7 +599,96 @@ pre.log {
   max-width: 220px; white-space: normal; text-align: center;
 }
 
-/* ── Inline explain box ──────────────────────────────────── */
+/* ── P&L TRIO (Fase 1) ─────────────────────────────────────
+   Tres cards en row: Hoy / Realizado / No realizado.
+   La card central (Realizado) es la destacada. */
+.pnl-trio {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr 1fr;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.pnl-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 18px 18px 16px;
+  position: relative;
+  overflow: hidden;
+}
+.pnl-card.featured {
+  background: linear-gradient(160deg, var(--bg-2) 0%, var(--bg-3) 100%);
+  border-color: var(--teal-glow);
+  box-shadow: var(--s-teal);
+}
+.pnl-card .pnl-icon {
+  font-size: 18px; margin-bottom: 8px; opacity: .85;
+}
+.pnl-card .pnl-label {
+  font-size: 11px; color: var(--ink-2); font-weight: 600;
+  text-transform: uppercase; letter-spacing: .7px;
+  margin-bottom: 4px;
+}
+.pnl-card .pnl-help {
+  font-size: 10px; color: var(--ink-3); margin-top: 2px;
+  display: block;
+}
+.pnl-card .pnl-value {
+  font-size: 26px; font-weight: 700; color: var(--ink);
+  letter-spacing: -0.5px; line-height: 1.1; margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.pnl-card .pnl-value.pos  { color: var(--teal); }
+.pnl-card .pnl-value.neg  { color: var(--rose); }
+.pnl-card .pnl-value.neut { color: var(--ink); }
+.pnl-card .pnl-sub {
+  font-size: 11px; color: var(--ink-3); margin-top: 6px;
+}
+@media (max-width: 720px) {
+  .pnl-trio { grid-template-columns: 1fr; gap: 10px; }
+  .pnl-card { padding: 14px 16px; }
+  .pnl-card .pnl-value { font-size: 22px; }
+}
+
+/* ── PAPER MODE BANNER (Fase 1) ────────────────────────────
+   Banner persistente, no dismissable. Visible en todas las páginas. */
+.paper-banner {
+  background: linear-gradient(90deg, rgba(201,162,107,0.12) 0%, rgba(193,134,114,0.10) 100%);
+  border: 1px solid rgba(201,162,107,0.30);
+  border-left: 3px solid var(--amber);
+  border-radius: var(--r-md);
+  padding: 9px 14px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px; color: var(--ink-2); line-height: 1.4;
+}
+.paper-banner .paper-tag {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(201,162,107,0.18);
+  color: var(--amber);
+  font-weight: 700; font-size: 10px;
+  text-transform: uppercase; letter-spacing: .8px;
+  padding: 3px 9px; border-radius: 20px;
+  flex-shrink: 0;
+}
+.paper-banner .paper-text strong { color: var(--ink); font-weight: 600; }
+.paper-banner .paper-text .paper-soft { color: var(--ink-3); margin-left: 6px; }
+
+/* ── "DESDE" TIMESTAMP (Fase 1) ────────────────────────────
+   Timestamp pequeño en el page header derecho. */
+.since-stamp {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--ink-3);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  padding: 4px 9px; border-radius: 20px;
+  font-family: 'DM Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+.since-stamp::before { content: '●'; color: var(--teal); font-size: 8px; }
+.since-stamp strong { color: var(--ink-2); font-weight: 600; margin-left: 2px; }
+
+
 .explain {
   background: var(--blue-dim); border: 1px solid rgba(96,165,250,.15);
   border-radius: var(--r-md); padding: 12px 16px;
