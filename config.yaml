@@ -159,7 +159,7 @@ profiles:
       polymarket:
         min_confidence: 50
       stocks:
-        min_confidence: 45
+        min_confidence: 30
     sl_default: 2.0
     sl_max_pct: 5.0
     sl_min_pct: 1.0

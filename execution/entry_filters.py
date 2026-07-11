@@ -76,6 +76,8 @@ def session_hours(market: str, utc_hour: int = None, profile: str = "normal", ti
         return (7 <= utc_hour < 16) or (13 <= utc_hour < 22)  # London + NY (18h/día)
 
     if market == "stocks":
+        if profile == "fast":
+            return True  # fast profile: 24/7 (bypass NYSE session para que el bot opere de noche)
         if ticker and ticker.endswith(".BA"):
             return 12 <= utc_hour < 19  # BYMA: 09:00-16:00 ART ≈ 12:00-19:00 UTC
         return 14 <= utc_hour < 21  # 09:30-16:00 ET ≈ 14:30-21:00 UTC
