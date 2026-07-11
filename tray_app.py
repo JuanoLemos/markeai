@@ -140,6 +140,33 @@ def kill_services():
     do_exit()
 
 
+def do_update():
+    """Run update.bat asynchronously so the tray UI doesn't freeze."""
+    try:
+        bat = BASE_DIR / "update.bat"
+        if not bat.exists():
+            return
+        # Runs detached; the .bat itself logs to update.log
+        subprocess.Popen(
+            ["cmd.exe", "/c", str(bat)],
+            cwd=str(BASE_DIR),
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        pass
+
+
+def do_close():
+    """Close the tray app (and the orchestrator it owns)."""
+    try:
+        if icon_instance:
+            icon_instance.notify("MarketAI cerrando...", title="MarketAI")
+    except Exception:
+        pass
+    do_exit()
+
+
 def start_dashboard():
     try:
         subprocess.Popen(
@@ -189,7 +216,8 @@ def build_menu():
         pystray.MenuItem("──────────────────", None, enabled=False),
         pystray.MenuItem("▶ Activar", activate_bot),
         pystray.MenuItem("──────────────────", None, enabled=False),
-        pystray.MenuItem("💀 Kill Services", kill_services),
+        pystray.MenuItem("🔄 Update", do_update),
+        pystray.MenuItem("❌ Close", do_close),
     )
 
 
