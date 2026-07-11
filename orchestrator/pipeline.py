@@ -36,12 +36,46 @@ def _snapshot_portfolio(orch):
         for name, pb in orch.paper_brokers.items():
             s = pb.get_summary()
             orch.risk_engine.update_balance(s["balance"])
+
+            # Issue 7 fix: compute total_pnl from DB as source of truth, not
+            # from PaperBroker.get_summary() which reflects in-memory self.balance
+            # (corruptible via duplicate orchestrators or state-file race).
+            def _price(ticker):
+                try:
+                    return orch.yf_collector.get_current_price(ticker)
+                except Exception:
+                    return None
+            pnl_data = orch.db.compute_total_pnl_from_db(get_current_price=_price)
+
+            # Kill-switch: if computed total_pnl exceeds 2x initial balance,
+            # it's clearly fictional (e.g. Issue 7 observed +$10,736 on $1000
+            # account). Log CRITICAL + Telegram. Do NOT abort — the snapshot
+            # still records the corrected value so the dashboard reflects reality.
+            initial_balance = (orch.config.get("paper") or {}).get("initial_balance", 1000)
+            if abs(pnl_data["total_pnl"]) > initial_balance * 2:
+                msg = (
+                    f"FICTIONAL PnL DETECTED: total_pnl=${pnl_data['total_pnl']:.2f} "
+                    f"exceeds 2x initial_balance=${initial_balance}. "
+                    f"realized=${pnl_data['realized_pnl']:.2f}, "
+                    f"unrealized=${pnl_data['unrealized_pnl']:.2f}, "
+                    f"n_open={pnl_data['n_open']}, n_closed={pnl_data['n_closed']}"
+                )
+                orch.log.critical(msg)
+                if getattr(orch, "notifier", None):
+                    try:
+                        orch.notifier.send_error(f"🚨 [KILL-SWITCH] {msg}")
+                    except Exception:
+                        pass
+
             orch.db.insert_portfolio_snapshot(
                 balance=s["balance"], open_positions=s["open_positions"],
-                daily_pnl=s["daily_pnl"], total_pnl=s["total_pnl"],
+                daily_pnl=s["daily_pnl"], total_pnl=pnl_data["total_pnl"],
             )
-    except Exception:
-        pass
+    except Exception as e:
+        try:
+            orch.log.error(f"_snapshot_portfolio failed: {e}")
+        except Exception:
+            pass
 
 
 def _process_market(orch, market: str, market_cfg: dict):

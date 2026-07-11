@@ -268,6 +268,72 @@ class Database:
         conn.close()
         return reversed([dict(r) for r in rows])
 
+    def compute_total_pnl_from_db(self, get_current_price=None) -> dict:
+        """
+        Issue 7 fix: compute total_pnl from DB (source of truth) instead of
+        trusting the in-memory state of PaperBroker (which can be corrupted by
+        duplicate orchestrators or state-file race conditions on the server).
+
+        Formula:
+            realized_pnl   = SUM(pnl_usd) for status='closed' AND exit_reason != 'lost_recovery'
+            unrealized_pnl = SUM( (current - entry)/entry * size * sign ) for status='open'
+            total_pnl      = realized_pnl + unrealized_pnl
+
+        Args:
+            get_current_price: callable(ticker: str) -> float | None.
+                If None or returns None for a ticker, that trade's unrealized
+                PnL contributes 0 (graceful degradation, not an error).
+
+        Returns:
+            dict with keys: total_pnl, realized_pnl, unrealized_pnl, n_open, n_closed
+        """
+        conn = self._get_conn()
+        try:
+            realized_row = conn.execute("""
+                SELECT COALESCE(SUM(pnl_usd), 0) FROM trades
+                WHERE status='closed' AND exit_reason != 'lost_recovery'
+            """).fetchone()
+            realized = float(realized_row[0] or 0.0)
+
+            n_closed = int(conn.execute(
+                "SELECT COUNT(*) FROM trades WHERE status='closed' AND exit_reason != 'lost_recovery'"
+            ).fetchone()[0])
+
+            open_rows = conn.execute("""
+                SELECT ticker, signal, entry_price, position_size_usd
+                FROM trades WHERE status='open'
+            """).fetchall()
+
+            unrealized = 0.0
+            for r in open_rows:
+                entry_price = float(r["entry_price"]) or 0.0
+                size_usd = float(r["position_size_usd"]) or 0.0
+                if entry_price <= 0 or size_usd <= 0:
+                    continue
+                current = None
+                if get_current_price is not None:
+                    try:
+                        current = get_current_price(r["ticker"])
+                    except Exception:
+                        current = None
+                if current is None or current <= 0:
+                    # No live price → can't mark to market → 0 contribution.
+                    # Better to under-report than fabricate a number.
+                    continue
+                sign = 1 if r["signal"] == "LONG" else -1
+                pnl = (current - entry_price) / entry_price * size_usd * sign
+                unrealized += pnl
+
+            return {
+                "total_pnl": round(realized + unrealized, 2),
+                "realized_pnl": round(realized, 2),
+                "unrealized_pnl": round(unrealized, 2),
+                "n_open": len(open_rows),
+                "n_closed": n_closed,
+            }
+        finally:
+            conn.close()
+
     def record_heartbeat(self, motor: str, status: str = "ok", message: str = ""):
         conn = self._get_conn()
         conn.execute(
