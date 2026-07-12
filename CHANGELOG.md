@@ -7,6 +7,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ## [Unreleased]
 
+### Fixed
+- Diligencia v2.7.0 → v2.6.3: corregido tag falso de MiniMax, alineado con metodología oficial
+- `execution/entry_filters.py`: eliminado `correlation_check` obsoleto (reemplazado por R2 gate)
+- `tests/test_ola1_p2_fixes.py`: removidos tests B-09 (cubiertos por test_risk_gates.py)
+- `tests/test_bot_actions.py`: removidos tests de correlation_check legacy
+
 ### Added
 - Diligencia v2.6.3 → v2.7.0: sync estructural (sistema de olas disponible via /ola)
 - 5 risk gates R1-R5 pre-trade (cascade R4→R5→R1→R2→R3 en `orchestrator/pipeline.py`)

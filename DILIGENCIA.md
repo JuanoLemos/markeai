@@ -1,4 +1,4 @@
-# Diligencia v2.7.0 — MarketAI
+# Diligencia v2.6.3 — MarketAI
 
 Sello de metodología para proyectos OpenCode.
 
@@ -25,26 +25,19 @@ Sello de metodología para proyectos OpenCode.
 
 | Proyecto | Fecha | Estado |
 |---|---|---|
-| MarketAI | 2026-07-11 | ✅ v2.7.0 |
+| MarketAI | 2026-07-12 | ✅ v2.6.3 |
 
 ## Historial
 
 | Versión | Fecha | Cambios |
 |---|---|---|
-| v2.7.0 | 2026-07-11 | Sync v2.6.3 → v2.7.0. INDEX.md creado. $NEWS_FILE removido (huérfana). `doc/arch/palomas.md` creado. CHANGELOG [Unreleased] poblado con 5 commits post-1.4.0. |
+| v2.6.3 | 2026-07-12 | Sync desde v2.7.0 (tag falso de MiniMax) — alineado con metodología oficial |
 | v2.6.3 | 2026-07-06 | Upgrade desde v1.18.1 — Comandos sincronizados (29 activos), $PALOMA_MAIN_PLAN en AGENTS.md, CHANGELOG registrado |
 | v1.18.1 | 2026-06-13 | Emojis liberados, themes, BUILD guard, /mutacion, /revision |
 | v1.17.2 | 2026-06-09 | GitHub readiness (LICENSE, CODE_OF_CONDUCT, CONTRIBUTING), guías/metodología nuevas |
 | v1.15.0 | 2026-06-05 | Enforcement documental, /circuito, /doctor, /salud, /reanudar |
 | v1.4 | 2026-05-31 | $INCIDENTS, doc/arch/incidentes.md, comandos bug/incidente |
 | v1.0 | 2026-05-09 | Adaptación desde estructura legacy |
-
-## Notas del upgrade v2.6.3 → v2.7.0
-
-- El global Diligencia está en v2.7.0 (sistema de olas disponible via `/ola`)
-- El comando `~/.config/opencode/commands/adaptar.md` está en v2.6.3 (lag vs DILIGENCIA.md global — flag para upstream, no es nuestro)
-- Para MarketAI, los cambios estructurales aplicables al upgrade ya están: `INDEX.md` y `doc/arch/palomas.md` creados
-- Items pendientes (R85-R88) son scope del proyecto, no de la metodología
 
 ## Archivos relacionados
 
