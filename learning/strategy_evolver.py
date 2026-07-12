@@ -82,7 +82,7 @@ class StrategyEvolver:
         content += "- Solo LONG en tendencia alcista (EMA50 > EMA200)\n"
         content += "- Post-earnings: esperar 2 velas horarias antes de entrar\n"
         content += "- Salir si VIX > 30 (volatilidad extrema)\n"
-        with open(self.strategy_path, "w") as f:
+        with open(self.strategy_path, "w", encoding="utf-8") as f:
             f.write(content)
 
     def _write_skills(self, strategies: dict):

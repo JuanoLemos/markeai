@@ -142,6 +142,12 @@ Sistema de Trading Multi-Capa con DeepSeek AI.
 | R41 | Estrategia madura → capital progresivo | P2 | ⏳ | R40 |
 | R42 | Modo replay histórico para QA sin APIs live | P2 | ⏳ | R38 |
 | R80 | Informe repos trading — investigación de técnicas AI en GitHub | P2 | ⏳ | — |
+| R85 | Risk code-enforced: validate_trade gatekeeper estilo swarm-trader | P1 | ✅ | R23 |
+| R86 | Time-exit configurable: minimal_roi table estilo Freqtrade | P1 | 🔴 Pendiente | R24 |
+| R87 | Prevención posiciones contradictorias: single Portfolio Manager bottleneck | P1 | 🔴 Pendiente | R22 |
+| R88 | Walk-forward validation con purging-and-embargo (ML4T pattern) | P2 | 🔴 Pendiente | R29 |
+
+Referencias: [swarm-trader](https://github.com/zhound420/swarm-trader), [freqtrade](https://github.com/freqtrade/freqtrade), [ai-hedge-fund](https://github.com/virattt/ai-hedge-fund), [ML4T](https://github.com/stefan-jansen/machine-learning-for-trading)
 
 ---
 
