@@ -255,4 +255,4 @@ Cargar `skill("actualizar-docs")` para el checklist completo.
 
 ## SELLO DILIGENCIA
 
-Proyecto adaptado a Diligencia v2.6.1.
+Proyecto adaptado a Diligencia v2.7.0.

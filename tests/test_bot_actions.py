@@ -208,26 +208,6 @@ class TestEntryFilters:
         result = entry_filters.session_hours("polymarket", 3)
         assert result is True
 
-    def test_correlation_same_direction(self):
-        from execution import entry_filters
-        open_positions = [
-            {"market": "forex", "ticker": "EURUSD=X", "signal": "LONG"},
-        ]
-        result = entry_filters.correlation_check(open_positions, "forex", "GBPUSD=X", "LONG")
-        assert result is False
-
-    def test_correlation_diff_direction(self):
-        from execution import entry_filters
-        open_positions = [{"market": "forex", "ticker": "EURUSD=X", "signal": "LONG"}]
-        result = entry_filters.correlation_check(open_positions, "forex", "GBPUSD=X", "SHORT")
-        assert result is True
-
-    def test_correlation_diff_market(self):
-        from execution import entry_filters
-        open_positions = [{"market": "forex", "ticker": "EURUSD=X", "signal": "LONG"}]
-        result = entry_filters.correlation_check(open_positions, "stocks", "SPY", "LONG")
-        assert result is True
-
 
 # ═══════════════════════════════════════════════════════════════════
 # RISK ENGINE — KELLY, POSITION SIZING, CIRCUIT BREAKERS

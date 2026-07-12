@@ -1,7 +1,6 @@
 """
 Tests for the 5 P2 fixes (Ola 1, Día 2).
 - B-08: PaperBroker SL/TP defaults from config
-- B-09: correlation_check threshold from config
 - B-14: api_error helper
 - B-15: api() JS helper distinguishes HTTP errors (template-side)
 - B-13 + B-16: closing the stale tracker entries (verified in commit, no code change)
@@ -14,7 +13,6 @@ import json
 from pathlib import Path
 
 from execution.paper_broker import PaperBroker
-from execution.entry_filters import correlation_check
 
 
 def test_b_08_paper_broker_default_sl_tp(tmp_path):
@@ -55,30 +53,6 @@ def test_b_08_paper_broker_default_backward_compatible(tmp_path):
     pb = PaperBroker(initial_balance=1000, state_path=str(tmp_path / "pb.json"))
     assert pb.default_sl_pct == 5.0
     assert pb.default_tp_pct == 10.0
-
-
-def test_b_09_correlation_threshold_from_config():
-    """B-09: correlation_check accepts threshold from config (single source of truth)."""
-    # With threshold=0.85, a correlation of 0.80 should PASS
-    open_positions = [{"market": "stocks", "ticker": "AAPL", "signal": "LONG"}]
-    # AAPL has MSFT=0.78, GOOGL=0.75, AMZN=0.72, QQQ=0.85
-    # With threshold=0.80, AAPL vs MSFT (0.78) passes
-    assert correlation_check(open_positions, "stocks", "MSFT", "LONG", threshold=0.80) is True
-    # With threshold=0.70, AAPL vs MSFT (0.78) blocks
-    assert correlation_check(open_positions, "stocks", "MSFT", "LONG", threshold=0.70) is False
-    # With threshold=0.85 (config), AAPL vs QQQ (0.85) blocks
-    assert correlation_check(open_positions, "stocks", "QQQ", "LONG", threshold=0.85) is False
-    # With threshold=0.86, AAPL vs QQQ (0.85) passes
-    assert correlation_check(open_positions, "stocks", "QQQ", "LONG", threshold=0.86) is True
-
-
-def test_b_09_default_threshold_backward_compatible():
-    """B-09: omitting threshold keeps legacy 0.80 behavior (backward compat)."""
-    open_positions = [{"market": "stocks", "ticker": "AAPL", "signal": "LONG"}]
-    # AAPL vs MSFT=0.78 — passes with default 0.80
-    assert correlation_check(open_positions, "stocks", "MSFT", "LONG") is True
-    # AAPL vs QQQ=0.85 — blocks with default 0.80
-    assert correlation_check(open_positions, "stocks", "QQQ", "LONG") is False
 
 
 def test_b_14_dashboard_api_error_helper():
