@@ -176,9 +176,9 @@ risk_gates:
   max_open_positions:
     enabled: true
     threshold: 12
-  max_position_size:
-    enabled: true
-    threshold_pct: 0.08
+    max_position_size:
+      enabled: true
+      threshold_pct: 0.12
   sector_cap:
     enabled: true
     default_threshold_pct: 0.30
@@ -199,9 +199,9 @@ risk_gates:
     cluster_threshold: 0.60
     cluster_min_count: 3
     matrix_lookback_days: 60
-  effective_n:
-    enabled: true   # GATE desde fase 1 (decision del usuario)
-    min_effective_n: 4
+    effective_n:
+      enabled: true   # GATE desde fase 1 (decision del usuario)
+      min_effective_n: 2
   sectors_file: config/sectors.yaml
 time_exit:
   default:
