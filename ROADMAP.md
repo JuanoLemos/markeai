@@ -1,12 +1,14 @@
-# MarketAI — Roadmap de Desarrollo v1.3.0
+# MarketAI — Roadmap de Desarrollo v1.4.0
 
 Sistema de Trading Multi-Capa con DeepSeek AI.
 
 ---
 
-## FASE 0: Fundación
+## Ola 0: Core
 
-**Objetivo: Estructura base funcionando**
+**Estado:** ✅ Completada
+**Depende de:** —
+**Scope:** Infraestructura base del sistema — fundación, datos, analizadores, motor DeepSeek, paper broker, aprendizaje, alertas, dashboard.
 
 | ID | Item | Prioridad | Estado | Depende de |
 |----|------|-----------|--------|------------|
@@ -16,30 +18,10 @@ Sistema de Trading Multi-Capa con DeepSeek AI.
 | R04 | Instalar dependencias (pip install) | P1 | ✅ | R01 |
 | R05 | Configurar .env con API keys | P1 | ✅ | R01 |
 | R06 | Verificar acceso a datos (Polymarket, Yahoo Finance) | P1 | ✅ | R05 |
-
----
-
-## FASE 1: Recolección de Datos
-
-**Objetivo: Datos fluyendo correctamente**
-
-| ID | Item | Prioridad | Estado | Depende de |
-|----|------|-----------|--------|------------|
 | R07 | collector_polymarket.py — CLOB API + DNS bypass | P1 | ✅ | R06 |
 | R08 | collector_yfinance.py — Forex, Acciones, DXY, VIX | P1 | ✅ | R06 |
 | R09 | collector_news.py — NewsAPI + RSS fallback | P2 | ✅ | R06 |
 | R10 | database.py — SQLite WAL schema | P1 | ✅ | R01 |
-
-**Hito 1:** `tests/test_collectors.py` pasa ✅
-
----
-
-## FASE 2: Analizadores
-
-**Objetivo: Señales de trading desde cada capa**
-
-| ID | Item | Prioridad | Estado | Depende de |
-|----|------|-----------|--------|------------|
 | R11 | technical.py — RSI, MACD, Bollinger, EMAs | P1 | ✅ | R08 |
 | R12 | onchain.py — Etherscan V2 (USDC flows) | P2 | ✅ | R08 |
 | R13 | sentiment.py — Clasificación bullish/bearish | P2 | ✅ | R09 |
@@ -49,73 +31,18 @@ Sistema de Trading Multi-Capa con DeepSeek AI.
 | R17 | cross_asset.py — SPY/QQQ divergencia | P2 | ✅ | R08 |
 | R18 | adx_regime.py — Trend strength filter | P2 | ✅ | R08 |
 | R19 | ict_smc.py — Order blocks, FVG, liquidity sweep | P2 | ✅ | R08 |
-
-**Hito 2:** 9 analizadores en formato consistente ✅
-
----
-
-## FASE 3: Motor de Decisión
-
-**Objetivo: DeepSeek tomando decisiones informadas**
-
-| ID | Item | Prioridad | Estado | Depende de |
-|----|------|-----------|--------|------------|
 | R20 | fusion.py — Pesos por capa/mercado, threshold 55/45 | P1 | ✅ | R11-R19 |
 | R21 | decider.py — Dual prompts, JSON parsing, fallback WAIT | P1 | ✅ | R20 |
-
-**Hito 3:** DeepSeek responde con señales coherentes ✅
-
----
-
-## FASE 4: Ejecución
-
-**Objetivo: Operaciones ejecutándose automáticamente**
-
-| ID | Item | Prioridad | Estado | Depende de |
-|----|------|-----------|--------|------------|
 | R22 | paper_broker.py — Slippage, trailing, partial TP | P1 | ✅ | R21 |
 | R23 | risk_engine.py — Kelly 25%, circuit breakers | P1 | ✅ | R21 |
 | R24 | entry_filters.py — Session hours, correlation | P1 | ✅ | R21 |
 | R25 | executor_polymarket.py — Stub (requiere keys Polygon) | P2 | ~ | R22 |
 | R26 | executor_traditional.py — Alpaca/OANDA stub | P2 | ~ | R22 |
-
-**Hito 4:** Paper trading funcional con dual profile ✅
-
----
-
-## FASE 5: Auto-Aprendizaje
-
-**Objetivo: Sistema que mejora solo con el uso**
-
-| ID | Item | Prioridad | Estado | Depende de |
-|----|------|-----------|--------|------------|
 | R27 | journal.py — Post-mortem automático de cada trade | P2 | ✅ | R22 |
 | R28 | strategy_evolver.py — Analiza trades, sugiere ajustes | P3 | ✅ | R27 |
 | R29 | backtest.py — Walk-forward con Sharpe, profit factor | P2 | ✅ | R22 |
-
-**Hito 5:** El sistema sugiere mejoras después de cada 10 trades ✅
-
----
-
-## FASE 6: Alertas y Orquestación
-
-**Objetivo: Sistema 24/7 completo**
-
-| ID | Item | Prioridad | Estado | Depende de |
-|----|------|-----------|--------|------------|
 | R30 | notifier.py — Telegram + Discord webhook | P2 | ✅ | R09 |
 | R31 | orchestrator.py — Loop dual profile, cron, time-exit | P1 | ✅ | R22-R30 |
-
-**Hito 6:** Sistema corriendo 24/7 con alertas ✅
-
----
-
-## FASE 7: Sistema Completo
-
-**Objetivo: Dashboard, tray app, mejoras de calidad de vida**
-
-| ID | Item | Prioridad | Estado | Depende de |
-|----|------|-----------|--------|------------|
 | R32 | Dashboard web — Flask + 9 páginas, 6 temas | P1 | ✅ | R31 |
 | R33 | Tray app — VBS launcher, tooltip, auto-restart | P2 | ✅ | R31 |
 | R34 | Backtest vía run_replay | P2 | ✅ | R29 |
@@ -125,35 +52,11 @@ Sistema de Trading Multi-Capa con DeepSeek AI.
 
 ---
 
-## FASE 8: Producción
+## Ola 1: Robustez
 
-**Objetivo: Operación real controlada**
-
-| ID | Item | Prioridad | Estado | Depende de |
-|----|------|-----------|--------|------------|
-| R38 | Paper trading 2-4 semanas (validación) | P1 | 🔄 | R31 |
-| R80 | Informe repos trading — investigación de técnicas AI en GitHub | P2 | ✅ | — |
-| R81 | Split orchestrator.py → orchestrator/ package (core/pipeline/replay) | P1 | ✅ | — |
-| R82 | Crash recovery auto-reconciliación DB↔JSON al boot (B-N1/N2/N3) | P1 | ✅ | — |
-| R83 | Refactor analyzers → BaseAnalyzer + _utils (B-23/24/25) | P2 | ✅ | — |
-| R84 | request_id por iteración + orchestrator.err.log separado | P2 | ✅ | — |
-| R39 | Micro-montos reales ($10-50 por operación) | P1 | ⏳ | R38 |
-| R40 | Monitoreo diario con ajustes manuales | P1 | ⏳ | R39 |
-| R41 | Estrategia madura → capital progresivo | P2 | ⏳ | R40 |
-| R42 | Modo replay histórico para QA sin APIs live | P2 | ⏳ | R38 |
-| R80 | Informe repos trading — investigación de técnicas AI en GitHub | P2 | ⏳ | — |
-| R85 | Risk code-enforced: validate_trade gatekeeper estilo swarm-trader | P1 | ✅ | R23 |
-| R86 | Time-exit configurable: minimal_roi table estilo Freqtrade | P1 | 🔴 Pendiente | R24 |
-| R87 | Prevención posiciones contradictorias: single Portfolio Manager bottleneck | P1 | 🔴 Pendiente | R22 |
-| R88 | Walk-forward validation con purging-and-embargo (ML4T pattern) | P2 | 🔴 Pendiente | R29 |
-
-Referencias: [swarm-trader](https://github.com/zhound420/swarm-trader), [freqtrade](https://github.com/freqtrade/freqtrade), [ai-hedge-fund](https://github.com/virattt/ai-hedge-fund), [ML4T](https://github.com/stefan-jansen/machine-learning-for-trading)
-
----
-
-## FASE 9: Mejoras Continuas
-
-**Objetivo: Refinamiento basado en experiencia real**
+**Estado:** ✅ Completada
+**Depende de:** Ola 0
+**Scope:** Refactor arquitectónico (orchestrator package, BaseAnalyzer), crash recovery, y todas las mejoras de calidad (ATR trailing, partial TP, Kelly, circuit breakers, endpoints debug).
 
 | ID | Item | Prioridad | Estado | Depende de |
 |----|------|-----------|--------|------------|
@@ -177,40 +80,75 @@ Referencias: [swarm-trader](https://github.com/zhound420/swarm-trader), [freqtra
 | R60 | CHANGELOG.md en raíz | P1 | ✅ | — |
 | R61 | POST /api/debug/reset-broker | P2 | ✅ | R32 |
 | R62 | POST /api/debug/motors-clear | P2 | ✅ | R32 |
+| R81 | Split orchestrator.py → orchestrator/ package (core/pipeline/replay) | P1 | ✅ | — |
+| R82 | Crash recovery auto-reconciliación DB↔JSON al boot | P1 | ✅ | — |
+| R83 | Refactor analyzers → BaseAnalyzer + _utils (B-23/24/25) | P2 | ✅ | — |
+| R84 | request_id por iteración + orchestrator.err.log separado | P2 | ✅ | — |
 
 ---
 
-## Fase A: Expansión de tickers (ETFs + Index Funds)
+## Ola 2: Expansión
 
-**Objetivo: Agregar 8 ETFs de amplio mercado y 2 fondos indexados.**
+**Estado:** 🔄 En progreso
+**Depende de:** Ola 0
+**Scope:** Ampliación de cobertura de mercado (ETFs, index funds, CEDEARs .BA) y risk gates R1-R5 pre-trade para protección del sistema.
 
 | ID | Item | Prioridad | Estado | Depende de |
 |----|------|-----------|--------|------------|
 | R63 | 8 ETFs + 2 index funds en config.yaml | P1 | ✅ | R08 |
 | R64 | Matriz de correlación expandida en entry_filters | P1 | ✅ | R24 |
-| R65 | 98 tests pasan | P1 | ✅ | R63-R64 |
-| R66 | Analizador fundamental con métricas ETF (Fase B) | P2 | ⏳ | R15 |
-
----
-
-## Fase C: CEDEARs Argentina (BYMA)
-
-**Objetivo: Soportar tickers .BA con conversión USD/ARS y horario BYMA.**
-
-| ID | Item | Prioridad | Estado | Depende de |
-|----|------|-----------|--------|------------|
+| R65 | 98 tests pasan — sin cambios a brokers/risk/fusion/decider | P1 | ✅ | R63-R64 |
+| R66 | Analizador fundamental con métricas ETF (AUM, expense ratio, YTD return) — Fase B | P2 | ⏳ | R15 |
 | R67 | 7 CEDEARs .BA en config.yaml | P1 | ✅ | R08 |
 | R68 | get_usd_ars_rate() en collector_yfinance | P1 | ✅ | R08 |
 | R69 | Precios ARS → pseudo-USD en orchestrator | P1 | ✅ | R68 |
 | R70 | BYMA session hours 12-19 UTC | P1 | ✅ | R24 |
 | R71 | Correlación CEDEAR vs subyacente (0.98) | P1 | ✅ | R24 |
 | R72 | _analyze_stocks() pasa 24 tickers completos | P1 | ✅ | R31 |
+| R85 | Risk gates R1-R5: validate_trade gatekeeper pre-trade (cascade R4→R5→R1→R2→R3) | P1 | ✅ | R23 |
 
 ---
 
-## Fase D: Diligencia — Salud estructural del proyecto
+## Ola 3: Producción
 
-**Objetivo: Mantener integridad de la estructura Diligencia durante y después de adaptaciones.**
+**Estado:** ⏳ En progreso (deploy Docker listo, paper trading en curso)
+**Depende de:** Ola 2
+**Scope:** Validación en paper trading, migración a micro-montos reales, deploy 24/7 con Docker, herramientas operacionales.
+
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R38 | Paper trading 2-4 semanas (validación) | P1 | 🔄 | R31 |
+| R39 | Micro-montos reales ($10-50 por operación) | P1 | ⏳ | R38 |
+| R40 | Monitoreo diario con ajustes manuales | P1 | ⏳ | R39 |
+| R41 | Estrategia madura → capital progresivo | P2 | ⏳ | R40 |
+| R42 | Modo replay histórico para QA sin APIs live | P2 | ⏳ | R38 |
+| — | Deploy Docker: Dockerfile, docker-compose, healthcheck, deploy.bat, GUIA_DEPLOY.md | P1 | ✅ | — |
+| — | Ola 2 tools: ola2_backup, ola2_daily_summary, ola2_monitor, ola2_watchdog | P2 | ✅ | — |
+| — | Dashboard mobile-first redesign: warm dark palette, bottom nav, gates page | P2 | ✅ | — |
+
+---
+
+## Ola 4: IA 2.0
+
+**Estado:** ⏳ Pendiente (research y prompts v2 completados)
+**Depende de:** Ola 3
+**Scope:** Mejoras del motor de decisión — prompts DeepSeek v2, time-exit configurable estilo Freqtrade, Portfolio Manager bottleneck, walk-forward validation.
+
+| ID | Item | Prioridad | Estado | Depende de |
+|----|------|-----------|--------|------------|
+| R80 | Informe repos trading — investigación de técnicas AI en GitHub (100+ repos analizados) | P2 | ✅ | — |
+| — | Prompt v2 DeepSeek: WAIT default, pre-mortem, 4 ejemplos few-shot, reasoning estructurado | P1 | ✅ | R21 |
+| R86 | Time-exit configurable: minimal_roi table estilo Freqtrade | P1 | 🔴 Pendiente | R24 |
+| R87 | Prevención posiciones contradictorias: single Portfolio Manager bottleneck | P1 | 🔴 Pendiente | R22 |
+| R88 | Walk-forward validation con purging-and-embargo (ML4T pattern) | P2 | 🔴 Pendiente | R29 |
+
+---
+
+## Ola 5: Diligencia
+
+**Estado:** ✅ Completada
+**Depende de:** —
+**Scope:** Salud estructural del proyecto — variables, comandos, metodología, documentación de autoridad.
 
 | ID | Item | Prioridad | Estado | Depende de |
 |----|------|-----------|--------|------------|
@@ -233,12 +171,13 @@ Referencias: [swarm-trader](https://github.com/zhound420/swarm-trader), [freqtra
 | M03 | Profit factor | >1.5 | Ganancia bruta / pérdida bruta |
 | M04 | Max drawdown | <15% | Peak-to-trough en dashboard |
 | M05 | Señales por día | 2-5 | Trades ejecutados en paper broker |
-| M06 | Tests | 98/98 | `python -m pytest tests/ -v` |
+| M06 | Tests | 200/200 | `python -m pytest tests/ -v` |
 
 ---
 
 ## Archivos relacionados
 
+- `doc/olas/` — Desglose detallado de cada ola (scope, entregables, agentes)
 - `CHECKLIST.md` — Checklist de implementación
 - `CHANGELOG.md` — Historial de versiones
 - `AGENTS.md` — Variables de ruta y comandos
