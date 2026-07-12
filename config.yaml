@@ -135,7 +135,7 @@ profiles:
       polymarket:
         min_confidence: 35
       stocks:
-        min_confidence: 30
+        min_confidence: 20
     sl_default: 0.5
     sl_max_pct: 1.5
     sl_min_pct: 0.3
@@ -147,7 +147,7 @@ profiles:
       adx_alignment: required
       correlation: true
       kelly_positive: true
-      min_confluence: 2
+      min_confluence: 1
       session: true
       volatility: true
     label: Normal
@@ -159,7 +159,7 @@ profiles:
       polymarket:
         min_confidence: 50
       stocks:
-        min_confidence: 30
+        min_confidence: 25
     sl_default: 2.0
     sl_max_pct: 5.0
     sl_min_pct: 1.0
