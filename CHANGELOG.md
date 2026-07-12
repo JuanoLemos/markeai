@@ -8,15 +8,36 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [Unreleased]
 
 ### Added
-- Diligencia v1.18.1 → v2.6.3: comandos sincronizados (45 activos), $PALOMA_MAIN_PLAN en AGENTS.md, DILIGENCIA.md actualizado
-- Search GitHub AI trading repos: investigación de técnicas IA trading (100+ repos analizados)
-- R80: Informe repos trading — investigación de técnicas AI en GitHub (FASE 8)
+- Diligencia v2.6.3 → v2.7.0: sync estructural (sistema de olas disponible via /ola)
+- 5 risk gates R1-R5 pre-trade (cascade R4→R5→R1→R2→R3 en `orchestrator/pipeline.py`)
+  - R1 sector cap, R2 correlación, R3 effective-N, R4 max open, R5 max size
+  - Tabla `gate_rejections` (pendiente R87) — por ahora parsea `orchestrator.log`
+- Prompt v2 DeepSeek (`engine/decider.py`): WAIT es el default, pre-mortem antes de sellar, 4 ejemplos few-shot (LONG/SHORT/WAIT-contradicción/WAIT-pre-mortem), reasoning estructurado `signal(conf) | capas: X+Y | riesgo: Z`, awareness del pipeline R1-R5, formato de salida conciso
+- Dashboard mobile-first (wireframe v2 aplicado):
+  - `static/style.css` reescrito con paleta warm dark (sage/terracotta/mustard), Outfit + JetBrains Mono
+  - `templates/base.html`: app-header sticky mobile + bottom nav 5 tabs (Inicio/Posiciones/Gates/Historial/Ajustes) + sidebar desktop (>960px)
+  - `templates/overview.html`: 4 cards (HOY, Posición destacada, Gates mini, Equity total) con sparklines
+  - `templates/gates.html`: feed de rechazos por gate
+- Endpoint `GET /api/overview/pnl`: 3 números honestos (hoy, realizado, no_realizado) + desde + balance + equity
+- Endpoint `GET /api/gates/recent`: chips R1-R5 + rechazos 24h (parsea `orchestrator.log`)
+- `tests/test_overview_pnl.py`: 16 tests para `/api/overview/pnl` (mark-to-market, no-invención, regresión anti-PnL ficticio Issue 7)
+- `doc/arch/r80_trading_ai_repos.md` — R80 cierre: 6 repos top trading AI analizados
+- `INDEX.md` (raíz) — índice de docs críticos (creado en este sync)
 
 ### Changed
-- ROADMAP.md: +R80 en FASE 8
+- `ROADMAP.md`: +R80 cerrado, R85-R88 siguen 🔴 pendientes
+- `DILIGENCIA.md`: v2.6.3 → v2.7.0
+- `README.md`: tests 143 → 159, nota del rediseño mobile-first
+- `AGENTS.md`: $NEWS_FILE removido (huérfana, no existe `news.txt`)
+- `doc/arch/palomas.md` — creado (placeholder, faltaba en estructura)
+
 ### Deprecated
 ### Removed
+- $NEWS_FILE de `AGENTS.md` (variable sin archivo target)
+
 ### Fixed
+- P&L ficticio (Issue 7) — `/api/overview/pnl` lee SOLO de la DB y paper broker state, cero cálculos inventados
+
 ### Security
 
 ## [1.4.0] — 2026-07-10

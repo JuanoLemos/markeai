@@ -27,8 +27,23 @@ Ver `doc/guias/` para instalación, configuración y uso detallado.
 ## Tests
 
 ```powershell
-python -m pytest tests/ -v                 # 143 tests
+python -m pytest tests/ -v                 # 159 tests
 ```
+
+## UI / UX
+
+Dashboard web en `localhost:8050`. Mobile-first: bottom nav 5 tabs (Inicio / Posiciones / Gates / Historial / Ajustes) en mobile, sidebar desktop en >960px. Diseño warm dark con paleta sage / terracotta / mustard. Wireframes de referencia en `doc/arch/wireframes-v2/` (cuando aplique).
+
+Componentes clave:
+- `static/style.css` — design system (Outfit + JetBrains Mono, paleta warm dark, cards con radius 16px, bottom nav fixed)
+- `templates/overview.html` — 4 cards: HOY (P&L con date range + Realizado + No realizado + sparkline), Posición destacada, Gates mini (R1-R5), Equity total
+- `templates/gates.html` — feed de rechazos por gate
+- Banner PAPER MODE persistente, no dismissable
+
+Endpoints principales:
+- `GET /api/overview/pnl` — 3 números honestos (hoy / realizado / no_realizado) + desde + balance + equity
+- `GET /api/gates/recent` — chips R1-R5 + rechazos 24h
+- `GET /api/positions`, `/api/signals`, `/api/trades` — datos de operaciones
 
 ## Licencia
 
