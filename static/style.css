@@ -320,6 +320,7 @@ button, input, select, textarea { font-family: inherit; }
 .sb-link:hover { background: var(--bg-3); color: var(--text); }
 .sb-link.active { background: var(--profit-bg); color: var(--profit); font-weight: 600; }
 .sb-icon { width: 20px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.sb-link svg { width: 18px; height: 18px; flex-shrink: 0; stroke: currentColor; }
 .sb-status { padding: 12px 16px; border-top: 1px solid var(--border-soft); display: flex; align-items: center; gap: 8px; }
 .sb-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; transition: background .3s, box-shadow .3s; }
 .sb-dot.on { background: var(--profit); box-shadow: 0 0 0 3px var(--profit-bg); animation: beat 2s ease-in-out infinite; }

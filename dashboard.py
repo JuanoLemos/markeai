@@ -22,6 +22,7 @@ loop_process = None
 
 def create_app():
     app = Flask(__name__, template_folder=BASE_DIR / "templates", static_folder=BASE_DIR / "static")
+    app.config['TEMPLATES_AUTO_RELOAD'] = True
 
     def _version():
         try:
