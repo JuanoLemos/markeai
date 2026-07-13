@@ -148,6 +148,41 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)})
 
+    @app.route("/api/deploy", methods=["POST"])
+    def api_deploy():
+        import sys, time
+        global loop_process
+        try:
+            result = subprocess.run(
+                ["git", "pull", "origin", "main"],
+                cwd=str(BASE_DIR), capture_output=True, text=True, timeout=30
+            )
+            pull_ok = result.returncode == 0
+            pull_out = (result.stdout or "").strip() + "\n" + (result.stderr or "").strip()
+        except Exception as e:
+            return jsonify({"ok": False, "error": f"git pull failed: {e}"})
+        stop_file = BASE_DIR / "STOP"
+        stop_file.write_text("deploy restart")
+        waited = 0
+        if loop_process and loop_process.poll() is None:
+            for _ in range(6):
+                time.sleep(5)
+                waited += 5
+                if loop_process.poll() is not None:
+                    break
+        loop_process = None
+        new_proc = subprocess.Popen(
+            [sys.executable, str(BASE_DIR / "orchestrator.py"), "--mode", "loop"],
+            cwd=str(BASE_DIR), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+        loop_process = new_proc
+        if stop_file.exists():
+            stop_file.unlink(missing_ok=True)
+        return jsonify({
+            "ok": pull_ok, "pull": pull_out.split("\n")[0] if pull_out else "no output",
+            "restarted": True, "waited_s": waited,
+        })
+
     @app.route("/api/debug/inject-signal", methods=["POST"])
     def api_debug_inject():
         try:
