@@ -134,6 +134,11 @@ def _process_market(orch, market: str, market_cfg: dict):
                 if prof_cfg.get("adx_alignment") == "required" and adx_regime == "ranging":
                     orch.log.info(f"  {prof_name} blocked: ADX ranging")
                     continue
+                # R89: check session hours BEFORE DeepSeek to avoid wasted API cost
+                hour = datetime.now(timezone.utc).hour
+                if not session_hours(market, hour, profile=prof_name, ticker=ticker):
+                    orch.log.info(f"  {prof_name} session blocked at hour {hour}")
+                    continue
                 pb = orch.paper_brokers[prof_name]
                 decision = orch.decider.decide(market, ticker, fused, {**market_data, "open_positions": pb.get_positions()}, fused.get("layer_scores", {}), profile=prof_name)
                 orch._hb("deepseek", "ok", f"{prof_name} {market} {ticker}: {decision.get('signal')} conf={decision.get('confidence')}")
@@ -144,10 +149,6 @@ def _process_market(orch, market: str, market_cfg: dict):
                 can_trade, reason = orch.risk_engine.circuit_breakers()
                 if not can_trade:
                     orch.log.warning(f"  Risk block ({prof_name}): {reason}")
-                    continue
-                hour = datetime.now(timezone.utc).hour
-                if not session_hours(market, hour, profile=prof_name, ticker=ticker):
-                    orch.log.info(f"  {prof_name} session blocked at hour {hour}")
                     continue
                 if prof_cfg.get("correlation_filter") and pb and pb.get_positions():
                     # Note: the old inline correlation_check is REMOVED.
