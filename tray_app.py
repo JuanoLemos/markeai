@@ -280,66 +280,36 @@ def on_show():
 
 
 def restart_all_clean():
-    """Matar TODO (propios + huerfanos), limpiar logs, arrancar fresh."""
+    """Git pull + kill orphans + clear logs + start fresh."""
     global _proc_orch, _proc_dash
-    log("=== RESTART CLEAN ===")
-    # Stop our own
+    log("=== UPDATE & RESTART ===")
     stop_service(_proc_orch, "orchestrator")
     stop_service(_proc_dash, "dashboard")
-    # Kill orphans
     time.sleep(2)
     kill_orphans()
-    time.sleep(3)
+    time.sleep(2)
+    # Git pull
+    try:
+        r = subprocess.run(["git", "pull", "origin", "main"], cwd=str(BASE_DIR),
+                           capture_output=True, text=True, timeout=60)
+        log(f"git pull: {r.stdout.strip() or 'up to date'}")
+    except Exception as e:
+        log(f"git pull failed: {e}")
     # Clear logs
     clear_logs()
-    # Re-initialize logger (file was truncated)
     for h in logging.getLogger().handlers[:]:
         if hasattr(h, 'baseFilename'):
             h.close()
             logging.getLogger().removeHandler(h)
     _setup_logging()
-    log("=== RESTART CLEAN: logs cleared, starting fresh ===")
-    # Start fresh
+    log("=== UPDATE & RESTART: code updated, starting fresh ===")
     _proc_orch = start_service(ORCH_SCRIPT, "orchestrator", ["--mode", "loop"])
     if _proc_orch:
         validate_startup(_proc_orch, "orchestrator")
     _proc_dash = start_service(DASH_SCRIPT, "dashboard")
     if _proc_dash:
         validate_startup(_proc_dash, "dashboard")
-    log("=== RESTART CLEAN COMPLETE ===")
-
-
-def do_update():
-    """Stop services, run update.bat synchronously, restart fresh."""
-    global _proc_orch, _proc_dash
-    log("=== UPDATE: started by user ===")
-    try:
-        stop_service(_proc_orch, "orchestrator")
-        stop_service(_proc_dash, "dashboard")
-        time.sleep(2)
-        kill_orphans()
-        time.sleep(3)
-        if not UPDATE_BAT.exists():
-            log("UPDATE: update.bat not found, aborting", 'error')
-            return
-        result = subprocess.run(
-            ["cmd.exe", "/c", str(UPDATE_BAT)],
-            cwd=str(BASE_DIR),
-            timeout=600,
-        )
-        log(f"UPDATE: update.bat exit code {result.returncode}")
-    except subprocess.TimeoutExpired:
-        log("UPDATE: timeout (10 min), continuing", 'error')
-    except Exception as e:
-        log(f"UPDATE: failed: {e}", 'error')
-    finally:
-        _proc_orch = start_service(ORCH_SCRIPT, "orchestrator", ["--mode", "loop"])
-        if _proc_orch:
-            validate_startup(_proc_orch, "orchestrator")
-        _proc_dash = start_service(DASH_SCRIPT, "dashboard")
-        if _proc_dash:
-            validate_startup(_proc_dash, "dashboard")
-        log("=== UPDATE: services restarted ===")
+    log("=== UPDATE & RESTART COMPLETE ===")
 
 
 def do_close():
@@ -396,8 +366,7 @@ def build_menu():
     return pystray.Menu(
         pystray.MenuItem("🌐 Dashboard", on_show, default=True),
         pystray.MenuItem("─────────────", None, enabled=False),
-        pystray.MenuItem("🔄 Update", do_update),
-        pystray.MenuItem("♻️  Restart Clean", restart_all_clean),
+        pystray.MenuItem("🔄 Update & Restart", restart_all_clean),
         pystray.MenuItem("─────────────", None, enabled=False),
         pystray.MenuItem("❌ Cerrar", do_close),
     )
