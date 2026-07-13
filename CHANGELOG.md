@@ -5,7 +5,27 @@ Todos los cambios notables en este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.4.0] — 2026-07-13
+
+### Added
+- `POST /api/deploy`: deploy remoto — git pull + restart orchestrator desde el navegador
+- Same-ticker check en R2 gate (correlation.py): bloquea duplicados como SPY+SPY
+- `pnl_from_db` en `/api/debug`: PnL real desde la DB para comparar con balance del state file
+
+### Changed
+- `ROADMAP.md` reorganizado en 6 olas (Ola 0-5) con dependencias y entregables
+- `doc/olas/` creado con 7 archivos: template + cada ola con scope, agentes, estado
+- Prompt v3 (`decider.py`): WAIT como fallback, no default. Pre-mortem modulador, no bloqueador. Convergencia: 1 capa ≥60 o 2 capas ≥50.
+- Config: Normal `min_confluence` 2→1, stocks `min_confidence` 30→25, forex 45→30
+- Sidebar desktop simplificado: de 10 a 6 links alineados con bottom nav mobile
+- Strategy lifespan: tray_app rewrite completo (Mavis)
+
+### Fixed
+- `strategy_used` en pipeline.py: ahora usa `decision['signal']` en vez de `fused['signal']`
+- R2 gate `max_position_size` 8%→12%, effective_n 4→2 (Mavis)
+- Normal `forex.min_confidence` 45→30
+- Dashboard `_summarize_state`: usa `initial_balance` real del state file, no hardcoded 1000
+- Tray_app test actualizado tras rewrite de Mavis
 
 ### Fixed
 - Diligencia v2.7.0 → v2.6.3: corregido tag falso de MiniMax, alineado con metodología oficial
