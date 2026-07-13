@@ -62,6 +62,15 @@ class CorrelationGate(BaseGate):
         if not positions:
             return GateResult(passed=True, gate_id=self.gate_id, reason="no_open_positions")
 
+        # Check 0: same symbol already open. Self-correlation is 1.0 — always reject.
+        if symbol in positions:
+            return GateResult(
+                passed=False,
+                gate_id=self.gate_id,
+                reason="SAME_SYMBOL",
+                details={"symbol": symbol},
+            )
+
         # Find max correlation and cluster count against open positions.
         max_corr = -2.0
         max_corr_symbol = None

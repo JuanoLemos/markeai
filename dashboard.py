@@ -138,6 +138,9 @@ def create_app():
                 info["signals_count"] = conn.execute("SELECT COUNT(*) FROM signals").fetchone()[0]
                 info["portfolio_rows"] = conn.execute("SELECT COUNT(*) FROM portfolio").fetchone()[0]
                 info["trades_open"] = conn.execute("SELECT COUNT(*) FROM trades WHERE status='open'").fetchone()[0]
+                # Issue 7: compute real PnL from DB for comparison with state file balance
+                realized = conn.execute("SELECT COALESCE(SUM(pnl_usd), 0) FROM trades WHERE exit_time IS NOT NULL").fetchone()[0]
+                info["pnl_from_db"] = {"realized": round(realized, 2)}
                 conn.close()
             except Exception:
                 pass
@@ -1028,9 +1031,10 @@ def _summarize_state(state: dict) -> dict:
     wins = len([t for t in state.get("trade_log", []) if t["type"] == "close" and t.get("pnl", 0) > 0])
     bal = state.get("balance", 1000)
     inv = sum(p["size_usd"] for p in state.get("positions", {}).values())
+    initial = state.get("initial_balance", 1000)
     return {
-        "balance": round(bal, 2), "initial_balance": 1000,
-        "total_pnl": round(bal - 1000, 2), "total_pnl_pct": round((bal - 1000) / 1000 * 100, 2),
+        "balance": round(bal, 2), "initial_balance": initial,
+        "total_pnl": round(bal - initial, 2), "total_pnl_pct": round((bal - initial) / max(initial, 1) * 100, 2),
         "daily_pnl": round(state.get("daily_pnl", 0), 2),
         "open_positions": len(state.get("positions", {})), "exposure_usd": round(inv, 2),
         "total_trades": closed, "winning_trades": wins,

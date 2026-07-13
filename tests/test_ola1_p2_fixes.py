@@ -116,7 +116,7 @@ def test_b_13_fused_calculated_once_per_market():
 
 
 def test_b_16_tray_app_uses_sys_exit():
-    """B-16: tray_app uses sys.exit (not os._exit) to terminate."""
+    """B-16: tray_app uses sys.exit (not os._exit) for clean shutdown."""
     from pathlib import Path
     src = Path("tray_app.py").read_text(encoding="utf-8")
     assert "sys.exit(0)" in src

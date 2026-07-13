@@ -213,7 +213,7 @@ def _process_market(orch, market: str, market_cfg: dict):
                         entry_price=entry_price, size_usd=size_usd,
                         stop_loss_pct=sp, take_profit_pct=tp,
                         confidence=decision.get("confidence", fused.get("confidence", 0)),
-                        strategy_used=f"{prof_name}_{market}_{fused['signal']}",
+                        strategy_used=f"{prof_name}_{market}_{decision['signal']}",
                     )
                 if trade and "error" not in trade:
                     orch._hb("execution", "ok", f"{prof_name} {market} {ticker} {decision['signal']} ${trade.get('size_usd',0):.0f}")
@@ -226,7 +226,7 @@ def _process_market(orch, market: str, market_cfg: dict):
                         "position_size_usd": trade.get("size_usd", trade.get("size", 0)),
                         "stop_loss": sp, "take_profit": tp,
                         "confidence": decision.get("confidence", 0),
-                        "strategy_used": f"{prof_name}_{market}_{fused['signal']}",
+                        "strategy_used": f"{prof_name}_{market}_{decision['signal']}",
                         "position_id": trade.get("id"),
                     })
                     if trade and "id" in trade and db_trade_id and trade["id"] in pb.positions:

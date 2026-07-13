@@ -155,7 +155,7 @@ profiles:
     max_total_exposure_pct: 0.4
     per_market:
       forex:
-        min_confidence: 45
+        min_confidence: 30
       polymarket:
         min_confidence: 50
       stocks:
