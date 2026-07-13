@@ -116,13 +116,8 @@ def test_b_13_fused_calculated_once_per_market():
 
 
 def test_b_16_tray_app_uses_sys_exit():
-    """B-16: tray_app.do_exit uses sys.exit (not os._exit)."""
+    """B-16: tray_app uses sys.exit (not os._exit) to terminate."""
     from pathlib import Path
     src = Path("tray_app.py").read_text(encoding="utf-8")
-    # Find do_exit function
-    fn_start = src.find("def do_exit")
-    assert fn_start > 0
-    fn_end = src.find("def on_show", fn_start)
-    fn = src[fn_start:fn_end]
-    assert "sys.exit(0)" in fn
-    assert "os._exit" not in fn
+    assert "sys.exit(0)" in src
+    assert "os._exit" not in src
