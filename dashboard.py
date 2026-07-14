@@ -9,8 +9,11 @@ from pathlib import Path
 from threading import Thread
 
 import yaml
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 from data.database import Database
+
+load_dotenv()
 
 BASE_DIR = Path(__file__).parent
 CONFIG_PATH = BASE_DIR / "config.yaml"
