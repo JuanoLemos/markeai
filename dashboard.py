@@ -1,3 +1,4 @@
+import functools
 import json
 import os
 import subprocess
@@ -18,6 +19,19 @@ LOG_PATH = BASE_DIR / "orchestrator.log"
 DB_PATH = BASE_DIR / "data" / "market.db"
 
 loop_process = None
+
+
+def require_auth(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        token = os.environ.get("DASHBOARD_AUTH_TOKEN", "")
+        if not token:
+            return f(*args, **kwargs)
+        auth = request.headers.get("X-Auth-Token", "")
+        if auth != token:
+            return jsonify({"error": "unauthorized"}), 403
+        return f(*args, **kwargs)
+    return wrapper
 
 
 def create_app():
@@ -150,6 +164,7 @@ def create_app():
             return jsonify({"error": str(e)})
 
     @app.route("/api/deploy", methods=["POST"])
+    @require_auth
     def api_deploy():
         import sys, time
         global loop_process
@@ -185,6 +200,7 @@ def create_app():
         })
 
     @app.route("/api/debug/inject-signal", methods=["POST"])
+    @require_auth
     def api_debug_inject():
         try:
             body = request.get_json(force=True)
@@ -232,6 +248,7 @@ def create_app():
             return jsonify({"error": str(e)})
 
     @app.route("/api/debug/reset-broker", methods=["POST"])
+    @require_auth
     def api_debug_reset():
         try:
             body = request.get_json(force=True) or {}
@@ -246,6 +263,7 @@ def create_app():
             return jsonify({"error": str(e)})
 
     @app.route("/api/debug/motors-clear", methods=["POST"])
+    @require_auth
     def api_debug_motors_clear():
         try:
             db = Database()
@@ -405,6 +423,7 @@ def create_app():
             return jsonify({"lines": "(log file not created yet)"})
 
     @app.route("/api/loop/start")
+    @require_auth
     def api_loop_start():
         global loop_process
         stop_file = BASE_DIR / "STOP"
@@ -423,6 +442,7 @@ def create_app():
         return jsonify({"ok": True})
 
     @app.route("/api/loop/stop")
+    @require_auth
     def api_loop_stop():
         global loop_process
         stop_file = BASE_DIR / "STOP"
