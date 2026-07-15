@@ -137,38 +137,39 @@ def check_err_rate() -> dict:
 
 
 def check_drawdown() -> dict:
-    """PnL del día vs balance inicial. Aproximación: SUM(pnl_usd) de hoy / capital base."""
+    """Drawdown via PaperBroker state file (includes unrealized PnL from open trades)."""
+    import os, json
     try:
-        if not DB_PATH.exists():
-            return {"status": "ok", "pct": 0.0, "msg": "no db"}
-        conn = sqlite3.connect(DB_PATH)
-        cur = conn.cursor()
-        # Capital base: SUM de pnl_usd cerrado hasta ayer + initial. Si no, usamos total_pnl.
-        row_today = cur.execute(
-            "SELECT ROUND(COALESCE(SUM(pnl_usd), 0), 2) FROM trades "
-            "WHERE DATE(exit_time) = DATE('now') AND exit_reason != 'lost_recovery'"
-        ).fetchone()
-        row_total = cur.execute(
-            "SELECT ROUND(COALESCE(SUM(pnl_usd), 0), 2) FROM trades "
-            "WHERE status='closed' AND exit_reason != 'lost_recovery'"
-        ).fetchone()
-        conn.close()
-        pnl_today = row_today[0] or 0.0
-        pnl_total = row_total[0] or 0.0
-        # Heurística de balance base: 1000 USD (paper broker default). Se puede sobreescribir vía env.
-        import os
         base = float(os.getenv("WATCHDOG_BASE_BALANCE", "1000"))
-        pct_today = (pnl_today / base) * 100 if base else 0.0
-        if pct_today <= DRAWDOWN_CRIT_PCT:
-            return {"status": "critical", "pct": round(pct_today, 2),
-                    "pnl_today": pnl_today, "pnl_total": pnl_total,
-                    "msg": f"daily drawdown {pct_today:.1f}% (<={DRAWDOWN_CRIT_PCT}%)"}
-        if pct_today <= DRAWDOWN_WARN_PCT:
-            return {"status": "warning", "pct": round(pct_today, 2),
-                    "pnl_today": pnl_today, "pnl_total": pnl_total,
-                    "msg": f"daily drawdown {pct_today:.1f}% (<={DRAWDOWN_WARN_PCT}%)"}
-        return {"status": "ok", "pct": round(pct_today, 2),
-                "pnl_today": pnl_today, "pnl_total": pnl_total, "msg": "within limits"}
+        state_path = ROOT / "data" / "cache" / "pb_fast.json"
+        balance = base
+        pnl_total = 0.0
+        if state_path.exists():
+            with open(state_path) as f:
+                state = json.load(f)
+            balance = state.get("balance", base)
+            pnl_total = round(balance - base, 2)
+        pct_total = (pnl_total / base) * 100 if base else 0.0
+        pnl_today = 0.0
+        if DB_PATH.exists():
+            conn = sqlite3.connect(DB_PATH)
+            row = conn.execute(
+                "SELECT COALESCE(SUM(pnl_usd), 0) FROM trades "
+                "WHERE DATE(exit_time) = DATE('now') AND exit_reason != 'lost_recovery'"
+            ).fetchone()
+            conn.close()
+            pnl_today = row[0] or 0.0
+        if pct_total <= DRAWDOWN_CRIT_PCT:
+            return {"status": "critical", "pct": round(pct_total, 2),
+                    "balance": balance, "pnl_total": pnl_total, "pnl_today": pnl_today,
+                    "msg": f"total drawdown {pct_total:.1f}% (<={DRAWDOWN_CRIT_PCT}%)"}
+        if pct_total <= DRAWDOWN_WARN_PCT:
+            return {"status": "warning", "pct": round(pct_total, 2),
+                    "balance": balance, "pnl_total": pnl_total, "pnl_today": pnl_today,
+                    "msg": f"total drawdown {pct_total:.1f}% (<={DRAWDOWN_WARN_PCT}%)"}
+        return {"status": "ok", "pct": round(pct_total, 2),
+                "balance": balance, "pnl_total": pnl_total, "pnl_today": pnl_today,
+                "msg": "within limits"}
     except Exception as e:
         return {"status": "warning", "pct": 0.0, "msg": f"check error: {e}"}
 
