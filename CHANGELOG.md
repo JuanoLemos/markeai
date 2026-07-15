@@ -8,7 +8,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## [1.4.0] — 2026-07-15
 
 ### Added
-- Diligencia v2.6.3 → v2.6.4: sync metodología (Fase 2.5.6 guias de referencia)
+- Diligencia v2.6.4 → v2.7.1: sync metodología (33 comandos, sistema /ola)
 
 ### Added
 - `POST /api/deploy`: deploy remoto — git pull + restart orchestrator desde el navegador

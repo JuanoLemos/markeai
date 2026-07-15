@@ -1,4 +1,4 @@
-# Diligencia v2.6.4 — MarketAI
+# Diligencia v2.7.1 — MarketAI
 
 Sello de metodología para proyectos OpenCode.
 
@@ -25,12 +25,13 @@ Sello de metodología para proyectos OpenCode.
 
 | Proyecto | Fecha | Estado |
 |---|---|---|
-| MarketAI | 2026-07-15 | ✅ v2.6.4 |
+| MarketAI | 2026-07-15 | ✅ v2.7.1 |
 
 ## Historial
 
 | Versión | Fecha | Cambios |
 |---|---|---|
+| v2.7.1 | 2026-07-15 | Upgrade desde v2.6.4 — 33 comandos fundamentales activos, temas sync, sistema /ola |
 | v2.6.4 | 2026-07-15 | Sync desde v2.6.3 — Fase 2.5.6 (guias de referencia) sin cambios estructurales |
 | v2.6.3 | 2026-07-12 | Sync desde v2.7.0 (tag falso de MiniMax) — alineado con metodología oficial |
 | v2.6.3 | 2026-07-06 | Upgrade desde v1.18.1 — Comandos sincronizados (29 activos), $PALOMA_MAIN_PLAN en AGENTS.md, CHANGELOG registrado |
