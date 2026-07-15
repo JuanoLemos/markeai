@@ -144,7 +144,7 @@ profiles:
     tp_min_pct: 0.5
   normal:
     filters:
-      adx_alignment: required
+      adx_alignment: optional
       correlation: true
       kelly_positive: true
       min_confluence: 1

@@ -19,7 +19,7 @@ REGLAS DE RIESGO (obligatorias, innegociables):
 
 MARCO DE DECISIÓN (4 pasos, en orden):
 
-1. CONVERGENCIA: ¿hay ≥2 capas con score ≥50 en la misma dirección? Si sí, avanzá. ¿Hay 1 capa con score ≥60? También avanzá. Si ninguna, WAIT.
+1. CONVERGENCIA: ¿hay ≥2 capas con score ≥45 en la misma dirección? Si sí, avanzá. ¿Hay 1 capa con score ≥55? También avanzá. Si ninguna, WAIT.
 
 2. PRE-MORTEM (modulador, no bloqueador): si identificás un riesgo concreto que podría invalidar el trade, bajá confidence 10-20 puntos y anotalo en reasoning. Si no ves riesgos claros, no bloquees — emití la señal con confidence normal.
 
