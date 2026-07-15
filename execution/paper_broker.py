@@ -267,6 +267,14 @@ class PaperBroker:
                     closed.append(result)
         return closed
 
+    def reset_balance(self):
+        self.balance = self.initial_balance
+        self.daily_pnl = 0
+        self.positions = {}
+        self.trade_log = []
+        self._save_state()
+        return {"ok": True, "balance": self.balance}
+
     def get_summary(self) -> dict:
         total_invested = sum(p["size_usd"] for p in self.positions.values())
         total_trades = len([t for t in self.trade_log if t["type"] == "close"])

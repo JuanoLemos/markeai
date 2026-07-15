@@ -275,6 +275,23 @@ def create_app():
         except Exception as e:
             return jsonify({"error": str(e)})
 
+    @app.route("/api/debug/reset-balance", methods=["POST"])
+    @require_auth
+    def api_debug_reset_balance():
+        import json
+        for name in ("normal", "fast"):
+            state_path = BASE_DIR / "data" / "cache" / f"pb_{name}.json"
+            try:
+                with open(state_path) as f:
+                    state = json.load(f)
+            except Exception:
+                state = {}
+            initial = state.get("initial_balance", 1000)
+            clean = {"balance": initial, "initial_balance": initial, "positions": {}, "trade_log": [], "daily_pnl": 0}
+            with open(state_path, "w") as f:
+                json.dump(clean, f)
+        return jsonify({"ok": True, "reset_to": initial})
+
     @app.route("/api/summary")
     def api_summary():
         return jsonify(_read_all_profiles())

@@ -140,6 +140,11 @@ class MarketAIOrchestrator:
             setattr(self, f"pb_{prof_name}", pb)
             self.paper_brokers[prof_name] = pb
         self.paper_broker = self.paper_brokers["normal"]
+        # Issue 7: auto-detox corrupted balance at boot
+        for name, pb in self.paper_brokers.items():
+            if pb.balance > pb.initial_balance * 3:
+                self.log.warning(f"{name} balance ${pb.balance:.0f} > 3x initial — auto-resetting")
+                pb.reset_balance()
         self.pm_executor = PolymarketExecutor()
         self.trad_executor = TraditionalExecutor()
         self.journal = TradeJournal()
