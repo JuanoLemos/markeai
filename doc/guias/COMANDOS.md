@@ -1,10 +1,10 @@
-# COMANDOS — Diligencia v2.6.6
+# COMANDOS — Diligencia v2.7.0
 
 > Referencia rapida de comandos, agentes y circuitos de calidad.
 
 ---
 
-## CREAR (4)
+## CREAR
 
 | Comando | Descripcion |
 |---|---|
@@ -14,7 +14,7 @@
 
 ---
 
-## PLANIFICAR (8)
+## PLANIFICAR
 
 | Comando | Descripcion |
 |---|---|
@@ -29,7 +29,7 @@
 
 ---
 
-## EJECUTAR (6)
+## EJECUTAR
 
 | Comando | Descripcion |
 |---|---|
@@ -42,7 +42,7 @@
 
 ---
 
-## REVISAR (5)
+## REVISAR
 
 | Comando | Descripcion |
 |---|---|
@@ -54,7 +54,7 @@
 
 ---
 
-## CUIDAR (6)
+## CUIDAR
 
 | Comando | Descripcion |
 |---|---|
@@ -95,35 +95,24 @@
 | `@trader` | Estrategias de trading, gestion de riesgo, brokers | DeepSeek V4 Pro | MarketAI |
 | `@cartografo` | Pipeline geoespacial, mapas reales, GIS | DeepSeek V4 Pro | conquisitare |
 | `@editor-video` | Pipeline de video, composicion avatar+voz+contenido | MiniMax M3 | OpenMontage |
-| `@disenador` (también cubre design systems) | CSS generativo, componentes, paletas, accesibilidad | MiniMax M3 + image-01 | BBB (unificado) |
+| `@disenador` (tambien cubre design systems) | CSS generativo, componentes, paletas, accesibilidad | MiniMax M3 + image-01 | BBB |
 
-### Multimodal
-
-| Agente | Rol | Modelo |
-|---|---|---|
-| `@disenador` | Diseno UI/UX | MiniMax M3 + image-01 |
-
-### Invocacion y sincronizacion
+### Invocacion
 
 | Comando | Subcomandos |
 |---|---|
+| `/ola` | `planear <proyecto>`, `ejecutar <olas>`, `estado <olas>` |
 
 ---
 
 ## Circuitos de calidad
 
-```
-SDD:         @sdd-architect ──→ @sdd-implement ──→ @sdd-verify ──→ @sdd-reviewer
-Documental:  @documentador ──→ /documentar ──→ /agentes-sync
-Integridad:  @circuito ──→ /circuito [area] ──→ reporte de handlers/rutas/navegacion
-```
-
 | Circuito | Flujo | Salida |
 |---|---|---|
-| 🔵 SDD | architect → implement → verify → reviewer | Plan + codigo + tests + revision |
-| 🟢 Paloma | agente → --new → --publish → evaluar → aplicar/archivar | Paloma en 📬/✅/🗑️ |
-| 🟣 Documental | documentador → /documentar → /agentes-sync | Hallazgos + agentes actualizados |
-| 🟡 Integridad | circuito → /circuito [area] | Reporte de handlers/rutas/UX |
+| SDD | architect -> implement -> verify -> reviewer | Plan + codigo + tests + revision |
+| Documental | documentador -> /documentar -> /agentes-sync | Hallazgos + agentes actualizados |
+| Integridad | circuito -> /circuito [area] | Reporte de handlers/rutas/UX |
+| Oleadas | /ola planear -> /ola ejecutar | Tareas ejecutadas por agentes autonomos |
 
 ---
 
@@ -132,6 +121,5 @@ Integridad:  @circuito ──→ /circuito [area] ──→ reporte de handlers/
 - `GUIA_REFERENCIA_RAPIDA.md` — guia con categorias y workflows
 - `GUIA_DE_COMANDOS.md` — referencia completa
 - `AGENTS.md` — tabla original de comandos
-- `MECANICA-TASK-ROUTER.md` — enrutador tarea → agente → modelo → API
-| /ola | Sistema de oleadas multi-proyecto
-           | planear <proyecto>, ejecutar <olas>, estado <olas> |
+- `MECANICA-TASK-ROUTER.md` — enrutador tarea -> agente -> modelo -> API
+- `MECANICA-OLAS.md` — sistema de oleadas multi-proyecto

@@ -106,6 +106,7 @@ Sistema de Trading Multi-Capa con DeepSeek AI.
 | R71 | Correlación CEDEAR vs subyacente (0.98) | P1 | ✅ | R24 |
 | R72 | _analyze_stocks() pasa 24 tickers completos | P1 | ✅ | R31 |
 | R85 | Risk gates R1-R5: validate_trade gatekeeper pre-trade (cascade R4→R5→R1→R2→R3) | P1 | ✅ | R23 |
+| R89 | Ahorro de llamadas DeepSeek — reducir consumo de ~$1.50/día (~1,800 calls) con fusion pre-filtro, flash model, y Normal profile overnight off | P1 | 🔴 Pendiente | — |
 
 ---
 
