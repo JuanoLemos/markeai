@@ -197,6 +197,11 @@ def create_app():
         loop_process = new_proc
         if stop_file.exists():
             stop_file.unlink(missing_ok=True)
+        # Schedule dashboard restart: exit so tray revives it with new code
+        def _restart_dash():
+            time.sleep(1)
+            os._exit(0)
+        Thread(target=_restart_dash, daemon=True).start()
         return jsonify({
             "ok": pull_ok, "pull": pull_out.split("\n")[0] if pull_out else "no output",
             "restarted": True, "waited_s": waited,
