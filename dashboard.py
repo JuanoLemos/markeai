@@ -707,6 +707,16 @@ def create_app():
     def api_health():
         return jsonify(_check_health())
 
+    @app.route("/api/ping")
+    def api_ping():
+        from datetime import datetime, timezone
+        running = loop_process is not None and loop_process.poll() is None
+        return jsonify({
+            "time": datetime.now(timezone.utc).strftime("%H:%M UTC"),
+            "running": running,
+            "version": _version(),
+        })
+
     @app.route("/api/backtest/run")
     def api_backtest_run():
         market = request.args.get("market", "forex")

@@ -92,6 +92,7 @@ document.querySelectorAll('.chip[data-f]').forEach(btn=>{
 });
 
 async function load(){allTrades=await api('/api/trades')||[];render();}
+document.addEventListener('marketai-refresh', () => { load(); });
 load(); setInterval(load,15000);
 </script>
 {% endblock %}

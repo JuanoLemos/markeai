@@ -275,6 +275,7 @@ function refresh() {
   _lastUpdated = Date.now();
 }
 refresh();
+document.addEventListener('marketai-refresh', () => { refresh(); });
 setInterval(refresh, 15000);
 </script>
 {% endblock %}
