@@ -109,6 +109,26 @@ def kill_orphans():
         return []
 
 
+def kill_port_8050():
+    """Kill any process listening on port 8050 before starting to avoid duplicates."""
+    try:
+        result = subprocess.run(
+            ["cmd.exe", "/c", "netstat -ano | findstr :8050 | findstr LISTENING"],
+            capture_output=True, text=True, timeout=5,
+        )
+        for line in result.stdout.strip().split('\n'):
+            line = line.strip()
+            if not line:
+                continue
+            parts = line.split()
+            if parts:
+                pid = parts[-1]
+                subprocess.run(["taskkill", "/f", "/pid", pid], capture_output=True, timeout=5)
+                log(f"kill_port_8050: killed PID {pid}")
+    except Exception as e:
+        log(f"kill_port_8050: {e}", 'error')
+
+
 def _log_path(service_name):
     return BASE_DIR / f"{service_name}.stdout.log"
 
@@ -402,8 +422,9 @@ def main():
     log("TRAY APP STARTED")
 
     # 1. Cleanup: matar todo lo viejo
-    log("Step 1: killing orphans")
+    log("Step 1: killing orphans + port 8050")
     kill_orphans()
+    kill_port_8050()
     time.sleep(3)
 
     # 2. Start services
