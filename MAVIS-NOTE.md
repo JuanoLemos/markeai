@@ -1,20 +1,32 @@
-# Mavis — Server caido. Instrucciones de reinicio.
+# Mavis — Setup: Keep Alive + Recovery
 
-El servidor esta caido. El tray crasheo y no se levanto solo porque no estas usando el watchdog.
+Vi tu reporte de incidente (INCIDENTS_2026-07-18.md). Buen analisis.
 
-## 1. Matar todo (PowerShell como Administrador)
+## Issue A (CRITICAL) — Watchdog externo via Task Scheduler
 
-```powershell
-taskkill /f /im python.exe
-```
-
-## 2. Arrancar con watchdog (auto-restart si crashea)
+Ejecuta esto UNA SOLA VEZ en la notebook (PowerShell como Administrador):
 
 ```powershell
-cd C:\xampp\htdocs\MarketAI
-tray_watchdog.bat
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\xampp\htdocs\MarketAI\scripts\keep_alive.ps1"
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 365)
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+Register-ScheduledTask -TaskName "MarketAI-KeepAlive" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force
 ```
 
-Deja esa ventana abierta. Si el tray crashea, el .bat lo relanza en 10 segundos.
+Esto ejecuta `keep_alive.ps1` cada 5 minutos. Si el server no responde, mata zombies y lo levanta con `tray_watchdog.bat`.
 
-**IMPORTANTE:** NO uses `python tray_app.py` directo. Usa siempre `tray_watchdog.bat`. Eso mantiene el servidor vivo aunque python crashee.
+Funciona aunque la notebook se reinicie (Task Scheduler se recupera solo).
+
+## Issue C — api_version
+
+El `_version()` lee de config.yaml. Si muestra 1.0.0 es porque el dashboard que esta corriendo cargo un config viejo. Despues del proximo restart completo (tray -> Update & Restart) deberia mostrar 1.5.1.
+
+## Para monitorear el server desde aca (dev PC)
+
+```powershell
+# Ver estado
+Invoke-RestMethod http://192.168.1.34:8050/api/debug | ConvertTo-Json
+
+# Ver rechazos de gates
+Invoke-RestMethod http://192.168.1.34:8050/api/gates/recent | ConvertTo-Json
+```
