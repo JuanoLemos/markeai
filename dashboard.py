@@ -490,73 +490,39 @@ def create_app():
 
     @app.route("/api/gates/recent")
     def api_gates_recent():
-        """
-        Estado reciente de los 5 risk gates (R1-R5) + rechazos en últimas 24h.
-
-        Devuelve:
-        - chips: lista de 5 {id, name, state, count_24h} (state = green/yellow/red)
-        - recent_24h: total de rechazos en las últimas 24h (para el badge del bottom nav)
-        - by_gate: rechazos agrupados por gate
-        - last_24h_ts: timestamp del último rechazo (si hay)
-
-        Sin tabla gate_rejections todavía: parseamos orchestrator.log con un regex
-        simple. Cuando R87 (PM bottleneck) cree la tabla, este endpoint se
-        actualiza para leer de la DB.
-        """
+        import sqlite3, datetime
+        chips = [
+            {"id": "R1", "name": "Sector cap",  "state": "green",  "count_24h": 0},
+            {"id": "R2", "name": "Correlacion", "state": "green",  "count_24h": 0},
+            {"id": "R3", "name": "Effective N", "state": "green",  "count_24h": 0},
+            {"id": "R4", "name": "Max abierto",  "state": "green",  "count_24h": 0},
+            {"id": "R5", "name": "Max tamano",  "state": "green",  "count_24h": 0},
+        ]
+        by_gate = {c["id"]: [] for c in chips}
+        recent_24h = 0
         try:
-            import re
-            import datetime
-            chips = [
-                {"id": "R1", "name": "Sector cap",  "state": "green",  "count_24h": 0},
-                {"id": "R2", "name": "Correlación", "state": "green",  "count_24h": 0},
-                {"id": "R3", "name": "Effective N", "state": "green",  "count_24h": 0},
-                {"id": "R4", "name": "Max abierto",  "state": "green",  "count_24h": 0},
-                {"id": "R5", "name": "Max tamaño",  "state": "green",  "count_24h": 0},
-            ]
-            by_gate = {c["id"]: [] for c in chips}
-            recent_24h = 0
-            last_ts = None
-            try:
-                cutoff = datetime.datetime.now() - datetime.timedelta(hours=24)
-                # regex: "GATE X reject" o "R1 reject" etc.
-                pat = re.compile(r"\b(R[1-5])\s+(?:reject|REJECT|bloquead|block)", re.IGNORECASE)
-                with open(LOG_PATH, encoding="utf-8", errors="replace") as f:
-                    lines = f.readlines()[-5000:]  # ventana razonable
-                for line in lines:
-                    m = pat.search(line)
-                    if not m:
-                        continue
-                    gate_id = m.group(1).upper()
-                    # extraer timestamp si está en la línea (formato YYYY-MM-DD HH:MM:SS)
-                    ts_m = re.search(r"(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})", line)
-                    if ts_m:
-                        try:
-                            ts = datetime.datetime.fromisoformat(ts_m.group(1).replace("T", " ").replace("/", "-"))
-                            if ts < cutoff:
-                                continue
-                            last_ts = ts.isoformat()
-                        except Exception:
-                            pass
-                    recent_24h += 1
-                    if gate_id in by_gate:
-                        by_gate[gate_id].append(line.strip()[:160])
-                        for c in chips:
-                            if c["id"] == gate_id:
-                                c["count_24h"] += 1
-                # estado del chip: 0=green, 1-3=yellow, 4+=red
-                for c in chips:
-                    n = c["count_24h"]
-                    c["state"] = "green" if n == 0 else ("yellow" if n <= 3 else "red")
-            except FileNotFoundError:
-                pass
-            return jsonify({
-                "chips": chips,
-                "by_gate": by_gate,
-                "recent_24h": recent_24h,
-                "last_24h_ts": last_ts,
-            })
-        except Exception as e:
-            return jsonify({"error": str(e), "chips": [], "by_gate": {}, "recent_24h": 0, "last_24h_ts": None}), 500
+            conn = sqlite3.connect(str(DB_PATH))
+            cutoff = (datetime.datetime.utcnow() - datetime.timedelta(hours=24)).isoformat()
+            rows = conn.execute(
+                "SELECT gate_id, reason, timestamp FROM gate_rejections WHERE timestamp > ? ORDER BY id DESC LIMIT 200",
+                (cutoff,),
+            ).fetchall()
+            conn.close()
+            for r in rows:
+                gid = r["gate_id"].upper()
+                if gid in by_gate:
+                    by_gate[gid].append(f"{r['timestamp']}: {r['reason']}")
+                    for c in chips:
+                        if c["id"] == gid:
+                            c["count_24h"] += 1
+            recent_24h = sum(c["count_24h"] for c in chips)
+            for c in chips:
+                n = c["count_24h"]
+                c["state"] = "green" if n == 0 else ("yellow" if n <= 3 else "red")
+        except Exception:
+            pass
+        return jsonify({"chips": chips, "by_gate": by_gate, "recent_24h": recent_24h, "source": "db"})
+
 
     @app.route("/api/overview/pnl")
     def api_overview_pnl():

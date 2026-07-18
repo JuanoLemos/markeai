@@ -133,6 +133,18 @@ class Database:
                 live_outcome TEXT DEFAULT ''
             );
 
+            CREATE TABLE IF NOT EXISTS gate_rejections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+                ticker TEXT NOT NULL,
+                market TEXT NOT NULL,
+                gate_id TEXT NOT NULL,
+                reason TEXT NOT NULL,
+                details TEXT DEFAULT '',
+                size_usd REAL DEFAULT 0,
+                profile TEXT DEFAULT ''
+            );
+
             CREATE TABLE IF NOT EXISTS backtest_runs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 created TEXT NOT NULL DEFAULT (datetime('now')),
@@ -293,6 +305,17 @@ class Database:
                live_signal, live_confidence, live_outcome)
                VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (ticker, signal, confidence, version, live_signal, live_confidence, live_outcome),
+        )
+        conn.commit()
+        conn.close()
+
+    def insert_gate_rejection(self, ticker: str, market: str, gate_id: str, reason: str,
+                              details: str = "", size_usd: float = 0, profile: str = ""):
+        conn = self._get_conn()
+        conn.execute(
+            """INSERT INTO gate_rejections (ticker, market, gate_id, reason, details, size_usd, profile)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (ticker, market, gate_id, reason, details, size_usd, profile),
         )
         conn.commit()
         conn.close()

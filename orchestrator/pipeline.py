@@ -194,6 +194,15 @@ def _process_market(orch, market: str, market_cfg: dict):
                         f"  {prof_name} REJECTED by {gate_result.gate_id}: {gate_result.reason} "
                         f"symbol={ticker} (see details in [RISK.GATE] log above)"
                     )
+                    # R87: record gate rejection in DB
+                    try:
+                        orch.db.insert_gate_rejection(
+                            ticker=ticker, market=market,
+                            gate_id=gate_result.gate_id, reason=gate_result.reason,
+                            size_usd=candidate_size, profile=prof_name,
+                        )
+                    except Exception:
+                        pass
                     continue
                 # --- end 5-gate cascade ---
                 trade = None
