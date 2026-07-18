@@ -152,7 +152,7 @@ def _process_market(orch, market: str, market_cfg: dict):
                     orch.log.info(f"  {prof_name} fusion pre-filter: score={fused['score']} conf={fused['confidence']} → WAIT")
                     continue
                 pb = orch.paper_brokers[prof_name]
-                decision = orch.decider.decide(market, ticker, fused, {**market_data, "open_positions": pb.get_positions()}, fused.get("layer_scores", {}), profile=prof_name)
+                decision = orch.decider.decide(market, ticker, fused, {**market_data, "open_positions": pb.get_positions()}, fused.get("layer_scores", {}), profile=prof_name, prompt_memory=getattr(orch, 'prompt_memory', None))
                 orch._hb("deepseek", "ok", f"{prof_name} {market} {ticker}: {decision.get('signal')} conf={decision.get('confidence')}")
                 orch.log.info(f"  {prof_name} DeepSeek: {decision.get('signal')} (conf:{decision.get('confidence')})")
                 if decision["signal"] == "WAIT":
@@ -499,5 +499,11 @@ def check_stops_and_evolve(orch):
                 orch.db.close_trade(db_id, c["exit_price"], c["reason"], c["pnl_usd"], c["pnl_pct"])
             else:
                 orch.log.warning(f"B-01: No DB trade_id for closed position {c.get('position_id', '?')}")
+            # Record lesson in prompt memory for this closed trade
+            try:
+                if hasattr(orch, 'prompt_memory'):
+                    orch.prompt_memory.record_lesson(c)
+            except Exception:
+                pass
         if len(pb.trade_log) > 0 and len(pb.trade_log) % 10 == 0:
             orch.evolver.evolve(pb.trade_log, pb.get_summary())

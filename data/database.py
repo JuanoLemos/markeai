@@ -91,6 +91,18 @@ class Database:
                 last_updated TEXT DEFAULT (datetime('now'))
             );
 
+            CREATE TABLE IF NOT EXISTS prompt_memory (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+                ticker TEXT NOT NULL,
+                signal TEXT NOT NULL,
+                confidence REAL DEFAULT 0,
+                outcome TEXT NOT NULL CHECK(outcome IN ('win','loss')),
+                pnl_pct REAL DEFAULT 0,
+                lesson TEXT NOT NULL,
+                critique TEXT DEFAULT ''
+            );
+
             CREATE TABLE IF NOT EXISTS portfolio (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TEXT NOT NULL DEFAULT (datetime('now')),

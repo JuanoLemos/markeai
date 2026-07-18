@@ -98,19 +98,19 @@ class DeepSeekDecider:
         self.temperature = temperature
         self.max_tokens = max_tokens
 
-    def decide(self, market: str, ticker: str, fused_signal: dict, market_data: dict, layer_details: dict, profile: str = "normal") -> dict:
+    def decide(self, market: str, ticker: str, fused_signal: dict, market_data: dict, layer_details: dict, profile: str = "normal", prompt_memory: object = None) -> dict:
         if profile == "fast":
             system_prompt = SYSTEM_PROMPT_FAST
         else:
             system_prompt = SYSTEM_PROMPT_NORMAL
-        user_prompt = self._build_prompt(market, ticker, fused_signal, market_data, layer_details)
+        user_prompt = self._build_prompt(market, ticker, fused_signal, market_data, layer_details, prompt_memory)
         response = self._call_deepseek(system_prompt, user_prompt)
         decision = self._parse_response(response)
         decision["market"] = market
         decision["ticker"] = ticker
         return decision
 
-    def _build_prompt(self, market: str, ticker: str, fused: dict, market_data: dict, layers: dict) -> str:
+    def _build_prompt(self, market: str, ticker: str, fused: dict, market_data: dict, layers: dict, prompt_memory: object = None) -> str:
         layers_text = ""
         for name, data in layers.items():
             s = data.get("signal", "WAIT")
@@ -130,20 +130,32 @@ class DeepSeekDecider:
                 positions_text += f"  {p.get('ticker','?')} | {p.get('signal','?')} | entry:{p.get('entry_price','?')} | SL:{p.get('stop_loss_pct','?')}% | TP:{p.get('take_profit_pct','?')}%\n"
         else:
             positions_text = "  Sin posiciones abiertas"
+
+        # Técnica 1+3: inject lessons from past trades on this ticker
+        memory_text = ""
+        if prompt_memory is not None:
+            lessons = prompt_memory.get_lessons(ticker, limit=3)
+            if lessons:
+                lines = [f"- {l['lesson']}" for l in lessons]
+                memory_text = "\n### Lecciones de trades anteriores en este ticker\n" + "\n".join(lines) + "\n"
+                # Técnica 3: add recent critique if last trade was a loss
+                if lessons[-1].get("critique"):
+                    memory_text += f"  Nota: {lessons[-1]['critique']}\n"
+
         return f"""## Mercado: {market.upper()} - {ticker}
 
 ### Datos del mercado
 Precio actual: {price or 'N/A'}
 
-### Capas de análisis
+### Capas de analisis
 {layers_text}
-### Fusión
+### Fusion
 Señal compuesta: {fused.get('signal', 'WAIT')} (score: {fused.get('score', 50)}, confianza: {fused.get('confidence', 0)})
 
 ### Posiciones abiertas
 {positions_text}
-
-### Instrucción
+{memory_text}
+### Instruccion
 Analiza los datos y responde SOLO con JSON sin markdown ni explicaciones extra:
 {{
   "signal": "LONG" o "SHORT" o "WAIT",

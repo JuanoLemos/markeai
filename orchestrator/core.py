@@ -30,6 +30,7 @@ from analyzers.ict_smc import ICTAnalyzer
 from analyzers.adx_regime import ADXRegimeAnalyzer
 from engine.fusion import FusionEngine
 from engine.decider import DeepSeekDecider
+from engine.prompt_memory import PromptMemory
 from execution.paper_broker import PaperBroker
 from execution.executor_polymarket import PolymarketExecutor
 from execution.executor_traditional import TraditionalExecutor
@@ -105,6 +106,7 @@ class MarketAIOrchestrator:
 
     def init_components(self):
         self.db = Database()
+        self.prompt_memory = PromptMemory(self.db)
         self.news_collector = NewsCollector(
             newsapi_key=os.getenv("NEWSAPI_KEY", ""),
             cryptopanic_key=os.getenv("CRYPTOPANIC_KEY", ""),
