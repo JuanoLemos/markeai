@@ -55,7 +55,7 @@ layers:
     weight_forex: 0.2
     weight_polymarket: 0.2
     weight_stocks: 0.25
-   technical:
+  technical:
     enabled: true
     weight_forex: 0.35
     weight_polymarket: 0.25

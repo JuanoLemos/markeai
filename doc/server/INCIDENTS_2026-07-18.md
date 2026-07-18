@@ -219,4 +219,102 @@ Si está leyendo esto, considera:
 
 ---
 
-*Actualizado: 2026-07-18 01:17 ART por Mavis-allá*
+## Recovery #3 — 2026-07-18 14:00 ART (causa raíz: config.yaml corrupto)
+
+**El server se cayó a las 02:59 UTC y quedó muerto 13.7h.** El keep_alive task nunca se creó (Issue A), y nadie lo levantó.
+
+### Hallazgo raíz (no era Issue A solo)
+
+| # | Hallazgo | Severidad |
+|---|----------|-----------|
+| **G1** | `config.yaml` línea 58: `technical:` tenía 3 espacios en vez de 2 — YAML parser crasheaba al boot | 🔴 bloqueante |
+| **G2** | FICTIONAL PnL detectado: $14696 vs $1000 inicial — el orchestrator moría en loop | 🟠 importante |
+| **G3** | Race condition en `auto_recover` del tray: mata el orchestrator nuevo a los 7s sin darle tiempo a actualizar el heartbeat | 🟠 importante |
+| **G4** | Bug de duplicación de procesos: 2 tray_app, 2 dashboard, 2 orchestrator corriendo simultáneamente | 🟡 menor |
+| **G5** | `/api/ping` reporta `running:false` aunque el orchestrator está corriendo (heartbeats de DB están OK) | 🟡 menor |
+
+### Causa raíz (G1)
+
+```yaml
+# ANTES (roto):
+layers:
+  adx_regime:
+    enabled: true
+    ...
+  sentiment:
+    enabled: true
+    weight_forex: 0.2
+    weight_polymarket: 0.2
+    weight_stocks: 0.25
+   technical:    # ← 3 espacios (1 menos)
+    enabled: true
+
+# DESPUÉS (arreglado):
+  technical:    # ← 2 espacios
+    enabled: true
+```
+
+El YAML parser esperaba que el bloque `sentiment` termine, pero al encontrar `technical:` indentado distinto se confundía:
+
+```
+yaml.parser.ParserError: while parsing a block mapping
+  in "config.yaml", line 18, column 3
+expected <block end>, but found '<block mapping start>'
+  in "config.yaml", line 58, column 4
+```
+
+### Por qué se mantuvo 13.7h
+
+1. **02:59 UTC**: orchestrator crashea por G1. Tray lo re-arranca. Loop infinito.
+2. **Watchdog `ola2_watchdog.py`**: detecta el problema y empieza a reportar `critical` cada 5 min.
+3. **Watchdog no levanta el server** — solo alerta. El `keep_alive.ps1` debería haberlo hecho, pero la task `MarketAI-KeepAlive` nunca se creó (Issue A).
+4. **El dev estaba en otra PC** — no veía los logs del watchdog.
+5. **Mavis-allá (esta)**: en standby. El user no había pedido monitoreo activo desde la sesión del 18/07 01:15.
+
+### Pasos de recovery (los que se deberían automatizar)
+
+1. `git pull --rebase` (sincronizar divergencia con origin)
+2. `taskkill /f /im python.exe pythonw.exe` (matar todo)
+3. Borrar `data/cache/pb_fast.json` y `pb_normal.json` (RUNBOOK: balance corrupto)
+4. **Fix config.yaml**: agregar 1 espacio a `technical:` línea 58
+5. `tray_watchdog.bat` (arrancar fresh)
+6. Verificar `/api/health` HTTP 200 + `/api/ping` (warning: bug G5, no se actualiza)
+7. Verificar `motor_heartbeat` en DB está fresco (esto sí funciona)
+8. Intentar crear Task Scheduler `MarketAI-KeepAlive` — **FALLA: requiere admin**
+
+### Estado al final (después del fix)
+
+| Item | Estado |
+|------|--------|
+| `api_version` | **1.5.2** ✓ (Issue C resuelto — el problema era G1, no el dashboard) |
+| `/api/health` | HTTP 200, deepseek=true polyscan=true yfinance=true |
+| `motor_heartbeat` | data=ok, fusion=ok, actualizándose cada ~30s |
+| `orchestrator.err.log` | VACÍO (sin errores) |
+| PnL ficticio | Resuelto (state files borrados, balance se reinicializó a $1000) |
+| Task `MarketAI-KeepAlive` | ❌ PENDIENTE (admin requerido, user debe correr) |
+| Procesos duplicados (G4) | Persiste (bug del tray, fix en commits 942bc35/48ddef5 quedó parcial) |
+| Race condition (G3) | Persiste (tray mata orchestrator nuevo en 7s; se mitigó borrando state files que el tray confundía con orchestrator stale) |
+
+### Bugs nuevos para el dev
+
+- **G1 (config indent)**: agregar validación de YAML al CI / pre-commit
+- **G2 (FICTICIAL PnL)**: el threshold 2x debería ser configurable y el auto-detox a 3x (per RUNBOOK) debería ser la única respuesta
+- **G3 (race auto_recover)**: agregar grace period de 60-90s después de `start_service(orchestrator)` antes de chequear heartbeat stale
+- **G4 (procesos duplicados)**: el `kill_orphans` no funciona; tray arranca tray_app, que crea otro tray_app
+- **G5 (api/ping running:false)**: el endpoint lee un state file o cache que no se actualiza; debería leer de motor_heartbeat directamente
+
+### Acción inmediata para el user
+
+```powershell
+# PowerShell como Administrador
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\xampp\htdocs\MarketAI\scripts\keep_alive.ps1"
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 365)
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+Register-ScheduledTask -TaskName "MarketAI-KeepAlive" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force
+```
+
+Sin la task, el próximo crash del server no se va a poder recuperar solo.
+
+---
+
+*Actualizado: 2026-07-18 14:00 ART por Mavis-allá*
