@@ -60,6 +60,8 @@ def tmp_market(monkeypatch, tmp_path):
             entry_time TEXT,
             exit_time TEXT,
             entry_price REAL,
+            exit_price REAL,
+            exit_reason TEXT,
             pnl_usd REAL,
             status TEXT
         );
