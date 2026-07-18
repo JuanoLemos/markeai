@@ -689,7 +689,18 @@ def create_app():
     @app.route("/api/ping")
     def api_ping():
         from datetime import datetime, timezone
-        running = loop_process is not None and loop_process.poll() is None
+        # G5: check motor_heartbeat DB in stead of loop_process (tray-managed orchestrator)
+        running = False
+        try:
+            import sqlite3
+            conn = sqlite3.connect(str(DB_PATH))
+            row = conn.execute(
+                "SELECT COUNT(*) FROM motor_heartbeat WHERE timestamp > datetime('now', '-5 minutes')"
+            ).fetchone()
+            running = (row[0] or 0) > 2
+            conn.close()
+        except Exception:
+            pass
         return jsonify({
             "time": datetime.now(timezone.utc).strftime("%H:%M UTC"),
             "running": running,

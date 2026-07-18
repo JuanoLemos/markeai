@@ -49,6 +49,7 @@ _proc_orch = None
 _proc_dash = None
 _icon = None
 _last_recover_ts = 0
+_last_orch_start_ts = 0
 _monitor_lock = threading.Lock()
 
 
@@ -230,7 +231,7 @@ def health_check():
 
 def auto_recover():
     """Check process state and restart if needed. Backoff fijo 30s."""
-    global _proc_orch, _proc_dash, _last_recover_ts
+    global _proc_orch, _proc_dash, _last_recover_ts, _last_orch_start_ts
 
     with _monitor_lock:
         now = time.time()
@@ -242,6 +243,7 @@ def auto_recover():
         if _proc_orch is None or _proc_orch.poll() is not None:
             log("auto_recover: orchestrator dead, restarting")
             _proc_orch = start_service(ORCH_SCRIPT, "orchestrator", ["--mode", "loop"])
+            _last_orch_start_ts = time.time()
             if _proc_orch:
                 validate_startup(_proc_orch, "orchestrator")
             return
@@ -253,6 +255,11 @@ def auto_recover():
             if _proc_dash:
                 validate_startup(_proc_dash, "dashboard")
 
+        # G3: grace period — don't force-restart orchestrator if started < 90s ago
+        elapsed = time.time() - _last_orch_start_ts if _last_orch_start_ts else 999
+        if elapsed < 90:
+            return
+
         # Health check: even if process alive, heartbeat may be stale
         alive, age, status = health_check()
         if not alive and status == "stale":
@@ -261,6 +268,7 @@ def auto_recover():
             log(f"auto_recover: heartbeat dead ({age:.1f}min), forcing restart")
             stop_service(_proc_orch, "orchestrator")
             _proc_orch = start_service(ORCH_SCRIPT, "orchestrator", ["--mode", "loop"])
+            _last_orch_start_ts = time.time()
             if _proc_orch:
                 validate_startup(_proc_orch, "orchestrator")
 
@@ -325,6 +333,7 @@ def restart_all_clean():
     _setup_logging()
     log("=== UPDATE & RESTART: code updated, starting fresh ===")
     _proc_orch = start_service(ORCH_SCRIPT, "orchestrator", ["--mode", "loop"])
+    _last_orch_start_ts = time.time()
     if _proc_orch:
         validate_startup(_proc_orch, "orchestrator")
     _proc_dash = start_service(DASH_SCRIPT, "dashboard")
@@ -432,6 +441,7 @@ def main():
     # 2. Start services
     log("Step 2: starting orchestrator")
     _proc_orch = start_service(ORCH_SCRIPT, "orchestrator", ["--mode", "loop"])
+    _last_orch_start_ts = time.time()
     if _proc_orch and not validate_startup(_proc_orch, "orchestrator"):
         log("orchestrator failed to start, will retry in monitor loop", 'error')
 
