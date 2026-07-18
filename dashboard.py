@@ -159,7 +159,7 @@ def create_app():
                 info["portfolio_rows"] = conn.execute("SELECT COUNT(*) FROM portfolio").fetchone()[0]
                 info["trades_open"] = conn.execute("SELECT COUNT(*) FROM trades WHERE status='open'").fetchone()[0]
                 # Issue 7: compute real PnL from DB for comparison with state file balance
-                realized = conn.execute("SELECT COALESCE(SUM(pnl_usd), 0) FROM trades WHERE exit_time IS NOT NULL AND COALESCE(exit_reason, '') != 'lost_recovery'").fetchone()[0]
+                realized = conn.execute("SELECT COALESCE(SUM(pnl_usd), 0) FROM trades WHERE exit_time IS NOT NULL AND ABS(pnl_usd) < 1000").fetchone()[0]
                 info["pnl_from_db"] = {"realized": round(realized, 2)}
                 conn.close()
             except Exception:
@@ -564,11 +564,11 @@ def create_app():
             hoy = float(row["pnl"] or 0)
             hoy_count = int(row["cnt"] or 0)
 
-            # realizado: acumulado total de trades cerrados (excluye lost_recovery)
+            # realizado: trades con PnL razonable (< $1000) — filtra valores ficticios
             row = cur.execute(
                 "SELECT COALESCE(SUM(pnl_usd), 0) AS pnl, "
                 "COUNT(*) AS cnt FROM trades "
-                "WHERE exit_time IS NOT NULL AND pnl_usd IS NOT NULL AND COALESCE(exit_reason, '') != 'lost_recovery'"
+                "WHERE exit_time IS NOT NULL AND pnl_usd IS NOT NULL AND ABS(pnl_usd) < 1000"
             ).fetchone()
             realizado = float(row["pnl"] or 0)
             total_trades = int(row["cnt"] or 0)
