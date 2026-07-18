@@ -45,8 +45,10 @@ def create_app():
         try:
             with open(CONFIG_PATH) as f:
                 c = yaml.safe_load(f)
-            return c.get("version", "1.0.0")
-        except Exception:
+            v = c.get("version", "1.0.0")
+            return v
+        except Exception as e:
+            print(f"[WARNING] _version(): cannot read {CONFIG_PATH}: {e}")
             return "1.0.0"
 
     @app.context_processor
