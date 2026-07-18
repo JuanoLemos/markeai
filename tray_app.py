@@ -307,6 +307,7 @@ def restart_all_clean():
     stop_service(_proc_dash, "dashboard")
     time.sleep(2)
     kill_orphans()
+    kill_port_8050()
     time.sleep(2)
     # Git pull
     try:
