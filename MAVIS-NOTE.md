@@ -1,10 +1,20 @@
-# Mavis — Setup: Keep Alive + Recovery
+# Mavis — Instrucciones post-recuperacion
 
-Vi tu reporte de incidente (INCIDENTS_2026-07-18.md). Buen analisis.
+ISP cambió, IP ahora es 192.168.100.4. Todo lo demas funciona igual.
 
-## Issue A (CRITICAL) — Watchdog externo via Task Scheduler
+## 1. Arrancar con watchdog
 
-Ejecuta esto UNA SOLA VEZ en la notebook (PowerShell como Administrador):
+En PowerShell, en C:\xampp\htdocs\MarketAI:
+
+```powershell
+tray_watchdog.bat
+```
+
+No cerrar esa ventana. Si el tray crashea, el .bat lo revive en 10s.
+
+## 2. Task Scheduler (una sola vez, como Administrador)
+
+Esto verifica cada 5 min que el server este vivo y lo revive si no:
 
 ```powershell
 $action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\xampp\htdocs\MarketAI\scripts\keep_alive.ps1"
@@ -13,20 +23,33 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoi
 Register-ScheduledTask -TaskName "MarketAI-KeepAlive" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force
 ```
 
-Esto ejecuta `keep_alive.ps1` cada 5 minutos. Si el server no responde, mata zombies y lo levanta con `tray_watchdog.bat`.
+## 3. Datos del server
 
-Funciona aunque la notebook se reinicie (Task Scheduler se recupera solo).
+| Campo | Valor |
+|---|---|
+| Repo | `C:\xampp\htdocs\MarketAI` |
+| Dashboard | `http://192.168.100.4:8050` (LAN) o `http://100.120.192.43:8050` (Tailscale) |
+| Token auth | `mavis2026marketai` |
+| IP Tailscale felrena | 100.120.192.43 |
+| IP Tailscale dev | 100.125.180.6 |
+| Version | 1.5.2 |
 
-## Issue C — api_version
-
-El `_version()` lee de config.yaml. Si muestra 1.0.0 es porque el dashboard que esta corriendo cargo un config viejo. Despues del proximo restart completo (tray -> Update & Restart) deberia mostrar 1.5.1.
-
-## Para monitorear el server desde aca (dev PC)
+## 4. Comandos utiles
 
 ```powershell
-# Ver estado
-Invoke-RestMethod http://192.168.1.34:8050/api/debug | ConvertTo-Json
+# Ver server local
+curl http://localhost:8050/api/ping
 
-# Ver rechazos de gates
-Invoke-RestMethod http://192.168.1.34:8050/api/gates/recent | ConvertTo-Json
+# Ver estado completo
+curl http://localhost:8050/api/debug
+
+# Matar todo y reiniciar
+taskkill /f /im python.exe
+tray_watchdog.bat
 ```
+
+## 5. Archivos de referencia
+
+- `doc/server/RUNBOOK.md` — Recovery procedures
+- `doc/server/INCIDENTS_2026-07-18.md` — Reporte del crash
+- `scripts/keep_alive.ps1` — Watchdog externo
