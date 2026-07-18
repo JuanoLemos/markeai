@@ -163,3 +163,60 @@ tray_watchdog.bat: corriendo en ventana separada, auto-restart 10s
 - MAVIS-NOTE.md (instrucciones de recovery del dev)
 - Commit `942bc35` (tray_watchdog.bat)
 - Commit `48ddef5` (do_close + kill_port_8050)
+
+---
+
+## Post-recovery follow-up (2026-07-18 01:15 ART)
+
+**El server se cayó otra vez ~1h después del primer recovery.** Mismo síntoma: el server estuvo vivo, luego dejó de responder, no había nadie que lo levantara (porque el keep_alive task todavía no se creó en Task Scheduler).
+
+### Timeline
+
+| Hora | Evento |
+|---|---|
+| 00:40 | Recovery inicial, server vivo con `tray_watchdog.bat` |
+| 00:50-01:10 | Server vivo, sin actividad |
+| ~01:10 | Server cae solo (causa desconocida, sin traceback) |
+| 01:13 | Lo detecto, health check falla, no hay procesos python |
+| 01:13 | Matar todo, arrancar `tray_watchdog.bat` fresco, health check OK |
+
+### Estado al final
+
+- **api_version**: sigue `1.0.0` (Issue C, no resuelto)
+- **trades_open**: 0 (acaba de arrancar fresh)
+- **balance_fast**: `$1003.03` (de $1000, +$3)
+- **procesos**: `tray_watchdog.bat` corriendo (cmd PID 46728), tray + orchestrator + dashboard levantados
+
+### Por qué sigue cayendo
+
+Sin la Task Scheduler `MarketAI-KeepAlive` activa, el `tray_watchdog.bat` puede morirse y nadie lo levanta. El dev creó el `keep_alive.ps1` para esto, pero **el user no ha corrido aún el comando de Register-ScheduledTask** (requiere admin, no lo puedo correr yo).
+
+### Estado del Issue A (CRITICAL)
+
+| Acción | Estado |
+|---|---|
+| `keep_alive.ps1` creado | ✅ por el dev (commit `0522b83`) |
+| `scripts/keep_alive.ps1` revisado | ✅ lógica correcta (ping → kill → restart) |
+| Task Scheduler `MarketAI-KeepAlive` creada | ❌ PENDIENTE — user debe correr como admin |
+| `api_version` debería pasar a 1.5.1 después del restart | ❌ sigue en 1.0.0 (Issue C) |
+
+### Comando que el user tiene que correr
+
+```powershell
+# PowerShell como Administrador
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File C:\xampp\htdocs\MarketAI\scripts\keep_alive.ps1"
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 365)
+$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable
+Register-ScheduledTask -TaskName "MarketAI-KeepAlive" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force
+```
+
+### Recomendación para el dev
+
+Si está leyendo esto, considera:
+1. El keep_alive debería ser auto-creado por el setup script, no requerir un comando manual con admin
+2. Un watchdog de nivel 2 que verifique que el keep_alive está corriendo (auto-meta-watchdog)
+3. Heartbeat en la DB que el dev pueda consultar para saber si el server está vivo sin pedirle a Mavis-allá
+
+---
+
+*Actualizado: 2026-07-18 01:17 ART por Mavis-allá*
