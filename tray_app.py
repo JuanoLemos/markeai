@@ -339,6 +339,7 @@ def do_close():
     stop_service(_proc_dash, "dashboard")
     time.sleep(1)
     kill_orphans()
+    kill_port_8050()
     if _icon:
         try:
             _icon.stop()
