@@ -5,6 +5,24 @@ Todos los cambios notables en este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.0] — 2026-07-18
+
+### Added
+- Meta-model training system: `scripts/train_historical.py` + `scripts/train_weekly.py` (RandomForest classifier basado en scores de analizadores históricos)
+- `analyzers/meta_model.py` — 10° capa de análisis que aprende de datos históricos
+- Ghost system: versionado de modelos + shadow trading en paralelo (`/api/ghost/compare`)
+- `tray_watchdog.bat` — wrapper que revive el tray automáticamente si crashea
+- `doc/olas/marketai-ola-06.md` — Wave manifest para Producción + IA 2.0
+
+### Fixed
+- `tray_app.py`: `do_close()` ahora llama a `kill_port_8050()` — mata procesos fantasma antes de cerrar
+- `tray_app.py`: `main()` corre `kill_port_8050()` antes de arrancar servicios — elimina Issue 6 (procesos duplicados)
+
+### Changed
+- `DILIGENCIA.md`: v2.6.4 → v2.7.1 (33 comandos fundamentales, sistema /ola)
+- `ROADMAP.md` reorganizado en Olas 0-5 con dependencias y entregables
+- Sesión completa de ~18 horas: 11 fixes aplicados (prompt v3, risk gates, security auth, deploy remoto, drawdown detection, PnL ficticio, Normal profile, refresh button, tray merge, fusion pre-filter, ghost system)
+
 ## [1.4.0] — 2026-07-15
 
 ### Added
@@ -185,12 +203,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - 95 tests
 
 <!--
-[Unreleased]: https://github.com/usuario/MarketAI/compare/v1.3.0...HEAD
-[1.3.0]: https://github.com/usuario/MarketAI/releases/tag/v1.3.0
-[1.2.1]: https://github.com/usuario/MarketAI/releases/tag/v1.2.1
-[1.2.0]: https://github.com/usuario/MarketAI/releases/tag/v1.2.0
-[1.1.0]: https://github.com/usuario/MarketAI/releases/tag/v1.1.0
-[1.0.0]: https://github.com/usuario/MarketAI/releases/tag/v1.0.0
+[Unreleased]: https://github.com/JuanoLemos/markeai/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/JuanoLemos/markeai/releases/tag/v1.5.0
+[1.4.0]: https://github.com/JuanoLemos/markeai/releases/tag/v1.4.0
+[1.3.0]: https://github.com/JuanoLemos/markeai/releases/tag/v1.3.0
+[1.2.1]: https://github.com/JuanoLemos/markeai/releases/tag/v1.2.1
+[1.2.0]: https://github.com/JuanoLemos/markeai/releases/tag/v1.2.0
+[1.1.0]: https://github.com/JuanoLemos/markeai/releases/tag/v1.1.0
+[1.0.0]: https://github.com/JuanoLemos/markeai/releases/tag/v1.0.0
 -->
 
 ## Archivos relacionados

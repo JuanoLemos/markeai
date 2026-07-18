@@ -1,4 +1,4 @@
-# MarketAI — Roadmap de Desarrollo v1.4.0
+# MarketAI — Roadmap de Desarrollo v1.5.0
 
 Sistema de Trading Multi-Capa con DeepSeek AI.
 
