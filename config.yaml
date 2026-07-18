@@ -55,11 +55,16 @@ layers:
     weight_forex: 0.2
     weight_polymarket: 0.2
     weight_stocks: 0.25
-  technical:
+   technical:
     enabled: true
     weight_forex: 0.35
     weight_polymarket: 0.25
     weight_stocks: 0.3
+  meta_model:
+    enabled: true
+    weight_forex: 0.15
+    weight_polymarket: 0.1
+    weight_stocks: 0.2
 markets:
   forex:
     check_interval_min: 60

@@ -99,6 +99,14 @@ def _process_market(orch, market: str, market_cfg: dict):
         orch._hb("data", "error", f"{market}: sin resultados")
         return
     orch._hb("data", "ok", f"{market}: {len(layer_results)} capas")
+    # Run meta-model analyzer if available (10th layer, trained from historical data)
+    try:
+        from analyzers.meta_model import analyze as mm_analyze
+        mm_result = mm_analyze(layer_results)
+        if mm_result["signal"] != "WAIT" or mm_result.get("details", {}).get("confidence", 0) > 50:
+            layer_results["meta_model"] = mm_result
+    except Exception:
+        pass
     target_tickers = _get_tickers(market, market_cfg)
     if market == "polymarket" and market_data.get("slug"):
         target_tickers = [market_data["slug"]]
