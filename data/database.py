@@ -104,9 +104,21 @@ class Database:
             CREATE TABLE IF NOT EXISTS motor_heartbeat (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 motor TEXT NOT NULL,
-                status TEXT NOT NULL CHECK(status IN ('ok','warn','error')),
+                status TEXT DEFAULT 'ok',
                 message TEXT DEFAULT '',
                 timestamp TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS ghost_signals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp TEXT NOT NULL DEFAULT (datetime('now')),
+                ticker TEXT NOT NULL,
+                signal TEXT NOT NULL,
+                confidence REAL DEFAULT 0,
+                version TEXT DEFAULT 'ghost',
+                live_signal TEXT DEFAULT '',
+                live_confidence REAL DEFAULT 0,
+                live_outcome TEXT DEFAULT ''
             );
 
             CREATE TABLE IF NOT EXISTS backtest_runs (
@@ -257,6 +269,19 @@ class Database:
             INSERT INTO portfolio (market, balance_usd, open_positions, daily_pnl, total_pnl)
             VALUES ('all', ?, ?, ?, ?)
         """, (balance, open_positions, daily_pnl, total_pnl))
+        conn.commit()
+        conn.close()
+
+    def insert_ghost_signal(self, ticker: str, signal: str, confidence: float,
+                            version: str = "ghost", live_signal: str = "",
+                            live_confidence: float = 0, live_outcome: str = ""):
+        conn = self._get_conn()
+        conn.execute(
+            """INSERT INTO ghost_signals (ticker, signal, confidence, version,
+               live_signal, live_confidence, live_outcome)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (ticker, signal, confidence, version, live_signal, live_confidence, live_outcome),
+        )
         conn.commit()
         conn.close()
 

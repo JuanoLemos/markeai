@@ -1,56 +1,69 @@
 """
 analyzers/meta_model.py — Meta-model analyzer (10th layer).
 Uses a trained RandomForest to predict next-day direction from the 9 analyzer scores.
-The model is trained offline by scripts/train_historical.py and loaded at runtime.
+The model is trained offline by scripts/train_versioned.py and loaded at runtime.
 
+Support ghost mode: if version='ghost', loads the previous model for shadow trading.
 When no model is found, returns WAIT gracefully (non-blocking failure).
 """
 from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).parent.parent
-MODEL_PATH = ROOT / "data" / "models" / "meta_model.pkl"
+MODEL_DIR = ROOT / "data" / "models"
 
-_model = None
+_live_model = None
+_ghost_model = None
 
 
-def _load_model():
-    global _model
-    if _model is not None:
-        return _model
+def _load_model(version: str = "live"):
+    global _live_model, _ghost_model
+    if version == "live":
+        if _live_model is not None:
+            return _live_model
+        path = MODEL_DIR / "meta_model.pkl"
+    else:
+        if _ghost_model is not None:
+            return _ghost_model
+        path = MODEL_DIR / "meta_model_ghost.pkl"
     try:
         import joblib
-        if MODEL_PATH.exists():
-            _model = joblib.load(MODEL_PATH)
+        if path.exists():
+            model = joblib.load(path)
+            if version == "live":
+                _live_model = model
+            else:
+                _ghost_model = model
+            return model
     except Exception:
         pass
-    return _model
+    return None
 
 
-def analyze(scores: dict) -> dict:
+def analyze(scores: dict, version: str = "live") -> dict:
     """Run the meta-model on the 9 analyzer scores.
     
     Args:
         scores: dict like {"technical": {"signal":"LONG","score":72}, ...}
+        version: "live" or "ghost"
     
     Returns:
         dict with signal, score, reasoning (standard analyzer format).
     """
-    model = _load_model()
+    model = _load_model(version)
     if model is None:
-        return {"signal": "WAIT", "score": 50, "reasoning": "no_model_trained",
-                "details": {"source": "meta_model", "model_path": str(MODEL_PATH)}}
+        return {"signal": "WAIT", "score": 50, "reasoning": f"no_model_{version}",
+                "details": {"source": f"meta_model_{version}", "version": version}}
 
     features = _extract_features(scores)
     if features is None:
         return {"signal": "WAIT", "score": 50, "reasoning": "insufficient_features",
-                "details": {"source": "meta_model"}}
+                "details": {"source": f"meta_model_{version}", "version": version}}
 
     proba = model.predict_proba([features])[0]
     prediction = model.predict([features])[0]
     confidence = float(max(proba) * 100)
 
-    # Map model output (1=LONG, 0=SHORT) to signal
     signal = "LONG" if prediction == 1 else "SHORT"
     score = confidence if prediction == 1 else 100 - confidence
 
@@ -61,16 +74,14 @@ def analyze(scores: dict) -> dict:
     return {
         "signal": signal,
         "score": round(score, 1),
-        "reasoning": f"meta_model: {signal} (conf={confidence:.0f}%)",
+        "reasoning": f"meta_model_{version}: {signal} (conf={confidence:.0f}%)",
         "details": {
-            "source": "meta_model",
+            "source": f"meta_model_{version}",
+            "version": version,
             "confidence": round(confidence, 1),
             "proba_long": round(float(proba[1]), 3),
         },
     }
-
-
-def _extract_features(scores: dict) -> list:
     """Extract numeric feature vector from the 9 analyzer scores.
     
     Expected keys: technical, fundamental, macro, sentiment, onchain,

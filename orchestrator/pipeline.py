@@ -245,6 +245,24 @@ def _process_market(orch, market: str, market_cfg: dict):
                     if trade and "id" in trade and db_trade_id and trade["id"] in pb.positions:
                         pb.positions[trade["id"]]["_db_id"] = db_trade_id
 
+    # Ghost: run previous model version in parallel for comparison
+    try:
+        if orch.config.get("ghost", {}).get("enabled") and "meta_model" in layer_results:
+            from analyzers.meta_model import analyze as mm_analyze
+            ghost_result = mm_analyze(layer_results, version="ghost")
+            if ghost_result["signal"] != "WAIT" or ghost_result.get("details", {}).get("confidence", 0) > 50:
+                lay = layer_results.get("meta_model", {})
+                orch.db.insert_ghost_signal(
+                    ticker=target_tickers[0] if target_tickers else "all",
+                    signal=ghost_result["signal"],
+                    confidence=ghost_result.get("details", {}).get("confidence", 0),
+                    version=ghost_result.get("details", {}).get("version", "ghost"),
+                    live_signal=lay.get("signal", "?"),
+                    live_confidence=lay.get("details", {}).get("confidence", 0),
+                )
+    except Exception:
+        pass
+
 
 def _analyze_polymarket(orch, market_cfg: dict) -> tuple:
     layer_results = {}

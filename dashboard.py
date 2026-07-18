@@ -340,7 +340,18 @@ def create_app():
 
             return jsonify({"brief": brief, "signals": signals_cnt, "trades_closed": trades_closed, "pnl_today": pnl_today, "open_positions": opened})
         except Exception as e:
-            return jsonify({"brief": f"Error cargando brief (sin datos aún)", "error": str(e)})
+            return jsonify({"brief": f"Error cargando brief", "error": str(e)})
+
+    @app.route("/api/ghost/compare")
+    def api_ghost_compare():
+        import sqlite3
+        try:
+            conn = sqlite3.connect(str(DB_PATH))
+            ghost_total = conn.execute("SELECT COUNT(*) FROM ghost_signals").fetchone()[0]
+            conn.close()
+        except Exception:
+            ghost_total = 0
+        return jsonify({"ghost_total": ghost_total})
 
     @app.route("/api/positions")
     def api_positions():
