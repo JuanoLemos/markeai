@@ -5,6 +5,18 @@ Todos los cambios notables en este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.2] — 2026-07-18
+
+### Added
+- `scripts/keep_alive.ps1` — external watchdog que verifica el server cada 5 min via Task Scheduler
+- `doc/server/INCIDENTS_2026-07-18.md` — reporte de Mavis sobre crash de 5 días (Issue A-D)
+
+### Fixed
+- Server ahora se auto-recupera aunque el tray crashee (keep_alive lo revive cada 5 min)
+
+### Changed
+- `MAVIS-NOTE.md` actualizado con instrucciones de recovery y setup de Task Scheduler
+
 ## [1.5.1] — 2026-07-19
 
 ### Added
@@ -215,7 +227,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - 95 tests
 
 <!--
-[Unreleased]: https://github.com/JuanoLemos/markeai/compare/v1.5.1...HEAD
+[Unreleased]: https://github.com/JuanoLemos/markeai/compare/v1.5.2...HEAD
+[1.5.2]: https://github.com/JuanoLemos/markeai/releases/tag/v1.5.2
 [1.5.1]: https://github.com/JuanoLemos/markeai/releases/tag/v1.5.1
 [1.4.0]: https://github.com/JuanoLemos/markeai/releases/tag/v1.4.0
 [1.3.0]: https://github.com/JuanoLemos/markeai/releases/tag/v1.3.0
