@@ -5,6 +5,18 @@ Todos los cambios notables en este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] — 2026-07-19
+
+### Added
+- PromptMemory: inyección de lecciones de trades pasados en el prompt de DeepSeek (Técnicas 1+2+3: memoria, reglas SHARP, críticas Moira)
+- `engine/prompt_memory.py` — clase `PromptMemory` con `record_lesson()` y `get_lessons()`
+- Tabla `prompt_memory` en SQLite para persistencia de lecciones
+
+### Changed
+- `decider.py`: `_build_prompt()` recibe `prompt_memory` opcional e inyecta hasta 3 lecciones por ticker
+- `pipeline.py`: hook post-close de trades → graba lección automáticamente
+- `core.py`: inicializa `PromptMemory` al boot
+
 ## [1.5.0] — 2026-07-18
 
 ### Added
@@ -203,8 +215,8 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 - 95 tests
 
 <!--
-[Unreleased]: https://github.com/JuanoLemos/markeai/compare/v1.5.0...HEAD
-[1.5.0]: https://github.com/JuanoLemos/markeai/releases/tag/v1.5.0
+[Unreleased]: https://github.com/JuanoLemos/markeai/compare/v1.5.1...HEAD
+[1.5.1]: https://github.com/JuanoLemos/markeai/releases/tag/v1.5.1
 [1.4.0]: https://github.com/JuanoLemos/markeai/releases/tag/v1.4.0
 [1.3.0]: https://github.com/JuanoLemos/markeai/releases/tag/v1.3.0
 [1.2.1]: https://github.com/JuanoLemos/markeai/releases/tag/v1.2.1
