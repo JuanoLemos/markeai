@@ -1,6 +1,6 @@
 # RUNBOOK — MarketAI Server Recovery
 
-Procedimientos de recuperacion para Mavis y operadores del server.
+Procedimientos de recuperacion para el administrador del server.
 
 ---
 
@@ -87,5 +87,5 @@ Get-Content C:\xampp\htdocs\MarketAI\orchestrator.log -Tail 20 -Wait
 
 - `scripts/keep_alive.ps1` — Watchdog externo via Task Scheduler
 - `tray_watchdog.bat` — Auto-restart del tray si crashea
-- `MAVIS-NOTE.md` — Instrucciones activas para Mavis
+- `SERVER-NOTE.md` — Instrucciones activas para el server admin
 - `INCIDENTS_2026-07-18.md` — Reporte de incidente previo

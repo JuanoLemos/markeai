@@ -46,7 +46,7 @@
 | `position-sizing-reference.md` | Cálculo de position size |
 | `COMANDOS.md` | Documentación de todos los comandos slash |
 | `GUIA_DE_BUENAS_PRACTICAS.md` | Buenas prácticas del proyecto |
-| `GUIA_DEPLOY.md` | Deploy en server (Mavis-allá) |
+| `GUIA_DEPLOY.md` | Deploy en server (notebook) |
 | `GUIA_DE_CONTRIBUCION.md` | Cómo contribuir al proyecto |
 | `GUIA_DE_INFORMES.md` | Cómo generar informes |
 | `GUIA_ECOSISTEMAS.md` | Ecosistema de proyectos (Diligencia + adaptados) |
@@ -68,7 +68,7 @@
 | `MECANICA-RECOVERY.md` | Crash recovery y auto-reconciliación |
 | `_template.md` | Plantilla para nuevas mecánicas |
 
-## `doc/server/` — Operación en Mavis-allá
+## `doc/server/` — Operación en notebook
 
 | Doc | Tema |
 |---|---|
