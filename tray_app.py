@@ -229,6 +229,35 @@ def health_check():
 #  Auto-recover
 # ════════════════════════════════════════════════════════════════
 
+def _nuke_foreign_orchestrators():
+    """Kill any orchestrator process that is NOT our tracked _proc_orch.
+    Returns list of killed PIDs."""
+    our_pid = _proc_orch.pid if (_proc_orch and _proc_orch.poll() is None) else None
+    try:
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-Command",
+             "Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | "
+             "Where-Object { $_.CommandLine -match 'orchestrator' } | "
+             "ForEach-Object { $_.ProcessId }"],
+            capture_output=True, text=True, timeout=10,
+        )
+        foreign = []
+        for pid_str in result.stdout.strip().split():
+            if not pid_str.isdigit():
+                continue
+            pid = int(pid_str)
+            if pid != our_pid:
+                foreign.append(pid)
+        if foreign:
+            log(f"_nuke_foreign_orchestrators: killing {foreign}")
+            for pid in foreign:
+                _kill_pid(pid)
+        return foreign
+    except Exception as e:
+        log(f"_nuke_foreign_orchestrators error: {e}", 'error')
+        return []
+
+
 def auto_recover():
     """Check process state and restart if needed. Backoff fijo 30s."""
     global _proc_orch, _proc_dash, _last_recover_ts, _last_orch_start_ts
@@ -238,6 +267,9 @@ def auto_recover():
         if now - _last_recover_ts < RECOVER_INTERVAL_S:
             return  # backoff
         _last_recover_ts = now
+
+        # Defense in depth: kill any foreign orchestrator instances
+        _nuke_foreign_orchestrators()
 
         # Check orchestrator
         if _proc_orch is None or _proc_orch.poll() is not None:
