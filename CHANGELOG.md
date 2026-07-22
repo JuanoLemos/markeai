@@ -5,6 +5,21 @@ Todos los cambios notables en este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.4] — 2026-07-22
+
+### Fixed
+- Prompt rewrite NORMAL+FAST: WAIT es el default, exige ≥2 capas con score ≥50 (Normal) o ≥40 (Fast) — corrige causa raíz de señales marginales
+- Confidence cap en fusión: 1 capa→33%, 2→66%, 3+→100% — evita confianza inflada que sesgaba al LLM
+- `model: deepseek-v4-flash` → `deepseek-v4-pro` — mayor precisión en razonamiento multi-capa
+- `max_tokens` 4000→300, `temperature` 0.3→0.0 — -80% costo, decisiones deterministas
+- Pre-filtro fusión endurecido: `score<35 OR conf<20 OR layers<2` — menos DeepSeek calls en setups marginales
+- `keep_alive` migrado a `pythonw.exe` (ventana cero en Task Scheduler)
+- Tasks 5min invisibles: `MarketAI-KeepAlive` y `MarketAI-Watchdog` corren sin consola
+
+### Changed
+- tarea-001: deploy prompt fixes a VAIO server
+- tarea-002: re-deploy con fixes en `main`
+
 ## [1.5.3] — 2026-07-21
 
 ### Fixed
