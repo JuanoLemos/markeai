@@ -2,14 +2,14 @@
 
 ## ✅ CORREGIDO: Tasks invisibles (2026-07-22)
 
-Ambas tasks de 5 min ahora corren con `-WindowStyle Hidden` y `-Hidden`:
+Ambas tasks de 5 min ahora corren con `pythonw.exe` (sin consola):
 
 | Task | Hidden | Ejecuta |
 |---|---|---|
-| MarketAI-KeepAlive | True | `powershell.exe ... keep_alive.ps1` |
+| MarketAI-KeepAlive | True | `pythonw.exe ... keep_alive.py` |
 | MarketAI-Watchdog | True | `pythonw.exe ... ola2_watchdog.py` |
 
-Si se necesita recrear manualmente, usar los comandos abajo.
+Si se necesita recrear manualmente, usar `scripts\_create_keepalive_task.ps1`.
 
 ## Hacer pull del ultimo codigo
 

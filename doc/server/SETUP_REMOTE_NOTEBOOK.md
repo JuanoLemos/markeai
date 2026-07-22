@@ -113,14 +113,24 @@ $sc.Description = "MarketAI - Trading 24/7 (system tray)"
 $sc.Save()
 Write-Host "Acceso directo creado en escritorio" -ForegroundColor Green
 
-# 5b. Crear task de watchdog (cada 5 min)
+# 5b. Crear task de keepalive (cada 5 min) — CORREGIDO: usa pythonw.exe sin consola
+try {
+    Unregister-ScheduledTask -TaskName "MarketAI-KeepAlive" -Confirm:$false -ErrorAction SilentlyContinue
+} catch {}
+$action_ka = New-ScheduledTaskAction -Execute "C:\markeai\venv\Scripts\pythonw.exe" -Argument "C:\markeai\scripts\keep_alive.py"
+$trigger_ka = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 365)
+$settings_ka = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -Hidden
+Register-ScheduledTask -TaskName "MarketAI-KeepAlive" -Action $action_ka -Trigger $trigger_ka -Settings $settings_ka -RunLevel Highest -Force
+Write-Host "KeepAlive Task: OK (cada 5 min, invisible)" -ForegroundColor Green
+
+# 5c. Crear task de watchdog (cada 5 min)
 $action = New-ScheduledTaskAction -Execute "C:\markeai\venv\Scripts\pythonw.exe" -Argument "C:\markeai\scripts\ola2_watchdog.py"
 $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 3650)
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -Hidden -ExecutionTimeLimit (New-TimeSpan -Minutes 2)
-Register-ScheduledTask -TaskName "MarketAI-Watchdog" -Action $action -Trigger $trigger -Settings $settings -Force | Out-Null
-Write-Host "Watchdog Task Scheduler: OK (cada 5 min)" -ForegroundColor Green
+Register-ScheduledTask -TaskName "MarketAI-Watchdog" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force | Out-Null
+Write-Host "Watchdog Task: OK (cada 5 min, invisible)" -ForegroundColor Green
 
-# 5c. Crear task de auto-update (cada 6h)
+# 5d. Crear task de auto-update (cada 6h)
 $action2 = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "C:\markeai\update_hidden.vbs"
 $trigger2 = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 6) -RepetitionDuration (New-TimeSpan -Days 3650)
 $settings2 = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
