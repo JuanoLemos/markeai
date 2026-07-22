@@ -2,7 +2,7 @@
 
 Índice de documentación crítica. Punto de entrada único para entender el proyecto.
 
-> Convencion Diligencia v2.7.0: este archivo es requerido desde v1.7.0. Si llega a faltar,
+> Convencion Diligencia v3.0.0: este archivo es requerido desde v1.7.0. Si llega a faltar,
 > `/adaptar` lo regenera.
 
 ---
@@ -55,6 +55,7 @@
 | `GUIA_ONBOARDING.md` | Onboarding de nuevos contributors |
 | `GUIA_UPDATE_DILIGENCIA.md` | Cómo actualizar la metodología Diligencia |
 | `identidad.md` | Identidad del proyecto (sello) |
+| `GUIA_CONTROL_REMOTO.md` | Conexión remota al server (VS Code Tunnels, Cloudflare, Tailscale) |
 | `_template.md` | Plantilla para nuevas guías |
 
 ## `doc/mecanicas/` — Mecánicas / reglas de negocio
@@ -66,6 +67,7 @@
 | `MECANICA-CIRCUITO.md` | Mecánica del circuito de trabajo |
 | `MECANICA-ENFORCEMENT.md` | Enforcement de metodología |
 | `MECANICA-RECOVERY.md` | Crash recovery y auto-reconciliación |
+| `MECANICA-VAIO-WORKER.md` | Worker autónomo 24/7 (MAIN↔VAIO vía GitHub) |
 | `_template.md` | Plantilla para nuevas mecánicas |
 
 ## `doc/server/` — Operación en notebook
@@ -96,7 +98,7 @@ Skills cargables con `skill("nombre")` — ver `AGENTS.md` para la lista complet
 
 ## Actualizado
 
-Ultima actualizacion del indice: 2026-07-11 (sync Diligencia v2.6.3 → v2.7.0).
+Ultima actualizacion del indice: 2026-07-21 (upgrade Diligencia v2.7.1 → v3.0.0).
 
 ## Archivos relacionados
 

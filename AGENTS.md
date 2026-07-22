@@ -51,6 +51,9 @@ Variables que los comandos del proyecto usan para referirse a archivos. Definida
 | $TESTS_DIR | `tests/` | Tests pytest |
 | $COMMANDS_DIR | `.opencode/commands/` | Comandos slash |
 | $CRITICAL_FILES | `$CONFIG`, `$ENV`, `$ORCHESTRATOR`, `$DATABASE`, `$DECIDER` | Archivos críticos |
+| $VAIO_TASKS | `doc/vaio/tasks/` | Tareas para el worker VAIO |
+| $VAIO_RESULTS | `doc/vaio/results/` | Resultados del worker VAIO |
+| $VAIO_PRONT | `doc/vaio/PRONT_VAIO.md` | Prompt de nacimiento VAIO |
 
 ---
 
@@ -130,6 +133,40 @@ Estos comandos viven en `~/.config/opencode/commands/` y funcionan sin configura
 - `tx` → backend: `$ENGINE_DIR`, `$ANALYZERS_DIR`, `$DATA_DIR`, `$EXECUTION_DIR`
 - `ui` → frontend: `$TEMPLATES_DIR`, `$STATIC_DIR`, `$DASHBOARD`
 - `ux` → experiencia: `$GUIAS`, `$ALERTS_DIR`, `$STRATEGIES_DIR`
+
+---
+
+## Agentes autónomos
+
+| Regla | Descripción |
+|---|---|
+| R14 | Worker autónomo 24/7 en máquina remota. Loop perpetuo (pull → detectar tareas en `doc/vaio/tasks/` → ejecutar → reportar en `doc/vaio/results/` → push → esperar 60s). No requiere confirmación para BUILD. Solo toca `doc/vaio/`. No modifica código del proyecto. |
+
+## Asistente VAIO-Server
+
+Este proyecto tiene un asistente en la laptop VAIO (servidor 24/7). La comunicación es vía git:
+
+1. **MAIN crea tarea** → escribe `doc/vaio/tasks/tarea-NNN.md` → git push
+2. **VAIO ejecuta** → git pull → detecta tarea → ejecuta comandos → escribe resultado
+3. **MAIN lee resultado** → git pull → `doc/vaio/results/resultado-NNN.md`
+
+### Archivos clave
+
+| Archivo | Propósito |
+|---|---|
+| `doc/vaio/PRONT_VAIO.md` | Prompt de nacimiento — cargar en sesión Chamber de VAIO para modo interactivo |
+| `doc/vaio/worker-loop.md` | Prompt del worker — cargar en sesión OpenCode para modo autónomo 24/7 |
+| `doc/vaio/README.md` | Instrucciones del puente de comunicación |
+| `doc/guias/GUIA_CONTROL_REMOTO.md` | Guía de conexión remota (VS Code Tunnels, Cloudflare Tunnel, Tailscale) |
+
+### Canales de conexión remota
+
+| Canal | Propósito |
+|---|---|
+| **GitHub** | Comunicación MAIN↔WORKER (tareas y resultados) |
+| **Cloudflare Tunnel** | Acceso a Chamber.exe + dashboard desde cualquier ubicación |
+| **VS Code Tunnels** | Acceso al sistema de archivos y terminal remota |
+| **Tailscale** | Red privada directa (IP 100.120.192.43) |
 
 ---
 

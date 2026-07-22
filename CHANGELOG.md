@@ -5,6 +5,26 @@ Todos los cambios notables en este proyecto se documentarán en este archivo.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.3] — 2026-07-21
+
+### Fixed
+- Anti-duplicate orchestrator: lockfile + orphan scan periódico previene procesos duplicados
+- PnL filter `ABS(pnl_usd) < 1000` elimina trades ficticios sin filtro de fecha
+- Excluir `lost_recovery` del realized PnL (eliminaba otro ficticio)
+- Grace period 90s en `auto_recover` + `/api/ping` lee `motor_heartbeat` (G3+G5)
+- Indentación línea 58 en `config.yaml` (technical: faltaba 1 espacio)
+- `kill_port_8050()` en `restart_all_clean`: mata dashboard viejo antes de restart
+- VAIO-NOTE.md duplicado eliminado, consolidado a SERVER-NOTE.md
+
+### Changed
+- Diligencia v2.7.1 → v3.0.0: `doc/vaio/` + worker autónomo 24/7, VS Code Tunnels + Cloudflare Tunnel, GUIA_CONTROL_REMOTO.md, AGENTS.md +Asistente VAIO-Server
+- Deprecate Mavis branding: MAVIS-NOTE → SERVER-NOTE, limpieza de referencias
+- KeepAlive Task Scheduler fix: ventana invisible + pull latest code
+- VAIO-NOTE.md con instrucciones de admin del server
+- MAVIS-NOTE actualizado con nueva IP y recovery instructions
+- RUNBOOK.md + `_version()` error logging (Mavis recommendations 4+5)
+- Post-recovery follow-up: documentado crash del server a las 01:13
+
 ## [1.5.2] — 2026-07-18
 
 ### Added
