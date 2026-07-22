@@ -125,7 +125,7 @@ data/server/
 Comando para crear la tarea (lo hace el usuario UNA VEZ):
 
 ```powershell
-schtasks /create /tn "MarketAI-Watchdog" /tr "C:\xampp\htdocs\MarketAI\venv\Scripts\python.exe C:\xampp\htdocs\MarketAI\scripts\ola2_watchdog.py" /sc minute /mo 5 /rl highest
+schtasks /create /tn "MarketAI-Watchdog" /tr "C:\xampp\htdocs\MarketAI\venv\Scripts\pythonw.exe C:\xampp\htdocs\MarketAI\scripts\ola2_watchdog.py" /sc minute /mo 5 /rl highest
 ```
 
 El script se ejecuta cada 5 minutos. La salida va a `data/server/`.

@@ -1,17 +1,15 @@
 # Server Admin — Instrucciones
 
-## URGENTE: Fix KeepAlive ventana invisible
+## ✅ CORREGIDO: Tasks invisibles (2026-07-22)
 
-La task de Task Scheduler abre ventana cada 5 min. Corregir:
+Ambas tasks de 5 min ahora corren con `-WindowStyle Hidden` y `-Hidden`:
 
-```powershell
-Unregister-ScheduledTask -TaskName "MarketAI-KeepAlive" -Confirm:$false -ErrorAction SilentlyContinue
+| Task | Hidden | Ejecuta |
+|---|---|---|
+| MarketAI-KeepAlive | True | `powershell.exe ... keep_alive.ps1` |
+| MarketAI-Watchdog | True | `pythonw.exe ... ola2_watchdog.py` |
 
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File C:\xampp\htdocs\MarketAI\scripts\keep_alive.ps1"
-$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Minutes 5) -RepetitionDuration (New-TimeSpan -Days 365)
-$settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable -Hidden
-Register-ScheduledTask -TaskName "MarketAI-KeepAlive" -Action $action -Trigger $trigger -Settings $settings -RunLevel Highest -Force
-```
+Si se necesita recrear manualmente, usar los comandos abajo.
 
 ## Hacer pull del ultimo codigo
 
