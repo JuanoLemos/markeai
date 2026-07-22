@@ -10,9 +10,9 @@ alerts:
     notify_on_error: true
     notify_on_exit: true
 deepseek:
-  max_tokens: 4000
-  model: deepseek-v4-flash
-  temperature: 0.3
+  max_tokens: 300
+  model: deepseek-v4-pro
+  temperature: 0.0
   timeout_seconds: 30
 layers:
   adx_regime:

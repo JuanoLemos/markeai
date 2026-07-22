@@ -47,10 +47,12 @@ class FusionEngine:
         total_signals = len(signals)
         total_layers = len(layer_scores)
         if total_signals > 0:
-            confidence = int((abs(long_votes - short_votes) / total_signals) * 100)
+            raw_confidence = int((abs(long_votes - short_votes) / total_signals) * 100)
+            confidence = int(raw_confidence * min(1.0, total_signals / 3))
         elif weighted_score != 50:
             deviation = abs(weighted_score - 50)
-            confidence = int(deviation * total_layers * 2)
+            raw_confidence = int(deviation * total_layers * 2)
+            confidence = int(raw_confidence * min(1.0, total_layers / 3))
         else:
             confidence = 0
         confidence = max(0, min(100, confidence))

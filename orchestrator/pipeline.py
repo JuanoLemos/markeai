@@ -147,9 +147,11 @@ def _process_market(orch, market: str, market_cfg: dict):
                 if not session_hours(market, hour, profile=prof_name, ticker=ticker):
                     orch.log.info(f"  {prof_name} session blocked at hour {hour}")
                     continue
-                # R89: fusion pre-filter — skip DeepSeek when score is too low to matter
-                if fused.get("score", 50) < 30 and fused.get("confidence", 0) < 25:
-                    orch.log.info(f"  {prof_name} fusion pre-filter: score={fused['score']} conf={fused['confidence']} → WAIT")
+                # R89: fusion pre-filter — skip DeepSeek when score is too low, layers < 2, or confidence low
+                active_layers = len(fused.get("layer_scores", {}))
+                if fused.get("score", 50) < 35 or fused.get("confidence", 0) < 20 or active_layers < 2:
+                    reason = f"score={fused.get('score')}" if fused.get("score", 50) < 35 else f"conf={fused.get('confidence')}" if fused.get("confidence", 0) < 20 else f"layers={active_layers}"
+                    orch.log.info(f"  {prof_name} fusion pre-filter: {reason} → WAIT")
                     continue
                 pb = orch.paper_brokers[prof_name]
                 decision = orch.decider.decide(market, ticker, fused, {**market_data, "open_positions": pb.get_positions()}, fused.get("layer_scores", {}), profile=prof_name, prompt_memory=getattr(orch, 'prompt_memory', None))
